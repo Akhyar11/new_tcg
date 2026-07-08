@@ -1,6 +1,0 @@
-Max attack = 2
-Max Ability = 2
-Max Element = 12
-5 Energi Murni:  COLORLESS ,  FIGHTING
-4 Energi Murni:  GRASS ,  FIRE ,  PSYCHIC ,  METAL
-3 Energi Murni:  WATER ,  LIGHTNING ,  DARKNESS
