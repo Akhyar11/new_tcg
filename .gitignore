@@ -18,7 +18,6 @@ __pycache__/
 
 # File Data Game & Dataset AI (Bisa memakan memori bergiga-giga)
 *.json
-*.csv
 *.pt      # File model pytorch jika nanti ditraining
 *.pth
 *.ckpt
