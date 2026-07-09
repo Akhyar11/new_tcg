@@ -1,0 +1,182 @@
+=== v2_bloodmoon_ursaluna_ex_flat.csv ===
+Pokemon: 12 | Trainer: 32 | Energy: 16
+  4x Dunsparce
+  4x Dudunsparce
+  4x Bloodmoon Ursaluna ex
+  4x Buddy-Buddy Poffin
+  4x Ultra Ball
+  4x Pokégear 3.0
+  4x Lillie's Determination
+  4x Cheren
+  3x Boss’s Orders
+  4x Night Stretcher
+  3x Switch
+  1x Prime Catcher
+  1x Sacred Ash
+  4x Energy Search
+  12x Basic {P} Energy
+
+=== v2_farigiraf_ex_flat.csv ===
+Pokemon: 16 | Trainer: 28 | Energy: 16
+  4x Dunsparce
+  4x Dudunsparce
+  4x Girafarig
+  4x Farigiraf ex
+  4x Buddy-Buddy Poffin
+  4x Ultra Ball
+  4x Pokégear 3.0
+  4x Lillie's Determination
+  3x Hilda
+  2x Boss’s Orders
+  4x Night Stretcher
+  2x Switch
+  1x Prime Catcher
+  4x Energy Search
+  12x Basic {D} Energy
+
+=== v2_gouging_fire_ex_flat.csv ===
+Pokemon: 12 | Trainer: 32 | Energy: 16
+  4x Dunsparce
+  4x Dudunsparce
+  4x Gouging Fire ex
+  4x Buddy-Buddy Poffin
+  4x Ultra Ball
+  4x Pokégear 3.0
+  4x Lillie's Determination
+  4x Cheren
+  3x Boss’s Orders
+  4x Night Stretcher
+  3x Switch
+  1x Prime Catcher
+  1x Sacred Ash
+  4x Energy Search
+  12x Basic {R} Energy
+
+=== v2_greninja_ex_flat.csv ===
+Pokemon: 18 | Trainer: 28 | Energy: 14
+  4x Dunsparce
+  4x Dudunsparce
+  4x Froakie
+  2x Frogadier
+  4x Greninja ex
+  4x Buddy-Buddy Poffin
+  4x Ultra Ball
+  4x Rare Candy
+  4x Lillie's Determination
+  3x Dawn
+  2x Boss’s Orders
+  4x Night Stretcher
+  2x Switch
+  1x Prime Catcher
+  2x Energy Search
+  12x Basic {F} Energy
+
+=== v2_incineroar_ex_flat.csv ===
+Pokemon: 18 | Trainer: 28 | Energy: 14
+  4x Dunsparce
+  4x Dudunsparce
+  4x Litten
+  2x Torracat
+  4x Incineroar ex
+  4x Buddy-Buddy Poffin
+  4x Ultra Ball
+  4x Rare Candy
+  4x Lillie's Determination
+  3x Dawn
+  2x Boss’s Orders
+  4x Night Stretcher
+  2x Switch
+  1x Prime Catcher
+  2x Energy Search
+  12x Basic {R} Energy
+
+=== v2_iron_crown_ex_flat.csv ===
+Pokemon: 12 | Trainer: 32 | Energy: 16
+  4x Dunsparce
+  4x Dudunsparce
+  4x Iron Crown ex
+  4x Buddy-Buddy Poffin
+  4x Ultra Ball
+  4x Pokégear 3.0
+  4x Lillie's Determination
+  4x Cheren
+  3x Boss’s Orders
+  4x Night Stretcher
+  3x Switch
+  1x Prime Catcher
+  1x Sacred Ash
+  4x Energy Search
+  12x Basic {P} Energy
+
+=== v2_iron_leaves_ex_flat.csv ===
+Pokemon: 12 | Trainer: 32 | Energy: 16
+  4x Dunsparce
+  4x Dudunsparce
+  4x Iron Leaves ex
+  4x Buddy-Buddy Poffin
+  4x Ultra Ball
+  4x Pokégear 3.0
+  4x Lillie's Determination
+  4x Cheren
+  3x Boss’s Orders
+  4x Night Stretcher
+  3x Switch
+  1x Prime Catcher
+  1x Sacred Ash
+  4x Energy Search
+  12x Basic {G} Energy
+
+=== v2_iron_thorns_ex_flat.csv ===
+Pokemon: 12 | Trainer: 32 | Energy: 16
+  4x Dunsparce
+  4x Dudunsparce
+  4x Iron Thorns ex
+  4x Buddy-Buddy Poffin
+  4x Ultra Ball
+  4x Pokégear 3.0
+  4x Lillie's Determination
+  4x Cheren
+  3x Boss’s Orders
+  4x Night Stretcher
+  3x Switch
+  1x Prime Catcher
+  1x Sacred Ash
+  4x Energy Search
+  12x Basic {L} Energy
+
+=== v2_palafin_ex_flat.csv ===
+Pokemon: 16 | Trainer: 28 | Energy: 16
+  4x Dunsparce
+  4x Dudunsparce
+  4x Finizen
+  4x Palafin ex
+  4x Buddy-Buddy Poffin
+  4x Ultra Ball
+  4x Pokégear 3.0
+  4x Lillie's Determination
+  3x Hilda
+  2x Boss’s Orders
+  4x Night Stretcher
+  2x Switch
+  1x Prime Catcher
+  4x Energy Search
+  12x Basic {W} Energy
+
+=== v2_scizor_ex_flat.csv ===
+Pokemon: 16 | Trainer: 28 | Energy: 16
+  4x Dunsparce
+  4x Dudunsparce
+  4x Scyther
+  4x Scizor ex
+  4x Buddy-Buddy Poffin
+  4x Ultra Ball
+  4x Pokégear 3.0
+  4x Lillie's Determination
+  3x Hilda
+  2x Boss’s Orders
+  4x Night Stretcher
+  2x Switch
+  1x Prime Catcher
+  4x Energy Search
+  12x Basic {M} Energy
+

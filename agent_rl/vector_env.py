@@ -93,8 +93,21 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
     import jax.numpy as jnp
     from flax import serialization
     from agent_rl.model import PokemonAgent
+    import glob
     
-    deck = load_deck(deck_path)
+    # Pre-load semua deck dari folder atau file tunggal
+    deck_files = []
+    if os.path.isdir(deck_path):
+        deck_files = glob.glob(os.path.join(deck_path, "*.csv"))
+    else:
+        deck_files = [deck_path]
+        
+    if not deck_files:
+        print(f"Peringatan: Tidak ada deck ditemukan di {deck_path}. Menggunakan deck dummy.")
+        loaded_decks = [[1]*56 + [210]*4]
+    else:
+        loaded_decks = [load_deck(f) for f in deck_files]
+        
     obs = None
     old_potential = 0.0
     your_index = 0
@@ -161,7 +174,9 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
                 if done:
                     battle_finish()
                     try:
-                        obs_dict, _ = battle_start(deck, deck)
+                        deck0 = random.choice(loaded_decks)
+                        deck1 = random.choice(loaded_decks)
+                        obs_dict, _ = battle_start(deck0, deck1)
                         obs = to_dataclass(obs_dict, Observation)
                         obs, rng = advance_to_player0(obs, params_opp, model_apply, decode_action, rng)
                         old_potential = calc_potential(obs.current, your_index) if obs.current else 0.0
@@ -179,7 +194,9 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
                 
             elif cmd == 'reset':
                 battle_finish()
-                obs_dict, _ = battle_start(deck, deck)
+                deck0 = random.choice(loaded_decks)
+                deck1 = random.choice(loaded_decks)
+                obs_dict, _ = battle_start(deck0, deck1)
                 obs = to_dataclass(obs_dict, Observation)
                 
                 # Biarkan Player 1 main duluan jika dia menang undian turn pertama

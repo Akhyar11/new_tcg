@@ -45,8 +45,8 @@ def train():
         print("[*] Mode Random Bot Aktif. Belum ada checkpoint untuk Self-Play.")
         
     # 1. Inisiasi Lingkungan Paralel
-    print(f"Menjalankan {NUM_ENVS} Environment Pekerja secara Paralel...")
-    env = VectorEnv(num_envs=NUM_ENVS, deck_path="agent_rl/deck.csv", is_self_play=is_self_play)
+    print(f"Menjalankan {NUM_ENVS} Environment Pekerja secara Paralel dengan 10 Decks...")
+    env = VectorEnv(num_envs=NUM_ENVS, deck_path="agent_rl/deck", is_self_play=is_self_play)
     
     # 2. Inisiasi Model & Optimizer
     model = PokemonAgent(num_actions=250)
