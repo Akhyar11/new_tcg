@@ -13,7 +13,7 @@ from agent_rl.buffer import RolloutBuffer
 from agent_rl.ppo_update import ppo_update_step, get_action_and_value
 
 # Konfigurasi Hyperparameter
-NUM_ENVS = 8              # Jumlah klon CPU Game Engine paralel
+NUM_ENVS = 4              # Kurangi jadi 4 agar CPU Kaggle tidak bottleneck
 N_STEPS = 128             # Jumlah langkah per klon sebelum AI melakukan update
 BATCH_SIZE = 64           # Ukuran mini-batch saat update PPO
 EPOCHS = 4                # Berapa kali mengulang belajar pada buffer yang sama
@@ -92,6 +92,7 @@ def train():
         ep_p0_wins = 0
         ep_p1_wins = 0
         ep_draws = 0
+        ep_turns = []
         
         # --- FASE 1: PENGUMPULAN PENGALAMAN (ROLLOUT) ---
         buffer.clear()
@@ -109,7 +110,11 @@ def train():
             actions_np = np.array(actions)
             
             # Melangkah di dunia nyata (C++)
-            next_obs, rewards, dones = env.step(actions_np)
+            next_obs, rewards, dones, infos = env.step(actions_np)
+            
+            for info in infos:
+                if "turn" in info and info["turn"] > 0:
+                    ep_turns.append(info["turn"])
             
             # Lacak Metrik (Hanya saat terminal)
             for i, d in enumerate(dones):
@@ -152,17 +157,17 @@ def train():
         
         # --- FASE 3: MONITORING & CHECKPOINT ---
         if update % 1 == 0:
-            avg_rew = np.mean(ep_rewards) if ep_rewards else 0.0
-            
             total_games = ep_p0_wins + ep_p1_wins + ep_draws
             p0_wr = (ep_p0_wins / total_games * 100) if total_games > 0 else 0.0
             p1_wr = (ep_p1_wins / total_games * 100) if total_games > 0 else 0.0
             draw_wr = (ep_draws / total_games * 100) if total_games > 0 else 0.0
+            avg_turns = (sum(ep_turns) / len(ep_turns)) if len(ep_turns) > 0 else 0.0
             
             fps = int(global_step / (time.time() - start_time))
             
             print(f"Update {update:04d}/{num_updates} | Step: {global_step} | FPS: {fps} | "
-                  f"Loss: {mean_loss:.4f} | P0 Win: {p0_wr:.1f}% | P1 Win: {p1_wr:.1f}% | Draw: {draw_wr:.1f}%")
+                  f"Loss: {mean_loss:.4f} | P0 Win: {p0_wr:.1f}% | P1 Win: {p1_wr:.1f}% | "
+                  f"Draw: {draw_wr:.1f}% | Avg Turns: {avg_turns:.1f}")
                   
         if update % 50 == 0:
             save_checkpoint(params, f"model_update_{update}.msgpack")
@@ -172,5 +177,4 @@ def train():
     save_checkpoint(params, "model_final.msgpack")
 
 if __name__ == "__main__":
-    import jax.numpy as jnp # pastikan jnp ter-load
     train()

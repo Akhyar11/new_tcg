@@ -173,8 +173,11 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
                     reward = -1.0
                     done = True
                     
+                info = {}
+                
                 # --- AUTO-RESET LOGIC ---
                 if done:
+                    info["turn"] = obs.current.turn if (obs and getattr(obs, 'current', None)) else 0
                     battle_finish()
                     try:
                         deck0 = random.choice(loaded_decks)
@@ -193,7 +196,7 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
                 else:
                     features = empty_features
                     
-                remote.send((features, reward, done))
+                remote.send((features, reward, done, info))
                 
             elif cmd == 'reset':
                 battle_finish()
@@ -223,7 +226,7 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
             break
         except Exception as e:
             print(f"[Worker {worker_id}] Terjadi kesalahan internal: {e}")
-            remote.send((empty_features, -1.0, True))
+            remote.send((empty_features, -1.0, True, {}))
 
 class VectorEnv:
     """
@@ -272,8 +275,9 @@ class VectorEnv:
         
         rewards = np.array([res[1] for res in results], dtype=np.float32)
         dones = np.array([res[2] for res in results], dtype=np.bool_)
+        infos = [res[3] for res in results]
         
-        return batch_features, rewards, dones
+        return batch_features, rewards, dones, infos
 
     def step(self, actions):
         """Convenience function (Gabungan async & wait)."""
