@@ -45,18 +45,25 @@ def generate_random_decks(csv_path, output_dir, num_decks=100):
     for i in range(num_decks):
         deck = []
         name_counts = {}
+        has_ace_spec = [False]
 
-        def can_add(cname):
+        def can_add(cname, cid):
+            is_ace = 'ACE SPEC' in cards[cid]['Rule'] or 'ACE SPEC' in cards[cid]['Stage (Pokémon)/Type (Energy and Trainer)']
+            if is_ace and has_ace_spec[0]:
+                return False
             return name_counts.get(cname, 0) < 4
 
         def add_card(cid, count):
             cname = cards[cid]['Card Name']
             added = 0
+            is_ace = 'ACE SPEC' in cards[cid]['Rule'] or 'ACE SPEC' in cards[cid]['Stage (Pokémon)/Type (Energy and Trainer)']
+            
             for _ in range(count):
-                # Basic Energy can exceed 4 copies
-                if len(deck) < 60 and (can_add(cname) or 'Basic Energy' in cards[cid]['Stage (Pokémon)/Type (Energy and Trainer)']):
+                if len(deck) < 60 and (can_add(cname, cid) or 'Basic Energy' in cards[cid]['Stage (Pokémon)/Type (Energy and Trainer)']):
                     deck.append(cid)
                     name_counts[cname] = name_counts.get(cname, 0) + 1
+                    if is_ace:
+                        has_ace_spec[0] = True
                     added += 1
             return added
 
@@ -89,7 +96,7 @@ def generate_random_decks(csv_path, output_dir, num_decks=100):
             if not trainers: break
             t_cid = random.choice(trainers)
             t_name = cards[t_cid]['Card Name']
-            if can_add(t_name):
+            if can_add(t_name, t_cid):
                 add_card(t_cid, random.randint(1, min(4 - name_counts.get(t_name, 0), target_size - len(deck))))
 
         # 3. Add Energies (fill remainder to exactly 60)
