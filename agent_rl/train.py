@@ -36,9 +36,17 @@ def train():
     print("=== INISIALISASI PELATIHAN PPO (JAX) ===")
     rng = jax.random.PRNGKey(42)
     
+    checkpoint_path = os.path.join(SAVE_DIR, "model_final.msgpack")
+    is_self_play = False
+    if os.path.exists(checkpoint_path):
+        is_self_play = True
+        print(f"[*] Mode Self-Play Aktif! Worker akan memuat {checkpoint_path} sebagai AI Player 1.")
+    else:
+        print("[*] Mode Random Bot Aktif. Belum ada checkpoint untuk Self-Play.")
+        
     # 1. Inisiasi Lingkungan Paralel
     print(f"Menjalankan {NUM_ENVS} Environment Pekerja secara Paralel...")
-    env = VectorEnv(num_envs=NUM_ENVS, deck_path="agent_rl/deck.csv")
+    env = VectorEnv(num_envs=NUM_ENVS, deck_path="agent_rl/deck.csv", is_self_play=is_self_play)
     
     # 2. Inisiasi Model & Optimizer
     model = PokemonAgent(num_actions=250)
@@ -81,7 +89,9 @@ def train():
     for update in range(1, num_updates + 1):
         # Array metrik sementara
         ep_rewards = []
-        ep_wins = []
+        ep_p0_wins = 0
+        ep_p1_wins = 0
+        ep_draws = 0
         
         # --- FASE 1: PENGUMPULAN PENGALAMAN (ROLLOUT) ---
         buffer.clear()
@@ -104,8 +114,12 @@ def train():
             # Lacak Metrik (Hanya saat terminal)
             for i, d in enumerate(dones):
                 if d:
-                    # Reward +1.0 artinya menang mutlak di reward.py
-                    ep_wins.append(1 if rewards[i] > 0.5 else 0)
+                    if rewards[i] > 0.5:
+                        ep_p0_wins += 1
+                    elif rewards[i] < -0.5:
+                        ep_p1_wins += 1
+                    else:
+                        ep_draws += 1
             ep_rewards.extend(rewards)
             
             # Simpan jejak memori ke Buffer
@@ -139,11 +153,16 @@ def train():
         # --- FASE 3: MONITORING & CHECKPOINT ---
         if update % 1 == 0:
             avg_rew = np.mean(ep_rewards) if ep_rewards else 0.0
-            win_rate = (np.mean(ep_wins) * 100) if ep_wins else 0.0
+            
+            total_games = ep_p0_wins + ep_p1_wins + ep_draws
+            p0_wr = (ep_p0_wins / total_games * 100) if total_games > 0 else 0.0
+            p1_wr = (ep_p1_wins / total_games * 100) if total_games > 0 else 0.0
+            draw_wr = (ep_draws / total_games * 100) if total_games > 0 else 0.0
+            
             fps = int(global_step / (time.time() - start_time))
             
             print(f"Update {update:04d}/{num_updates} | Step: {global_step} | FPS: {fps} | "
-                  f"Loss: {mean_loss:.4f} | Avg Reward: {avg_rew:.4f} | Win Rate: {win_rate:.1f}%")
+                  f"Loss: {mean_loss:.4f} | P0 Win: {p0_wr:.1f}% | P1 Win: {p1_wr:.1f}% | Draw: {draw_wr:.1f}%")
                   
         if update % 50 == 0:
             save_checkpoint(params, f"model_update_{update}.msgpack")

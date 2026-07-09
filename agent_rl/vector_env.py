@@ -15,64 +15,106 @@ def load_deck(filepath):
                 deck.append(int(line))
     return deck
 
-def advance_to_player0(obs):
+def advance_to_player0(obs, params_opp, model_apply, decode_action, rng):
     """
     Memajukan simulasi secara otomatis jika giliran saat ini adalah milik Player 1.
-    Player 1 akan dimainkan oleh Random Bot murni sampai giliran kembali ke Player 0,
-    atau game berakhir.
+    Player 1 dimainkan oleh Model AI Masa Lalu (Self-Play) menggunakan JAX di CPU.
     """
     from cg.game import battle_select
-    from cg.api import to_dataclass, Observation
+    from cg.api import to_dataclass, Observation, OptionType
+    from agent_rl.feature_extractor import extract_features
+    import jax
+    import jax.numpy as jnp
+    import random
     
     while obs.current is not None and obs.current.result == -1 and obs.current.yourIndex != 0:
-        if obs.select is not None:
-            min_c = obs.select.minCount
-            max_c = obs.select.maxCount
+        if obs.select is not None and obs.select.option:
             opt_count = len(obs.select.option)
-            choices = []
-            
-            if min_c > 0:
-                max_c = min(max_c, opt_count)
-                max_c = max(max_c, min_c)
-                pick_count = random.randint(min_c, max_c)
-                choices = random.sample(range(opt_count), pick_count)
+            if params_opp is not None:
+                # SELF PLAY MODE
+                features = extract_features(obs.current, obs.select, 1)
+                seq_input = np.expand_dims(features["seq_input"], axis=0)
+                glob_input = np.expand_dims(features["glob_input"], axis=0)
+                
+                rng, step_rng = jax.random.split(rng)
+                masked_logits, _ = model_apply(params_opp, seq_input, glob_input)
+                
+                # Gunakan gumbel softmax / categorical untuk sedikit variasi atau argmax langsung
+                # Menggunakan argmax untuk performa stabil
+                action_idx = int(jnp.argmax(masked_logits[0]))
+                
+                mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs.select.option]}
+                choices = decode_action(action_idx, mock_select_dict)
             else:
-                if opt_count > 0 and random.random() > 0.5:
-                    pick_count = random.randint(1, min(max_c, opt_count))
+                # FALLBACK RANDOM BOT
+                min_c = obs.select.minCount
+                max_c = obs.select.maxCount
+                choices = []
+                if min_c > 0:
+                    max_c = min(max_c, opt_count)
+                    max_c = max(max_c, min_c)
+                    pick_count = random.randint(min_c, max_c)
                     choices = random.sample(range(opt_count), pick_count)
-            
+                else:
+                    if opt_count > 0 and random.random() > 0.5:
+                        pick_count = random.randint(1, min(max_c, opt_count))
+                        choices = random.sample(range(opt_count), pick_count)
+
             try:
                 obs_dict = battle_select(choices)
                 obs = to_dataclass(obs_dict, Observation)
             except Exception as e:
-                # Failsafe jika aksi random menyebabkan crash C++
                 try:
-                    obs_dict = battle_select([0] if opt_count > 0 and min_c > 0 else [])
+                    obs_dict = battle_select([0] if opt_count > 0 and obs.select.minCount > 0 else [])
                     obs = to_dataclass(obs_dict, Observation)
                 except:
                     break
         else:
             break
             
-    return obs
+    return obs, rng
 
-def worker(remote, parent_remote, worker_id, deck_path):
+def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
     """
     Fungsi independen yang berjalan di sub-process untuk mengisolasi State C++ Engine.
     """
+    # Isolasi GPU, paksa worker menggunakan CPU agar tidak OOM
+    os.environ["JAX_PLATFORM_NAME"] = "cpu"
+    
     parent_remote.close()
     
-    # Import diletakkan di dalam worker agar instance C++ DLL dimuat secara independen per proses
     from cg.game import battle_start, battle_finish, battle_select
     from cg.api import to_dataclass, Observation
     from agent_rl.feature_extractor import extract_features
     from agent_rl.reward import calc_potential, calculate_step_reward
     from agent_rl.action_mapping import decode_action
     
+    import jax
+    import jax.numpy as jnp
+    from flax import serialization
+    from agent_rl.model import PokemonAgent
+    
     deck = load_deck(deck_path)
     obs = None
     old_potential = 0.0
     your_index = 0
+    rng = jax.random.PRNGKey(worker_id)
+    
+    # Inisialisasi Model Player 1 (Frozen)
+    params_opp = None
+    model_apply = None
+    if is_self_play:
+        model = PokemonAgent(num_actions=250)
+        model_apply = jax.jit(model.apply)
+        dummy_seq = jnp.zeros((1, 93, 31))
+        dummy_glob = jnp.zeros((1, 266))
+        rng, init_rng = jax.random.split(rng)
+        params_opp = model.init(init_rng, dummy_seq, dummy_glob)
+        
+        cp_path = "checkpoints/model_final.msgpack"
+        if os.path.exists(cp_path):
+            with open(cp_path, 'rb') as f:
+                params_opp = serialization.from_bytes(params_opp, f.read())
     
     empty_features = {
         "seq_input": np.zeros((93, 31), dtype=np.float32), 
@@ -102,8 +144,8 @@ def worker(remote, parent_remote, worker_id, deck_path):
                     # Jika error parah, paksa game over (penalti kalah)
                     obs = Observation(current=None, select=None, logs=[])
                     
-                # 2. Majukan game secara otomatis jika sekarang giliran Player 1 (Random Bot)
-                obs = advance_to_player0(obs)
+                # 2. Majukan game secara otomatis jika sekarang giliran Player 1
+                obs, rng = advance_to_player0(obs, params_opp, model_apply, decode_action, rng)
                 
                 # 3. Hitung Reward setelah siklus selesai (kembali ke giliran Player 0 atau Game Over)
                 if obs.current:
@@ -121,7 +163,7 @@ def worker(remote, parent_remote, worker_id, deck_path):
                     try:
                         obs_dict, _ = battle_start(deck, deck)
                         obs = to_dataclass(obs_dict, Observation)
-                        obs = advance_to_player0(obs)
+                        obs, rng = advance_to_player0(obs, params_opp, model_apply, decode_action, rng)
                         old_potential = calc_potential(obs.current, your_index) if obs.current else 0.0
                     except Exception as e:
                         print(f"Error during auto-reset: {e}")
@@ -140,8 +182,8 @@ def worker(remote, parent_remote, worker_id, deck_path):
                 obs_dict, _ = battle_start(deck, deck)
                 obs = to_dataclass(obs_dict, Observation)
                 
-                # Biarkan Random Bot (Player 1) main duluan jika dia menang undian turn pertama
-                obs = advance_to_player0(obs)
+                # Biarkan Player 1 main duluan jika dia menang undian turn pertama
+                obs, rng = advance_to_player0(obs, params_opp, model_apply, decode_action, rng)
                 
                 old_potential = calc_potential(obs.current, your_index) if obs.current else 0.0
                 
@@ -168,7 +210,7 @@ class VectorEnv:
     Manajer Lingkungan Paralel (Actor-Learner Bridge).
     Membungkus banyak environment (worker) agar JAX bisa memprosesnya secara batch.
     """
-    def __init__(self, num_envs, deck_path="agent_rl/deck.csv"):
+    def __init__(self, num_envs, deck_path="agent_rl/deck.csv", is_self_play=False):
         self.num_envs = num_envs
         self.remotes, self.work_remotes = zip(*[mp.Pipe() for _ in range(num_envs)])
         self.processes = []
@@ -177,7 +219,7 @@ class VectorEnv:
         ctx = mp.get_context('spawn')
         
         for i, (work_remote, remote) in enumerate(zip(self.work_remotes, self.remotes)):
-            p = ctx.Process(target=worker, args=(work_remote, remote, i, deck_path))
+            p = ctx.Process(target=worker, args=(work_remote, remote, i, deck_path, is_self_play))
             p.daemon = True
             p.start()
             self.processes.append(p)
