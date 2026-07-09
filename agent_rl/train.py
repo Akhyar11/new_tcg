@@ -111,7 +111,7 @@ def train():
             # Simpan jejak memori ke Buffer
             buffer.add(
                 next_seq, next_glob, actions_np, np.array(log_probs), 
-                rewards, np.array(values), next_done
+                rewards, np.array(values), dones.astype(np.float32)
             )
             
             next_seq = next_obs["seq_input"]

@@ -115,8 +115,20 @@ def worker(remote, parent_remote, worker_id, deck_path):
                     reward = -1.0
                     done = True
                     
+                # --- AUTO-RESET LOGIC ---
+                if done:
+                    battle_finish()
+                    try:
+                        obs_dict, _ = battle_start(deck, deck)
+                        obs = to_dataclass(obs_dict, Observation)
+                        obs = advance_to_player0(obs)
+                        old_potential = calc_potential(obs.current, your_index) if obs.current else 0.0
+                    except Exception as e:
+                        print(f"Error during auto-reset: {e}")
+                        obs = Observation(current=None, select=None, logs=[])
+                        
                 # 4. Ekstrak Fitur terbaru untuk state berikutnya
-                if not done and obs.current and obs.select:
+                if obs.current and obs.select and obs.current.result == -1:
                     features = extract_features(obs.current, obs.select, your_index)
                 else:
                     features = empty_features
