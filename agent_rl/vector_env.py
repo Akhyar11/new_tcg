@@ -78,10 +78,12 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
     """
     Fungsi independen yang berjalan di sub-process untuk mengisolasi State C++ Engine.
     """
-    # Pindahkan beban model lawan (Player 1) ke GPU kedua (GPU 1)
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    # KEMBALI KE CPU: Terbukti bahwa inferensi Batch Size 1 di GPU
+    # justru menimbulkan bottleneck transfer data PCIe yang sangat parah.
+    # CPU jauh lebih cepat untuk inferensi 1 per 1.
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    os.environ["JAX_PLATFORMS"] = "cpu"
     os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
-    os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.2"
     
     parent_remote.close()
     
