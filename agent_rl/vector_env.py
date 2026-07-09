@@ -79,7 +79,10 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
     Fungsi independen yang berjalan di sub-process untuk mengisolasi State C++ Engine.
     """
     # Isolasi GPU, paksa worker menggunakan CPU agar tidak OOM
+    import os
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
     os.environ["JAX_PLATFORM_NAME"] = "cpu"
+    os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
     
     parent_remote.close()
     
