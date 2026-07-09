@@ -17,7 +17,7 @@ NUM_ENVS = 8              # Jumlah klon CPU Game Engine paralel
 N_STEPS = 128             # Jumlah langkah per klon sebelum AI melakukan update
 BATCH_SIZE = 64           # Ukuran mini-batch saat update PPO
 EPOCHS = 4                # Berapa kali mengulang belajar pada buffer yang sama
-TOTAL_TIMESTEPS = 2048 # Target total langkah pengalaman (Untuk test cepat, nanti bisa diubah user)
+TOTAL_TIMESTEPS = 1000000 # Target total langkah pengalaman (Bisa diatur ulang di Kaggle)
 LEARNING_RATE = 3e-4
 GAMMA = 0.99
 GAE_LAMBDA = 0.95
@@ -46,8 +46,19 @@ def train():
     
     dummy_seq = jnp.zeros((1, 93, 31))
     dummy_glob = jnp.zeros((1, 266))
+    
+    # Inisialisasi awal (acak)
     params = model.init(init_rng, dummy_seq, dummy_glob)
     
+    # Coba muat checkpoint jika ada untuk Resume Training
+    checkpoint_path = os.path.join(SAVE_DIR, "model_final.msgpack")
+    if os.path.exists(checkpoint_path):
+        print(f"[*] Melanjutkan (Resume) dari checkpoint: {checkpoint_path}")
+        with open(checkpoint_path, 'rb') as f:
+            params = serialization.from_bytes(params, f.read())
+    else:
+        print("[*] Mulai latihan dari awal (Bobot Acak).")
+        
     tx = optax.adam(learning_rate=LEARNING_RATE)
     opt_state = tx.init(params)
     
