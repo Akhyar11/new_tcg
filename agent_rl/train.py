@@ -1,3 +1,4 @@
+import jax.numpy as jnp
 import os
 import time
 import jax
