@@ -1,5 +1,9 @@
-import jax.numpy as jnp
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.7"
+
+import jax.numpy as jnp
 import time
 import jax
 # pyrefly: ignore [missing-import]
