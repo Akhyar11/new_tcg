@@ -1,4 +1,9 @@
 import os
+import sys
+
+# Menambahkan root folder (new_tcg) ke dalam sys.path agar module 'agent_rl' terbaca
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.7"
@@ -118,7 +123,11 @@ def train():
     dummy_glob = jnp.zeros((1, 266))
     params = model.init(init_rng, dummy_seq, dummy_glob)
     
-    tx = optax.adam(learning_rate=LEARNING_RATE)
+    # Menambahkan Gradient Clipping untuk menstabilkan PPO + Transformer
+    tx = optax.chain(
+        optax.clip_by_global_norm(0.5),
+        optax.adam(learning_rate=LEARNING_RATE, eps=1e-5)
+    )
     opt_state = tx.init(params)
     
     global_step = 0

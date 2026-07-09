@@ -15,18 +15,12 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio=0.2, val_
     
     def loss_fn(p):
         # 1. Forward Pass (Mendapatkan Logits dan Value)
-        # Bentuk logits: (Batch, 250), Bentuk values: (Batch, 1)
+        # Bentuk logits: (Batch, 250) (sudah di-masking di model.py), Bentuk values: (Batch, 1)
         logits, values = apply_fn(p, batch['seq_input'], batch['glob_input'])
         values = values.squeeze(-1) # ratakan menjadi (Batch,)
         
-        # 2. Action Masking
-        # Mask berada di indeks 16 sampai 265 pada glob_input
-        action_mask = batch['glob_input'][..., 16:266]
-        # Beri penalti tak terhingga pada opsi ilegal agar probabilitasnya mutlak 0
-        masked_logits = logits + ((1.0 - action_mask) * -1e9)
-        
-        # 3. Hitung Log Probabilities
-        log_probs_all = jax.nn.log_softmax(masked_logits)
+        # 2. Hitung Log Probabilities (Logits sudah di-mask oleh model)
+        log_probs_all = jax.nn.log_softmax(logits)
         
         # Ambil log_prob spesifik dari aksi yang benar-benar dipilih saat rollout
         # actions berdimensi (Batch,) di-expand untuk take_along_axis lalu diratakan kembali
@@ -43,7 +37,7 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio=0.2, val_
         value_loss = 0.5 * jnp.square(values - batch['returns']).mean()
         
         # 6. Entropy Penalty (Mendorong eksplorasi / mencegah model terlalu cepat yakin)
-        probs = jax.nn.softmax(masked_logits)
+        probs = jax.nn.softmax(logits)
         # Sum(P * logP)
         entropy = -jnp.sum(probs * log_probs_all, axis=-1).mean()
         
@@ -72,16 +66,12 @@ def get_action_and_value(params, apply_fn, seq_input, glob_input, key):
     """
     logits, values = apply_fn(params, seq_input, glob_input)
     
-    # Action Masking
-    action_mask = glob_input[..., 16:266]
-    masked_logits = logits + ((1.0 - action_mask) * -1e9)
-    
     # Distribusi probabilitas (Categorical)
-    # Gunakan jax.random.categorical untuk sampling dari log_probs
-    actions = jax.random.categorical(key, masked_logits, axis=-1)
+    # Gunakan jax.random.categorical untuk sampling dari log_probs (Logits sudah di-mask dari model)
+    actions = jax.random.categorical(key, logits, axis=-1)
     
     # Ambil log_prob dari aksi yang dipilih
-    log_probs_all = jax.nn.log_softmax(masked_logits)
+    log_probs_all = jax.nn.log_softmax(logits)
     log_probs = jnp.take_along_axis(log_probs_all, actions[..., None], axis=-1).squeeze(-1)
     
     return actions, log_probs, values.squeeze(-1)
