@@ -22,8 +22,9 @@ class RolloutBuffer:
         
         # dones menyimpan status episode berakhir (True jika game over di step tersebut)
         self.dones = np.zeros((n_steps, num_envs), dtype=np.float32)
+        self.turn_switched = np.zeros((n_steps, num_envs), dtype=np.bool_)
         
-    def add(self, seq_in, glob_in, actions_mask, log_prob, reward, value, done):
+    def add(self, seq_in, glob_in, actions_mask, log_prob, reward, value, done, turn_switched):
         """
         Menyimpan data hasil dari satu step ke dalam buffer (data berasal dari seluruh n worker sekaligus).
         Semua input berdimensi (num_envs, ...).
@@ -38,27 +39,33 @@ class RolloutBuffer:
         self.rewards[self.step] = np.array(reward, copy=False)
         self.values[self.step] = np.array(value, copy=False)
         self.dones[self.step] = np.array(done, dtype=np.float32, copy=False)
+        self.turn_switched[self.step] = np.array(turn_switched, dtype=np.bool_, copy=False)
         
         self.step += 1
         
-    def compute_returns_and_advantages(self, last_values, last_dones, gamma=0.99, gae_lambda=0.95):
+    def compute_returns_and_advantages(self, last_values, last_dones, last_turn_switched, gamma=0.99, gae_lambda=0.95):
         """
         Menghitung Generalized Advantage Estimation (GAE) untuk seluruh data di buffer.
         """
         self.returns = np.zeros_like(self.rewards)
         self.advantages = np.zeros_like(self.rewards)
         
-        last_gae_lam = 0
+        last_gae_lam = np.zeros(self.num_envs, dtype=np.float32)
         for t in reversed(range(self.n_steps)):
             if t == self.n_steps - 1:
                 next_non_terminal = 1.0 - last_dones
                 next_values = last_values
+                next_turn_switched = last_turn_switched
             else:
                 next_non_terminal = 1.0 - self.dones[t + 1]
                 next_values = self.values[t + 1]
+                next_turn_switched = self.turn_switched[t + 1]
                 
-            delta = self.rewards[t] + gamma * next_values * next_non_terminal - self.values[t]
-            last_gae_lam = delta + gamma * gae_lambda * next_non_terminal * last_gae_lam
+            # Jika giliran berpindah ke musuh, nilai state berikutnya bagi kita adalah MINUS dari nilai musuh.
+            adjusted_next_value = next_values * np.where(next_turn_switched, -1.0, 1.0)
+            
+            delta = self.rewards[t] + gamma * adjusted_next_value * next_non_terminal - self.values[t]
+            last_gae_lam = delta + gamma * gae_lambda * next_non_terminal * last_gae_lam * np.where(next_turn_switched, -1.0, 1.0)
             self.advantages[t] = last_gae_lam
             
         self.returns = self.advantages + self.values

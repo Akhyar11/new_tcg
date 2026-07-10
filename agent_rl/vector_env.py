@@ -15,46 +15,7 @@ def load_deck(filepath):
                 deck.append(int(line))
     return deck
 
-def advance_to_player0(obs):
-    """
-    Memajukan simulasi secara otomatis jika giliran saat ini adalah milik Player 1.
-    Player 1 akan dimainkan oleh Random Bot murni sampai giliran kembali ke Player 0,
-    atau game berakhir.
-    """
-    from cg.game import battle_select
-    from cg.api import to_dataclass, Observation
-    
-    while obs.current is not None and obs.current.result == -1 and obs.current.yourIndex != 0:
-        if obs.select is not None:
-            min_c = obs.select.minCount
-            max_c = obs.select.maxCount
-            opt_count = len(obs.select.option)
-            choices = []
-            
-            if min_c > 0:
-                max_c = min(max_c, opt_count)
-                max_c = max(max_c, min_c)
-                pick_count = random.randint(min_c, max_c)
-                choices = random.sample(range(opt_count), pick_count)
-            else:
-                if opt_count > 0 and random.random() > 0.5:
-                    pick_count = random.randint(1, min(max_c, opt_count))
-                    choices = random.sample(range(opt_count), pick_count)
-            
-            try:
-                obs_dict = battle_select(choices)
-                obs = to_dataclass(obs_dict, Observation)
-            except Exception as e:
-                # Failsafe jika aksi random menyebabkan crash C++
-                try:
-                    obs_dict = battle_select([0] if opt_count > 0 and min_c > 0 else [])
-                    obs = to_dataclass(obs_dict, Observation)
-                except:
-                    break
-        else:
-            break
-            
-    return obs
+# Fungsi advance_to_player0 telah dihapus karena kita menggunakan True Self-Play.
 
 def worker(remote, parent_remote, worker_id, deck_path):
     """
@@ -83,8 +44,7 @@ def worker(remote, parent_remote, worker_id, deck_path):
         loaded_decks = [load_deck(f) for f in deck_files]
     
     obs = None
-    old_potential = 0.0
-    your_index = 0
+    old_potentials = {0: 0.0, 1: 0.0}
     
     empty_features = {
         "seq_input": np.zeros((93, 31), dtype=np.float32), 
@@ -139,20 +99,22 @@ def worker(remote, parent_remote, worker_id, deck_path):
                         # Jika error parah, paksa game over (penalti kalah)
                         obs = Observation(current=None, select=None, logs=[])
                     
-                # 2. Majukan game secara otomatis jika sekarang giliran Player 1 (Random Bot)
-                obs = advance_to_player0(obs)
+                # Tidak ada lagi advance_to_player0 (AI mengendalikan kedua belah pihak)
                 
-                # 3. Hitung Reward setelah siklus selesai (kembali ke giliran Player 0 atau Game Over)
+                # 3. Hitung Reward setelah siklus selesai
                 if obs.current:
-                    new_potential = calc_potential(obs.current, your_index)
-                    reward = calculate_step_reward(old_potential, new_potential, obs.current, your_index)
-                    old_potential = new_potential
+                    active_p = obs.current.yourIndex
+                    new_potential = calc_potential(obs.current, active_p)
+                    # Ambil old_potential dari pemain yang sedang aktif
+                    reward = calculate_step_reward(old_potentials[active_p], new_potential, obs.current, active_p)
+                    old_potentials[active_p] = new_potential
                     done = (obs.current.result != -1)
                 else:
+                    active_p = 0
                     reward = -1.0
                     done = True
                     
-                info = {"actions_mask": actions_mask}
+                info = {"actions_mask": actions_mask, "active_player": active_p, "result": obs.current.result if obs.current else -1}
                     
                 # --- AUTO-RESET LOGIC ---
                 if done:
@@ -162,17 +124,23 @@ def worker(remote, parent_remote, worker_id, deck_path):
                         deck1 = random.choice(loaded_decks)
                         obs_dict, _ = battle_start(deck0, deck1)
                         obs = to_dataclass(obs_dict, Observation)
-                        obs = advance_to_player0(obs)
-                        old_potential = calc_potential(obs.current, your_index) if obs.current else 0.0
+                        old_potentials = {0: calc_potential(obs.current, 0) if obs.current else 0.0, 
+                                          1: calc_potential(obs.current, 1) if obs.current else 0.0}
+                        
+                        if obs.current and obs.select and obs.current.result == -1:
+                            features = extract_features(obs.current, obs.select, obs.current.yourIndex)
+                        else:
+                            features = empty_features
                     except Exception as e:
                         print(f"Error during auto-reset: {e}")
                         obs = Observation(current=None, select=None, logs=[])
-                        
-                # 4. Ekstrak Fitur terbaru untuk state berikutnya
-                if obs.current and obs.select and obs.current.result == -1:
-                    features = extract_features(obs.current, obs.select, your_index)
+                        features = empty_features
                 else:
-                    features = empty_features
+                    # 4. Ekstrak Fitur terbaru untuk state berikutnya
+                    if obs.current and obs.select and obs.current.result == -1:
+                        features = extract_features(obs.current, obs.select, obs.current.yourIndex)
+                    else:
+                        features = empty_features
                     
                 remote.send((features, reward, done, info))
                 
@@ -183,13 +151,11 @@ def worker(remote, parent_remote, worker_id, deck_path):
                 obs_dict, _ = battle_start(deck0, deck1)
                 obs = to_dataclass(obs_dict, Observation)
                 
-                # Biarkan Random Bot (Player 1) main duluan jika dia menang undian turn pertama
-                obs = advance_to_player0(obs)
-                
-                old_potential = calc_potential(obs.current, your_index) if obs.current else 0.0
+                old_potentials = {0: calc_potential(obs.current, 0) if obs.current else 0.0, 
+                                  1: calc_potential(obs.current, 1) if obs.current else 0.0}
                 
                 if obs.current and obs.select and obs.current.result == -1:
-                    features = extract_features(obs.current, obs.select, your_index)
+                    features = extract_features(obs.current, obs.select, obs.current.yourIndex)
                 else:
                     features = empty_features
                     

@@ -91,12 +91,16 @@ def train():
     
     global_step = 0
     start_time = time.time()
+    env_step_counts = np.zeros(NUM_ENVS, dtype=np.int32)
+    last_active_players = np.zeros(NUM_ENVS, dtype=np.int32)
     
     print("\n=== MEMULAI MAIN TRAINING LOOP ===")
     for update in range(1, num_updates + 1):
         # Array metrik sementara
         ep_rewards = []
-        ep_wins = []
+        ep_wins_p0 = []
+        ep_wins_p1 = []
+        ep_steps = []
         
         # --- FASE 1: PENGUMPULAN PENGALAMAN (ROLLOUT) ---
         buffer.clear()
@@ -127,10 +131,23 @@ def train():
             next_obs, rewards, dones, infos = env.step(actions_np, top_actions_np)
             
             # Lacak Metrik (Hanya saat terminal)
+            env_step_counts += 1
+            current_active_players = np.stack([info["active_player"] for info in infos])
+            turn_switched = (current_active_players != last_active_players)
+            last_active_players = current_active_players
+            
             for i, d in enumerate(dones):
                 if d:
-                    # Reward +1.0 artinya menang mutlak di reward.py
-                    ep_wins.append(1 if rewards[i] > 0.5 else 0)
+                    result = infos[i].get("result", -1)
+                    if result == 0:
+                        ep_wins_p0.append(1)
+                        ep_wins_p1.append(0)
+                    elif result == 1:
+                        ep_wins_p0.append(0)
+                        ep_wins_p1.append(1)
+                    ep_steps.append(env_step_counts[i])
+                    env_step_counts[i] = 0
+                    
             ep_rewards.extend(rewards)
             
             # Ekstrak actions_mask dari infos
@@ -148,12 +165,13 @@ def train():
             # Simpan jejak memori ke Buffer
             buffer.add(
                 next_seq, next_glob, actions_mask_np, multi_log_probs, 
-                rewards, values_np, dones.astype(np.float32)
+                rewards, values_np, dones.astype(np.float32), turn_switched
             )
             
             next_seq = next_obs["seq_input"]
             next_glob = next_obs["glob_input"]
             next_done = dones.astype(np.float32)
+            next_turn_switched = turn_switched
             
         # Hitung Nilai Masa Depan (Bootstrap)
         next_seq_sharded = next_seq.reshape((num_devices, NUM_ENVS // num_devices, *next_seq.shape[1:]))
@@ -162,7 +180,7 @@ def train():
         
         _, _, next_values_sharded, _ = get_action_and_value(params_repl, model.apply, next_seq_sharded, next_glob_sharded, step_rngs)
         next_values = np.array(next_values_sharded).reshape((NUM_ENVS,))
-        buffer.compute_returns_and_advantages(next_values, next_done, GAMMA, GAE_LAMBDA)
+        buffer.compute_returns_and_advantages(next_values, next_done, next_turn_switched, GAMMA, GAE_LAMBDA)
         
         # --- FASE 2: OPTIMASI GRADIENT (PPO UPDATE) ---
         mean_loss = 0.0
@@ -185,11 +203,16 @@ def train():
         # --- FASE 3: MONITORING & CHECKPOINT ---
         if update % 1 == 0:
             avg_rew = np.mean(ep_rewards) if ep_rewards else 0.0
-            win_rate = (np.mean(ep_wins) * 100) if ep_wins else 0.0
-            fps = int(global_step / (time.time() - start_time))
+            win_p0 = (np.mean(ep_wins_p0) * 100) if ep_wins_p0 else 0.0
+            win_p1 = (np.mean(ep_wins_p1) * 100) if ep_wins_p1 else 0.0
+            games_played = len(ep_wins_p0)
+            avg_steps = (np.mean(ep_steps) / max(1, games_played)) if ep_steps else 0.0
             
-            print(f"Update {update:04d}/{num_updates} | Step: {global_step} | FPS: {fps} | "
-                  f"Loss: {mean_loss:.4f} | Avg Reward: {avg_rew:.4f} | Win Rate: {win_rate:.1f}%")
+            fps = int((NUM_ENVS * N_STEPS) / (time.time() - start_time + 1e-8))
+            start_time = time.time()
+            
+            print(f"Update {update:04d}/{num_updates} | Step: {global_step} | FPS: {fps} | Games: {games_played} | AvgStep/Game: {avg_steps:.0f} | "
+                  f"Loss: {mean_loss:.4f} | Win P0: {win_p0:.1f}% | Win P1: {win_p1:.1f}%")
                   
         if update % 50 == 0:
             save_checkpoint(unreplicate(params_repl), f"model_update_{update}.msgpack")
