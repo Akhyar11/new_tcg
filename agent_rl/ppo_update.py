@@ -6,8 +6,8 @@ from functools import partial
 
 # Definisi fungsi Update murni (Pure Function) untuk JAX XLA Compilation
 # Menggunakan partial untuk menandai fungsi apply sebagai argumen statis agar bisa di-JIT
-@partial(jax.jit, static_argnames=['apply_fn', 'tx'])
-def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio=0.2, val_coef=0.5, ent_coef=0.01):
+@partial(jax.pmap, static_broadcasted_argnums=(3, 4, 5), axis_name='gpu')
+def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio):
     """
     Satu langkah optimasi (Gradient Descent) menggunakan algoritma PPO.
     Seluruh perhitungan di fungsi ini berjalan murni di dalam GPU/TPU via XLA.
@@ -47,7 +47,7 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio=0.2, val_
         entropy = -jnp.sum(probs * log_probs_all, axis=-1).mean()
         
         # 7. Total Loss Kombinasi
-        total_loss = actor_loss + (val_coef * value_loss) - (ent_coef * entropy)
+        total_loss = actor_loss + (0.5 * value_loss) - (0.01 * entropy)
         
         # Kembalikan tuple (Loss untuk gradient, dan metrik untuk logistik/monitoring)
         return total_loss, (actor_loss, value_loss, entropy)
@@ -55,6 +55,10 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio=0.2, val_
     # Hitung nilai Loss dan Gradient secara sekuensial
     grad_fn = jax.value_and_grad(loss_fn, has_aux=True)
     (loss, aux_metrics), grads = grad_fn(params)
+    
+    # Sinkronisasi / Rata-rata Gradient di seluruh GPU (multi-GPU)
+    grads = jax.lax.pmean(grads, axis_name='gpu')
+    loss = jax.lax.pmean(loss, axis_name='gpu')
     
     # Hitung pembaruan optimasi menggunakan Optax (misal: Adam)
     updates, new_opt_state = tx.update(grads, opt_state, params)
@@ -64,7 +68,7 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio=0.2, val_
     
     return new_params, new_opt_state, loss, aux_metrics
 
-@partial(jax.jit, static_argnames=['apply_fn'])
+@partial(jax.pmap, static_broadcasted_argnums=(1,), axis_name='gpu')
 def get_action_and_value(params, apply_fn, seq_input, glob_input, key):
     """
     Fungsi inferensi super-cepat untuk digunakan saat bermain (Rollout).

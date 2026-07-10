@@ -16,6 +16,7 @@ from agent_rl.model import PokemonAgent
 from agent_rl.vector_env import VectorEnv
 from agent_rl.buffer import RolloutBuffer
 from agent_rl.ppo_update import ppo_update_step, get_action_and_value
+from flax.jax_utils import replicate, unreplicate
 
 # Konfigurasi Hyperparameter
 NUM_ENVS = 8              # Jumlah klon CPU Game Engine paralel
@@ -64,12 +65,17 @@ def train():
     else:
         print("[*] Mulai latihan dari awal (Bobot Acak).")
         
-    # Tetap gunakan gradient clipping dari perbaikan sebelumnya untuk mencegah Policy Collapse
     tx = optax.chain(
         optax.clip_by_global_norm(0.5),
         optax.adam(learning_rate=LEARNING_RATE, eps=1e-5)
     )
     opt_state = tx.init(params)
+    
+    # REPLIKASI PARAMETER KE SELURUH GPU
+    num_devices = jax.device_count()
+    print(f"[*] Mendeteksi {num_devices} perangkat JAX (GPU/TPU). Mengaktifkan mode Multi-GPU (pmap).")
+    params_repl = replicate(params)
+    opt_state_repl = replicate(opt_state)
     
     # 3. Inisiasi Buffer
     buffer = RolloutBuffer(n_steps=N_STEPS, num_envs=NUM_ENVS)
@@ -97,16 +103,21 @@ def train():
         
         for step in range(N_STEPS):
             global_step += NUM_ENVS
-            
-            # Inferensi Cepat JAX
+            # Inferensi Cepat JAX (Multi-GPU Sharding)
             rng, step_rng = jax.random.split(rng)
-            actions, log_probs, values, logits = get_action_and_value(
-                params, model.apply, next_seq, next_glob, step_rng
+            step_rngs = jax.random.split(step_rng, num_devices)
+            
+            next_seq_sharded = next_seq.reshape((num_devices, NUM_ENVS // num_devices, *next_seq.shape[1:]))
+            next_glob_sharded = next_glob.reshape((num_devices, NUM_ENVS // num_devices, *next_glob.shape[1:]))
+            
+            actions_sharded, log_probs_sharded, values_sharded, logits_sharded = get_action_and_value(
+                params_repl, model.apply, next_seq_sharded, next_glob_sharded, step_rngs
             )
             
-            # Transfer actions ke numpy untuk VectorEnv (CPU)
-            actions_np = np.array(actions)
-            logits_np = np.array(logits)
+            # Transfer actions ke numpy dan gabungkan shard (CPU)
+            actions_np = np.array(actions_sharded).reshape((NUM_ENVS,))
+            logits_np = np.array(logits_sharded).reshape((NUM_ENVS, -1))
+            values_np = np.array(values_sharded).reshape((NUM_ENVS,))
             
             # Urutkan dan ambil top 10 aksi terbaik (Untuk memperkecil overhead IPC Pipe)
             top_actions_np = np.argsort(logits_np, axis=-1)[:, ::-1][:, :10]
@@ -134,7 +145,7 @@ def train():
             # Simpan jejak memori ke Buffer
             buffer.add(
                 next_seq, next_glob, actions_mask_np, multi_log_probs, 
-                rewards, np.array(values), dones.astype(np.float32)
+                rewards, values_np, dones.astype(np.float32)
             )
             
             next_seq = next_obs["seq_input"]
@@ -142,8 +153,13 @@ def train():
             next_done = dones.astype(np.float32)
             
         # Hitung Nilai Masa Depan (Bootstrap)
-        _, _, next_values, _ = get_action_and_value(params, model.apply, next_seq, next_glob, rng)
-        buffer.compute_returns_and_advantages(np.array(next_values), next_done, GAMMA, GAE_LAMBDA)
+        next_seq_sharded = next_seq.reshape((num_devices, NUM_ENVS // num_devices, *next_seq.shape[1:]))
+        next_glob_sharded = next_glob.reshape((num_devices, NUM_ENVS // num_devices, *next_glob.shape[1:]))
+        step_rngs = jax.random.split(rng, num_devices)
+        
+        _, _, next_values_sharded, _ = get_action_and_value(params_repl, model.apply, next_seq_sharded, next_glob_sharded, step_rngs)
+        next_values = np.array(next_values_sharded).reshape((NUM_ENVS,))
+        buffer.compute_returns_and_advantages(next_values, next_done, GAMMA, GAE_LAMBDA)
         
         # --- FASE 2: OPTIMASI GRADIENT (PPO UPDATE) ---
         mean_loss = 0.0
@@ -151,10 +167,14 @@ def train():
         
         for epoch in range(EPOCHS):
             for batch in buffer.get_batches(BATCH_SIZE):
-                params, opt_state, loss, _ = ppo_update_step(
-                    params, opt_state, batch, model.apply, tx, clip_ratio=CLIP_RATIO
+                # Shard batch untuk Multi-GPU
+                batch_sharded = {k: v.reshape((num_devices, BATCH_SIZE // num_devices, *v.shape[1:])) for k, v in batch.items()}
+                
+                params_repl, opt_state_repl, loss, _ = ppo_update_step(
+                    params_repl, opt_state_repl, batch_sharded, model.apply, tx, CLIP_RATIO
                 )
-                mean_loss += float(loss)
+                # Ambil scalar loss dari GPU pertama (karena pmean membuat loss identik di semua GPU)
+                mean_loss += float(loss[0])
                 update_count += 1
                 
         mean_loss /= update_count
@@ -169,11 +189,11 @@ def train():
                   f"Loss: {mean_loss:.4f} | Avg Reward: {avg_rew:.4f} | Win Rate: {win_rate:.1f}%")
                   
         if update % 50 == 0:
-            save_checkpoint(params, f"model_update_{update}.msgpack")
+            save_checkpoint(unreplicate(params_repl), f"model_update_{update}.msgpack")
             
     print("Pelatihan selesai. Menutup lingkungan.")
     env.close()
-    save_checkpoint(params, "model_final.msgpack")
+    save_checkpoint(unreplicate(params_repl), "model_final.msgpack")
 
 if __name__ == "__main__":
     import multiprocessing as mp
