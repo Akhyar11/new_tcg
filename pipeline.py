@@ -41,32 +41,29 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-# ─── GPU Auto-Detect ───
-# Kaggle typically provides 2 GPUs (Tesla T4/P100). Auto-detect dan konfigurasi.
+# GPU Auto-Detect
+# Deteksi via nvidia-smi SAJA (tanpa import JAX yang init CUDA).
+# JAX hanya di-import di worker proses yang benar-benar butuh GPU.
 _NUM_GPUS = 0
 try:
-    import jax
-    _NUM_GPUS = len(jax.devices('gpu'))
+    import subprocess
+    result = subprocess.run(
+        ['nvidia-smi', '--query-gpu=index', '--format=csv,noheader'],
+        capture_output=True, text=True, timeout=5
+    )
+    _NUM_GPUS = len(result.stdout.strip().split('\n')) if result.stdout.strip() else 0
 except Exception:
-    try:
-        import subprocess
-        result = subprocess.run(
-            ['nvidia-smi', '--query-gpu=index', '--format=csv,noheader'],
-            capture_output=True, text=True, timeout=5
-        )
-        _NUM_GPUS = len(result.stdout.strip().split('\n')) if result.stdout.strip() else 0
-    except Exception:
-        _NUM_GPUS = 0
+    _NUM_GPUS = 0
 
 if _NUM_GPUS > 0:
     os.environ.setdefault("XLA_PYTHON_CLIENT_MEM_FRACTION", "0.85")
-    print(f"[Pipeline] {_NUM_GPUS} GPU(s) terdeteksi — mode XLA/GPU")
+    print(f"[Pipeline] {_NUM_GPUS} GPU(s) terdeteksi - mode XLA/GPU")
     for env_key in ["CUDA_VISIBLE_DEVICES", "JAX_PLATFORMS"]:
         val = os.environ.get(env_key, "")
         if val == "" or val.lower() in ("", "cpu"):
             os.environ.pop(env_key, None)
 else:
-    print("[Pipeline] GPU tidak terdeteksi — mode CPU")
+    print("[Pipeline] GPU tidak terdeteksi - mode CPU")
 
 # ─── Config ───
 CHECKPOINT_DIR = os.path.join(ROOT, "checkpoints")
