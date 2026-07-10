@@ -1,52 +1,41 @@
-# Rencana Pembuatan GUI & Mode Bermain Manusia vs AI
+# Master Plan: Pokémon TCG Web Application
 
-Dokumen ini memuat tahapan terstruktur (tasks) untuk membangun antarmuka grafis (GUI) interaktif yang memungkinkan pemain manusia bertanding langsung melawan agen AI Pokémon TCG (JAX/Flax) Anda.
+Dokumen ini berisi struktur pengembangan untuk versi penuh dari Pokémon TCG Web Game.
 
-## 1. Pemilihan Arsitektur & Teknologi GUI
-Mengingat game ini memiliki kompleksitas visual yang tinggi (kartu, tumpukan deck, efek serangan), pendekatan **Aplikasi Web (Web-based GUI)** adalah yang paling direkomendasikan karena memberikan fleksibilitas desain modern dan animasi yang mulus.
+## 1. Tech Stack
+*   **Frontend**: Next.js (App Router), TypeScript, Vanilla CSS (Premium & Modern Aesthetics).
+*   **Backend Server (Game API & WebSocket)**: Python FastAPI (terhubung ke C++ TCG Engine dan model AI JAX).
+*   **Database**: MySQL (untuk menyimpan data *user*, *deck*, dan *friend list*).
+*   **State Management & ORM**: Prisma ORM (untuk interaksi Next.js ke MySQL) atau koneksi langsung dari FastAPI (SQLAlchemy).
 
-*   **Backend:** Python (FastAPI).
-    *   Berfungsi sebagai jembatan yang menjalankan C++ Engine (`cg`) dan mengelola status permainan.
-    *   Mengatur model JAX (`model.py`) untuk giliran AI.
-    *   Komunikasi waktu nyata dengan Frontend menggunakan **WebSockets**.
-*   **Frontend:** Vanilla JS / React (dengan CSS Modern).
-    *   Membuat desain antarmuka yang sangat premium (animasi hover kartu, efek *glassmorphism*, dark mode).
-*   *(Alternatif jika ingin murni Desktop)*: Pygame atau PyQt6. Namun tampilan UI-nya akan kalah estetis dibanding Web.
+## 2. Fitur Utama (Core Features)
 
-## 2. Persiapan Aset (Game Assets)
-Sebelum membuat UI, kita perlu mengumpulkan aset visual yang berkualitas.
-*   **[ ] Scraping/Download Gambar Kartu:**
-    *   Menarik gambar kartu berdasarkan `card_id` menggunakan layanan seperti Pokémon TCG API (https://pokemontcg.io/).
-    *   Menyimpan aset gambar di folder lokal (misal: `assets/cards/`).
-*   **[ ] Aset UI Tambahan:**
-    *   Desain bagian belakang kartu (Card Back).
-    *   Ikon Energi (Grass, Fire, Water, dll.) untuk menempelkan status energi di antarmuka.
-    *   Gambar Playmat/Board (Latar belakang permainan).
-    *   Token Damage, Penanda Racun/Terbakar (Poison/Burn markers), dan penanda VSTAR.
+### A. Deck Builder
+*   **Database Kartu**: Menampilkan galeri semua 1.200+ kartu yang tersedia.
+*   **Drag & Drop UI**: Memasukkan dan mengeluarkan kartu dari deck.
+*   **Validasi**: Pengecekan otomatis aturan deck (harus 60 kartu, batas maksimal kartu ber-nama sama, dll).
+*   **Penyimpanan**: Menyimpan konfigurasi deck ke dalam MySQL agar bisa dipakai sewaktu-waktu.
 
-## 3. Tahapan Implementasi (Milestones)
+### B. Bermain Melawan AI (PvE)
+*   **Mode Praktik**: Bermain melawan agen AI JAX.
+*   **Tingkat Kesulitan**: (Bisa menyesuaikan checkpoint model AI yang dimuat).
+*   **Animasi Real-time**: Feedback visual saat AI bergerak (kartu terpasang, serangan dilancarkan).
 
-### Fase 1: Integrasi Backend API (Game Server)
-*   [ ] Membuat skrip server (contoh: `server.py`) menggunakan FastAPI.
-*   [ ] Membuat *Session Manager* agar server bisa menginisiasi C++ game dari `cg.game.battle_start()`.
-*   [ ] Membuat endpoint WebSocket untuk mengirim **Observation (Game State)** ke browser.
-*   [ ] Menyiapkan fungsi khusus yang menerjemahkan klik pemain (di browser) menjadi `Action Index` (0-249) yang dimengerti oleh C++ engine.
+### C. Bermain Multiplayer (PvP)
+*   **Lobby / Matchmaking**: Sistem antrean (queue) pemain.
+*   **Room System**: WebSocket mereplika status game untuk 2 klien (pemain 1 dan pemain 2) yang tersambung ke FastAPI *Game Session*.
+*   **Keamanan**: Semua aturan (rules) dijalankan di *server (C++ Engine)* untuk mencegah curang (*anti-cheat*).
 
-### Fase 2: Pembangunan Antarmuka (Frontend Board)
-*   [ ] Membangun layout Playmat (Zona Active, Bench, Hand, Discard, Prize, Lost Zone, Stadium).
-*   [ ] Mengimplementasikan *render* gambar kartu yang sesuai dengan ID dari data JSON server.
-*   [ ] Menambahkan animasi klik dan seret (*drag-and-drop* atau *click-to-select*) untuk kemudahan bermain.
-*   [ ] Membangun menu *Prompt / Select Option* (karena game sering meminta interaksi spesifik seperti memilih kartu dari deck).
+## 3. Fitur Lanjutan (Advanced)
 
-### Fase 3: Penggabungan AI (AI Integration)
-*   [ ] Memuat bobot checkpoint JAX (`model_update_XXX.msgpack`) di backend FastAPI.
-*   [ ] Memastikan saat giliran musuh tiba, server otomatis membungkus *observation*, memprosesnya lewat AI, dan mengaplikasikan aksi AI ke C++ Engine.
-*   [ ] Memberikan jeda waktu (sekitar 1-2 detik) saat AI memikirkan langkahnya, dan memberi indikator "AI sedang berpikir..." di layar agar terasa nyata.
+### D. Sistem Teman & Jejaring (Social)
+*   **Friend List**: Menambahkan pemain lain menggunakan Player ID atau Username (tersimpan di MySQL).
+*   **Direct Challenge**: Mengirim undangan duel langsung ke teman yang sedang *online*.
 
-### Fase 4: Poles Estetika (Polish & FX)
-*   [ ] Animasi saat kartu diserang (guncangan layar / efek partikel).
-*   [ ] Suara efek (SFX) sederhana saat menarik kartu atau mengeluarkan energi.
-*   [ ] Desain papan pemenang (Victory/Defeat screen).
-
-## Kesimpulan
-Pendekatan ini memisahkan logika berat (C++ dan AI JAX) di latar belakang, sementara memberikan pemain pengalaman bermain yang menawan di browser. Langkah pertama yang harus kita ambil adalah **mengumpulkan aset gambar kartu (Scraping)** dan **membangun kerangka FastAPI**.
+## 4. Tahapan Pekerjaan Saat Ini
+*   [x] Persiapan Aset (Ribuan kartu berhasil di-download).
+*   [x] Inisialisasi Proyek Web (Next.js telah dibuat di folder `web_app`).
+*   [ ] Konfigurasi Database (Menyiapkan skema MySQL untuk `users`, `decks`, `friends`).
+*   [ ] Desain UI/UX (Membangun halaman beranda berdesain modern, gelap, dan premium di Next.js).
+*   [ ] Pembuatan Halaman *Deck Builder*.
+*   [ ] Integrasi Game Board dengan WebSocket FastAPI.

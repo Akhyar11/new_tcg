@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relasi
+  decks     Deck[]
+  friends   Friend[] @relation("UserFriends")
+  friendOf  Friend[] @relation("FriendOfUser")
+}
+
+model Deck {
+  id        String   @id @default(uuid())
+  name      String
+  cards     String   @db.Text // Menyimpan array ID kartu dalam bentuk JSON string
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Friend {
+  id        String   @id @default(uuid())
+  userId    String
+  friendId  String
+  status    String   @default("pending") // 'pending', 'accepted'
+  createdAt DateTime @default(now())
+  
+  user      User     @relation("UserFriends", fields: [userId], references: [id], onDelete: Cascade)
+  friend    User     @relation("FriendOfUser", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+}
