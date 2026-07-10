@@ -95,7 +95,7 @@ def detect_events(old_state, new_state, player_index: int) -> dict:
     return events
 
 
-def calculate_step_reward(new_state, player_index: int, events: dict = None) -> float:
+def calculate_step_reward(new_state, player_index: int, events: dict = None, end_reason: int = 0) -> float:
     """
     Reward dengan anti-hacking safeguards.
 
@@ -105,7 +105,8 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None) -> 
     2. Step penalty naik seiring waktu → stall makin mahal
     3. Damage = NET (dealt - received) → trade blow gak ngasih reward
     4. Diminishing returns per event type → spam dikurangi
-    5. Intermediate total capped per step → gak bisa stacking
+    5. **Deck-out (end_reason=2) → terminal reward = 0**
+       → Model tidak belajar apa-apa dari deck-out, abaikan.
 
     Anti-Hacking Matrix:
     ┌──────────────────────┬──────────────────┬───────────────────────┐
@@ -120,6 +121,8 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None) -> 
     │                      │                  │ mengurangi reward     │
     │ Symmetric self-play  │ Net zero learning│ Terminal ±3.0         │
     │                      │                  │ memecah simetri       │
+    │ Deck-out win/loss    │ Stalling farm    │ Terminal = 0          │
+    │                      │                  │ (diabaikan training)  │
     │ Prize delay          │ Skip KO, farm    │ Prize reward          │
     │                      │ damage           │ (0.50) >> damage      │
     │                      │                  │ (max 0.25)            │
@@ -175,7 +178,11 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None) -> 
     # 3. Terminal reward (DOMINAN — menjamin kemenangan > farming)
     r_terminal = 0.0
     if new_state.result != -1:
-        if new_state.result == player_index:
+        # Deck-out (reason=2): abaikan — terminal reward = 0
+        # Model TIDAK belajar apa-apa dari game yang berakhir deck-out.
+        if end_reason == 2:
+            r_terminal = 0.0
+        elif new_state.result == player_index:
             r_terminal = 3.0    # Menang besar
         elif new_state.result == 2:
             r_terminal = -0.5   # Draw

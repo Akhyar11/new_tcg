@@ -22,15 +22,17 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 
-def _worker_main(pipe, worker_id):
+def _worker_main(pipe, worker_id, use_gpu=False):
     """
-    Worker process:
-    - Load model + JIT compile
-    - Receive (deck_a, deck_b, num_games) tuples via pipe
-    - Return results
+    Worker process — load model + evaluate decks.
+
+    Args:
+        use_gpu: If False (default), force CPU to preserve GPU memory for training.
+                 On Kaggle without concurrent training, set True for faster inference.
     """
-    os.environ["CUDA_VISIBLE_DEVICES"] = ""
-    os.environ["JAX_PLATFORMS"] = "cpu"
+    if not use_gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = ""
+        os.environ["JAX_PLATFORMS"] = "cpu"
     os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
     import jax
@@ -158,6 +160,9 @@ def _worker_main(pipe, worker_id):
                     if log.type == LogType.RESULT and log.reason is not None:
                         reason = log.reason
                         break
+            # Deck-out (reason=2): anggap draw — GA jangan optimize untuk deck-out
+            if reason == 2:
+                return {"winner": -1, "reason": 2, "steps": steps}
             return {"winner": winner, "reason": reason, "steps": steps}
         else:
             return {"winner": -1, "reason": "timeout", "steps": steps}
@@ -211,17 +216,18 @@ class DeckEvaluator:
         evaluator.close()
     """
 
-    def __init__(self, n_workers: int = 1):
+    def __init__(self, n_workers: int = 1, use_gpu: bool = False):
         if n_workers < 1:
             n_workers = 1
         self.n_workers = n_workers
+        self.use_gpu = use_gpu
         self.pipes = []
         self.processes = []
 
         ctx = mp.get_context("spawn")
         for i in range(n_workers):
             parent_pipe, child_pipe = mp.Pipe()
-            p = ctx.Process(target=_worker_main, args=(child_pipe, i), daemon=True)
+            p = ctx.Process(target=_worker_main, args=(child_pipe, i, use_gpu), daemon=True)
             p.start()
             child_pipe.close()
             self.pipes.append(parent_pipe)

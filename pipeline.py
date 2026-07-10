@@ -41,6 +41,33 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
+# ─── GPU Auto-Detect ───
+# Kaggle typically provides 2 GPUs (Tesla T4/P100). Auto-detect dan konfigurasi.
+_NUM_GPUS = 0
+try:
+    import jax
+    _NUM_GPUS = len(jax.devices('gpu'))
+except Exception:
+    try:
+        import subprocess
+        result = subprocess.run(
+            ['nvidia-smi', '--query-gpu=index', '--format=csv,noheader'],
+            capture_output=True, text=True, timeout=5
+        )
+        _NUM_GPUS = len(result.stdout.strip().split('\n')) if result.stdout.strip() else 0
+    except Exception:
+        _NUM_GPUS = 0
+
+if _NUM_GPUS > 0:
+    os.environ.setdefault("XLA_PYTHON_CLIENT_MEM_FRACTION", "0.85")
+    print(f"[Pipeline] {_NUM_GPUS} GPU(s) terdeteksi — mode XLA/GPU")
+    for env_key in ["CUDA_VISIBLE_DEVICES", "JAX_PLATFORMS"]:
+        val = os.environ.get(env_key, "")
+        if val == "" or val.lower() in ("", "cpu"):
+            os.environ.pop(env_key, None)
+else:
+    print("[Pipeline] GPU tidak terdeteksi — mode CPU")
+
 # ─── Config ───
 CHECKPOINT_DIR = os.path.join(ROOT, "checkpoints")
 RL_DECK_DIR = os.path.join(ROOT, "agent_rl", "deck")
@@ -49,7 +76,7 @@ GENERATED_DECK_DIR = os.path.join(ROOT, "agent_rl", "deck_generated")
 PIPELINE_STATE = os.path.join(ROOT, "pipeline_state.json")
 DECK_BACKUP_DIR = os.path.join(ROOT, "pipeline_deck_backups")
 
-REASON_LABELS = {1: "Prize", 2: "DeckOut", 3: "NoActive", 4: "Effect"}
+REASON_LABELS = {1: "Prize✓", 2: "DeckOut✗", 3: "NoActive✓", 4: "Effect✓"}
 
 
 def parse_args():
@@ -170,8 +197,26 @@ def phase_train_rl(iteration: int, args, total_steps: int):
     os.environ["RL_TOTAL_STEPS"] = str(total_steps)
     os.environ["RL_DECK_PATH"] = RL_DECK_DIR
 
+    # GPU-aware scaling: naikkan NUM_ENVS dan BATCH_SIZE untuk multiple GPU
+    if _NUM_GPUS > 1:
+        envs_per_gpu = 8
+        batch_per_gpu = 32
+        recommended_envs = _NUM_GPUS * envs_per_gpu
+        recommended_batch = _NUM_GPUS * batch_per_gpu
+        os.environ["RL_NUM_ENVS"] = str(recommended_envs)
+        os.environ["RL_BATCH_SIZE"] = str(recommended_batch)
+        log(f"GPU x{_NUM_GPUS}: NUM_ENVS={recommended_envs}, BATCH_SIZE={recommended_batch}")
+    elif args.rl_workers:
+        os.environ["RL_NUM_ENVS"] = str(args.rl_workers)
+
+    # Pastikan GPU visibility untuk JAX
+    if _NUM_GPUS > 0:
+        for env_key in ["CUDA_VISIBLE_DEVICES", "JAX_PLATFORMS"]:
+            val = os.environ.get(env_key, "")
+            if val == "" or val.lower() in ("", "cpu"):
+                os.environ.pop(env_key, None)
+
     # Import and run train with overrides
-    # We'll call the train function with overrides
     sys.path.insert(0, ROOT)
 
     # Override agar menggunakan deck yang sudah di-set
@@ -240,7 +285,12 @@ def phase_run_ga(iteration: int, args):
     ga_config.MODEL_PATH = model_path
 
     db = CardDB(os.path.join(ROOT, "agent_rl", "EN_Card_Data.csv"))
-    ga = GALoop(db, n_workers=args.ga_workers)
+    use_gpu = _NUM_GPUS > 0
+    ga = GALoop(db, n_workers=args.ga_workers, use_gpu=use_gpu)
+    if use_gpu:
+        log(f"GA Workers menggunakan GPU (x{_NUM_GPUS})")
+    else:
+        log("GA Workers menggunakan CPU")
 
     # Seed populasi dari generated decks + random fill
     if os.path.isdir(GENERATED_DECK_DIR):

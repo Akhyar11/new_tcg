@@ -31,9 +31,9 @@ class GALoop:
         n_workers: Number of parallel evaluator workers
     """
 
-    def __init__(self, db: CardDB, n_workers: int = 2):
+    def __init__(self, db: CardDB, n_workers: int = 2, use_gpu: bool = False):
         self.db = db
-        self.evaluator = DeckEvaluator(n_workers=n_workers)
+        self.evaluator = DeckEvaluator(n_workers=n_workers, use_gpu=use_gpu)
         self.surrogate = SurrogateModel()
         self.population: list[DeckGenome] = []
         self.generation = 0

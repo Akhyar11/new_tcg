@@ -170,11 +170,12 @@ def worker(remote, parent_remote, worker_id, deck_path):
 
                 # --- Hitung reward untuk prev_player (yang baru saja bertindak) ---
                 if obs.current:
+                    # Extract end_reason dari logs untuk deck-out detection
+                    end_reason = get_end_reason(obs)
                     events = detect_events(old_state, obs.current, prev_player)
-                    reward = calculate_step_reward(obs.current, prev_player, events)
+                    reward = calculate_step_reward(obs.current, prev_player, events, end_reason)
                     old_state = obs.current
                     done = (obs.current.result != -1)
-                    # active_player menginformasikan ke training loop player mana yang bertindak
                     active_p = prev_player
                 else:
                     active_p = prev_player

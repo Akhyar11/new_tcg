@@ -18,12 +18,13 @@ from agent_rl.buffer import RolloutBuffer
 from agent_rl.ppo_update import ppo_update_step, get_action_and_value
 from flax.jax_utils import replicate, unreplicate
 
-# Konfigurasi Hyperparameter
-NUM_ENVS = 8              # Jumlah klon CPU Game Engine paralel
-N_STEPS = 128             # Jumlah langkah per klon sebelum AI melakukan update
-BATCH_SIZE = 64           # Ukuran mini-batch saat update PPO
-EPOCHS = 4                # Berapa kali mengulang belajar pada buffer yang sama
-TOTAL_TIMESTEPS = 1000000 # Target total langkah pengalaman (Bisa diatur ulang di Kaggle)
+# ─── Konfigurasi Hyperparameter ───
+# Note: NUM_ENVISIBLE_DEVICES dan BATCH_SIZE auto-adjust ke jumlah GPU
+NUM_ENVS = 8              # Jumlah worker paralel (otomatis disesuaikan untuk GPU)
+N_STEPS = 128             # Langkah per worker sebelum PPO update
+BATCH_SIZE = 64           # Mini-batch size (otomatis disesuaikan untuk GPU)
+EPOCHS = 4                # Epoch PPO per buffer
+TOTAL_TIMESTEPS = 1000000 # Target total langkah (bisa di-override lewat env)
 LEARNING_RATE = 3e-4
 GAMMA = 0.99
 GAE_LAMBDA = 0.95
@@ -38,8 +39,34 @@ def save_checkpoint(params, filename):
         f.write(serialization.to_bytes(params))
     print(f"[*] Checkpoint tersimpan di {path}")
 
+def auto_config_gpu():
+    """Adjust NUM_ENVISIBLE_DEVICES dan BATCH_SIZE agar habis dibagi jumlah GPU."""
+    global NUM_ENVS, BATCH_SIZE
+
+    # Override dari environment variable (diset oleh pipeline.py)
+    NUM_ENVS = int(os.environ.get("RL_NUM_ENVS", NUM_ENVS))
+    BATCH_SIZE = int(os.environ.get("RL_BATCH_SIZE", BATCH_SIZE))
+
+    num_devices = jax.device_count()
+    if NUM_ENVS % num_devices != 0:
+        adjusted = max((NUM_ENVS // num_devices) * num_devices, num_devices)
+        print(f"[!] NUM_ENVS={NUM_ENVS} tidak habis dibagi {num_devices} GPU, "
+              f"disesuaikan ke {adjusted}")
+        NUM_ENVS = adjusted
+    if BATCH_SIZE % num_devices != 0:
+        adjusted = max((BATCH_SIZE // num_devices) * num_devices, num_devices)
+        print(f"[!] BATCH_SIZE={BATCH_SIZE} tidak habis dibagi {num_devices} GPU, "
+              f"disesuaikan ke {adjusted}")
+        BATCH_SIZE = adjusted
+    return num_devices
+
+
 def train():
     print("=== INISIALISASI PELATIHAN PPO (JAX) ===")
+    num_devices = auto_config_gpu()
+    print(f"[*] {num_devices} GPU terdeteksi, "
+          f"NUM_ENVS={NUM_ENVS} ({NUM_ENVS//num_devices}/GPU), "
+          f"BATCH_SIZE={BATCH_SIZE} ({BATCH_SIZE//num_devices}/GPU)")
     rng = jax.random.PRNGKey(42)
     
     # 1. Inisiasi Lingkungan Paralel
@@ -72,9 +99,7 @@ def train():
     )
     opt_state = tx.init(params)
     
-    # REPLIKASI PARAMETER KE SELURUH GPU
-    num_devices = jax.device_count()
-    print(f"[*] Mendeteksi {num_devices} perangkat JAX (GPU/TPU). Mengaktifkan mode Multi-GPU (pmap).")
+    # REPLIKASI PARAMETER KE SELURUH GPU (multi-GPU via pmap)
     params_repl = replicate(params)
     opt_state_repl = replicate(opt_state)
     
