@@ -43,8 +43,9 @@ def train():
     rng = jax.random.PRNGKey(42)
     
     # 1. Inisiasi Lingkungan Paralel
-    print(f"Menjalankan {NUM_ENVS} Environment Pekerja secara Paralel...")
-    env = VectorEnv(num_envs=NUM_ENVS, deck_path="agent_rl/deck")
+    deck_path = os.environ.get("RL_DECK_PATH", "agent_rl/deck")
+    print(f"Menjalankan {NUM_ENVS} Environment Pekerja secara Paralel dari '{deck_path}'...")
+    env = VectorEnv(num_envs=NUM_ENVS, deck_path=deck_path)
     
     # 2. Inisiasi Model & Optimizer
     model = PokemonAgent(num_actions=250)
