@@ -81,9 +81,9 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
     # KEMBALI KE CPU: Terbukti bahwa inferensi Batch Size 1 di GPU
     # justru menimbulkan bottleneck transfer data PCIe yang sangat parah.
     # CPU jauh lebih cepat untuk inferensi 1 per 1.
-    os.environ["CUDA_VISIBLE_DEVICES"] = ""
-    os.environ["JAX_PLATFORMS"] = "cpu"
-    os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    # os.environ["JAX_PLATFORMS"] = "cpu"
+    # os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
     
     parent_remote.close()
     
@@ -164,6 +164,17 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
                 # 1. Player 0 melakukan aksi (Decode JAX -> C++)
                 choices = decode_action(sorted_action_indices, mock_select_dict, min_c)
                 
+                # Buat mask multi-hot dari pilihan yang benar-benar dieksekusi (untuk PPO Gradient)
+                from agent_rl.action_mapping import get_action_index_for_option
+                actions_mask = np.zeros(250, dtype=np.bool_)
+                if mock_select_dict["options"]:
+                    for c in choices:
+                        if c < len(mock_select_dict["options"]):
+                            actions_mask[get_action_index_for_option(mock_select_dict["options"][c])] = True
+                
+                if not np.any(actions_mask):
+                    actions_mask[action_idx] = True
+                    
                 try:
                     obs_dict = battle_select(choices)
                     obs = to_dataclass(obs_dict, Observation)
@@ -192,7 +203,7 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
                     reward = -1.0
                     done = True
                     
-                info = {}
+                info = {"actions_mask": actions_mask}
                 
                 # --- AUTO-RESET LOGIC ---
                 if done:

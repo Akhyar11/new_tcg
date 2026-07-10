@@ -17,9 +17,9 @@ from agent_rl.vector_env import VectorEnv
 from agent_rl.buffer import RolloutBuffer
 from agent_rl.ppo_update import ppo_update_step, get_action_and_value
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
-os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.7"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+# os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+# os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.7"
 
 # Konfigurasi Hyperparameter
 NUM_ENVS = 8              # Jumlah klon CPU Game Engine paralel
@@ -124,9 +124,16 @@ def train():
                     ep_wins.append(1 if rewards[i] > 0.5 else 0)
             ep_rewards.extend(rewards)
             
+            # Ekstrak actions_mask dari infos
+            actions_mask_np = np.stack([info["actions_mask"] for info in infos])
+            
+            # Hitung old_log_probs aktual berdasarkan mask (Jumlah dari semua log_prob aksi yang diambil)
+            log_probs_all = jax.nn.log_softmax(logits)
+            multi_log_probs = jnp.sum(log_probs_all * actions_mask_np, axis=-1)
+            
             # Simpan jejak memori ke Buffer
             buffer.add(
-                next_seq, next_glob, actions_np, np.array(log_probs), 
+                next_seq, next_glob, actions_mask_np, np.array(multi_log_probs), 
                 rewards, np.array(values), dones.astype(np.float32)
             )
             

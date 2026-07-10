@@ -22,10 +22,9 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio=0.2, val_
         # 2. Hitung Log Probabilities (Logits sudah di-mask oleh model)
         log_probs_all = jax.nn.log_softmax(logits)
         
-        # Ambil log_prob spesifik dari aksi yang benar-benar dipilih saat rollout
-        # actions berdimensi (Batch,) di-expand untuk take_along_axis lalu diratakan kembali
-        actions_expanded = batch['actions'][..., None]
-        log_probs = jnp.take_along_axis(log_probs_all, actions_expanded, axis=-1).squeeze(-1)
+        # Ambil total log_prob spesifik dari semua aksi yang benar-benar dipilih saat rollout
+        # actions_mask berdimensi (Batch, 250) (Multi-hot)
+        log_probs = jnp.sum(log_probs_all * batch['actions_mask'], axis=-1)
         
         # 4. PPO Actor Loss (Clipped Surrogate Objective)
         ratio = jnp.exp(log_probs - batch['old_log_probs'])
