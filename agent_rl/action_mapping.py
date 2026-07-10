@@ -86,27 +86,40 @@ def create_action_mask(select_data: dict) -> np.ndarray:
     return mask
 
 
-def decode_action(action_index: int, select_data: dict, max_count: int = 1) -> list:
+def decode_action(sorted_action_indices: list, select_data: dict, min_count: int = 1) -> list:
     """
-    Mengonversi kembali indeks JAX (0-249) yang dipilih AI menjadi format 
-    list `[int]` yang menunjuk ke indeks aktual di array 'options' milik C++ engine.
-    
-    Contoh: Jika model JAX memilih aksi 180 (End Turn), fungsi ini mencari
-    'option' mana di dalam select_data yang merupakan End Turn, lalu mereturn
-    posisi indeks 'option' tersebut di dalam list C++ (untuk diteruskan ke search_step).
+    Mengonversi daftar aksi terurut yang dipilih AI (berdasarkan probabilitas tertinggi)
+    menjadi list pilihan indeks (0-n) sesuai dengan opsi legal dari C++ engine.
+    Mendukung multiple-choice (misalnya membuang 2 kartu) dengan mengumpulkan beberapa
+    opsi teratas hingga memenuhi `min_count` yang disyaratkan engine.
     """
     options = select_data.get("options", [])
-    
-    # Mencari semua opsi C++ yang memetakan ke action_index ini
-    matched_option_indices = []
+    if not options:
+        return []
+
+    # Map setiap opsi C++ ke indeks JAX-nya (0-249)
+    cpp_option_to_jax_idx = []
     for i, option in enumerate(options):
-        if get_action_index_for_option(option) == action_index:
-            matched_option_indices.append(i)
-            
-    # Mengembalikan daftar indeks C++ yang valid (dibatasi oleh max_count untuk Multi-Aksi)
-    if matched_option_indices:
-        return matched_option_indices[:max_count]
-    
-    # Fallback/Safe-Return jika AI memilih aksi ilegal (hal yang harusnya 
-    # dicegah oleh action_mask, tapi tetap perlu di-handle demi stabilitas).
-    return [0] if options else []
+        cpp_option_to_jax_idx.append((i, get_action_index_for_option(option)))
+
+    choices = []
+    # 1. Telusuri pilihan AI dari probabilitas terbesar ke terkecil
+    for jax_idx in sorted_action_indices:
+        # Cari apakah ada opsi C++ yang cocok dengan pilihan JAX ini
+        for cpp_idx, mapped_jax_idx in cpp_option_to_jax_idx:
+            if mapped_jax_idx == jax_idx and cpp_idx not in choices:
+                choices.append(cpp_idx)
+                break # Pindah ke JAX idx selanjutnya (satu JAX idx untuk satu opsi C++)
+        
+        if len(choices) >= min_count:
+            break
+
+    # 2. Fallback jika masih belum memenuhi min_count (karena model AI masih bodoh/belum konvergen)
+    if len(choices) < min_count:
+        for cpp_idx in range(len(options)):
+            if cpp_idx not in choices:
+                choices.append(cpp_idx)
+            if len(choices) >= min_count:
+                break
+
+    return choices

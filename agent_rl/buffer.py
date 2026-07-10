@@ -15,7 +15,7 @@ class RolloutBuffer:
         # Pre-alokasi array memori
         self.seq_inputs = np.zeros((n_steps, num_envs, *seq_shape), dtype=np.float32)
         self.glob_inputs = np.zeros((n_steps, num_envs, *glob_shape), dtype=np.float32)
-        self.actions = np.zeros((n_steps, num_envs), dtype=np.int32)
+        self.actions_mask = np.zeros((n_steps, num_envs, 250), dtype=np.bool_)
         self.log_probs = np.zeros((n_steps, num_envs), dtype=np.float32)
         self.rewards = np.zeros((n_steps, num_envs), dtype=np.float32)
         self.values = np.zeros((n_steps, num_envs), dtype=np.float32)
@@ -23,7 +23,7 @@ class RolloutBuffer:
         # dones menyimpan status episode berakhir (True jika game over di step tersebut)
         self.dones = np.zeros((n_steps, num_envs), dtype=np.float32)
         
-    def add(self, seq_in, glob_in, action, log_prob, reward, value, done):
+    def add(self, seq_in, glob_in, actions_mask, log_prob, reward, value, done):
         """
         Menyimpan data hasil dari satu step ke dalam buffer (data berasal dari seluruh n worker sekaligus).
         Semua input berdimensi (num_envs, ...).
@@ -33,7 +33,7 @@ class RolloutBuffer:
             
         self.seq_inputs[self.step] = np.array(seq_in, copy=False)
         self.glob_inputs[self.step] = np.array(glob_in, copy=False)
-        self.actions[self.step] = np.array(action, copy=False)
+        self.actions_mask[self.step] = np.array(actions_mask, copy=False)
         self.log_probs[self.step] = np.array(log_prob, copy=False)
         self.rewards[self.step] = np.array(reward, copy=False)
         self.values[self.step] = np.array(value, copy=False)
@@ -74,7 +74,7 @@ class RolloutBuffer:
         # Mengubah bentuk (n_steps, num_envs, ...) menjadi (n_steps * num_envs, ...)
         b_seq = self.seq_inputs.reshape((self.buffer_size, -1, 31))
         b_glob = self.glob_inputs.reshape((self.buffer_size, -1))
-        b_actions = self.actions.reshape((self.buffer_size,))
+        b_actions_mask = self.actions_mask.reshape((self.buffer_size, 250))
         b_log_probs = self.log_probs.reshape((self.buffer_size,))
         b_advantages = self.advantages.reshape((self.buffer_size,))
         b_returns = self.returns.reshape((self.buffer_size,))
@@ -94,7 +94,7 @@ class RolloutBuffer:
             yield {
                 "seq_input": b_seq[batch_indices],
                 "glob_input": b_glob[batch_indices],
-                "actions": b_actions[batch_indices],
+                "actions_mask": b_actions_mask[batch_indices],
                 "old_log_probs": b_log_probs[batch_indices],
                 "advantages": b_advantages[batch_indices],
                 "returns": b_returns[batch_indices],

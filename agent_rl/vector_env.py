@@ -62,14 +62,26 @@ def worker(remote, parent_remote, worker_id, deck_path):
     """
     parent_remote.close()
     
-    # Import diletakkan di dalam worker agar instance C++ DLL dimuat secara independen per proses
     from cg.game import battle_start, battle_finish, battle_select
     from cg.api import to_dataclass, Observation
     from agent_rl.feature_extractor import extract_features
     from agent_rl.reward import calc_potential, calculate_step_reward
-    from agent_rl.action_mapping import decode_action
+    from agent_rl.action_mapping import decode_action, get_action_index_for_option
+    import glob
     
-    deck = load_deck(deck_path)
+    # Pre-load semua deck dari folder atau file tunggal
+    deck_files = []
+    if os.path.isdir(deck_path):
+        deck_files = glob.glob(os.path.join(deck_path, "*.csv"))
+    else:
+        deck_files = [deck_path]
+        
+    if not deck_files:
+        print(f"Peringatan: Tidak ada deck ditemukan di {deck_path}. Menggunakan deck dummy.")
+        loaded_decks = [[1]*56 + [210]*4]
+    else:
+        loaded_decks = [load_deck(f) for f in deck_files]
+    
     obs = None
     old_potential = 0.0
     your_index = 0
@@ -84,23 +96,48 @@ def worker(remote, parent_remote, worker_id, deck_path):
             cmd, data = remote.recv()
             
             if cmd == 'step':
-                action_idx = data
+                action_idx, top_actions_list = data
                 
                 # Buat mock_select_dict dari obs.select untuk decode_action
                 from cg.api import OptionType
                 mock_select_dict = {"options": []}
+                min_c = 1
                 if obs and obs.select and obs.select.option:
                     mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs.select.option]}
+                    min_c = obs.select.minCount
+                
+                # Pastikan action_idx utama yang terpilih (sampled action) ada di paling depan list
+                if action_idx in top_actions_list:
+                    top_actions_list.remove(action_idx)
+                top_actions_list.insert(0, action_idx)
                 
                 # 1. Player 0 melakukan aksi (Decode JAX -> C++)
-                choices = decode_action(action_idx, mock_select_dict)
+                choices = decode_action(top_actions_list, mock_select_dict, min_c)
+                
+                # Buat mask multi-hot dari pilihan yang benar-benar dieksekusi (untuk PPO Gradient)
+                actions_mask = np.zeros(250, dtype=np.bool_)
+                if mock_select_dict["options"]:
+                    for c in choices:
+                        if c < len(mock_select_dict["options"]):
+                            actions_mask[get_action_index_for_option(mock_select_dict["options"][c])] = True
+                
+                if not np.any(actions_mask):
+                    actions_mask[action_idx] = True
                 
                 try:
                     obs_dict = battle_select(choices)
                     obs = to_dataclass(obs_dict, Observation)
                 except Exception as e:
-                    # Jika error parah, paksa game over (penalti kalah)
-                    obs = Observation(current=None, select=None, logs=[])
+                    # Coba fallback bot jika AI gagal parse
+                    try:
+                        opt_count = len(obs.select.option) if obs.select and obs.select.option else 0
+                        min_c = obs.select.minCount if obs.select else 0
+                        fallback_choices = list(range(min(opt_count, min_c))) if min_c > 0 else []
+                        obs_dict = battle_select(fallback_choices)
+                        obs = to_dataclass(obs_dict, Observation)
+                    except:
+                        # Jika error parah, paksa game over (penalti kalah)
+                        obs = Observation(current=None, select=None, logs=[])
                     
                 # 2. Majukan game secara otomatis jika sekarang giliran Player 1 (Random Bot)
                 obs = advance_to_player0(obs)
@@ -115,11 +152,15 @@ def worker(remote, parent_remote, worker_id, deck_path):
                     reward = -1.0
                     done = True
                     
+                info = {"actions_mask": actions_mask}
+                    
                 # --- AUTO-RESET LOGIC ---
                 if done:
                     battle_finish()
                     try:
-                        obs_dict, _ = battle_start(deck, deck)
+                        deck0 = random.choice(loaded_decks)
+                        deck1 = random.choice(loaded_decks)
+                        obs_dict, _ = battle_start(deck0, deck1)
                         obs = to_dataclass(obs_dict, Observation)
                         obs = advance_to_player0(obs)
                         old_potential = calc_potential(obs.current, your_index) if obs.current else 0.0
@@ -133,11 +174,13 @@ def worker(remote, parent_remote, worker_id, deck_path):
                 else:
                     features = empty_features
                     
-                remote.send((features, reward, done))
+                remote.send((features, reward, done, info))
                 
             elif cmd == 'reset':
                 battle_finish()
-                obs_dict, _ = battle_start(deck, deck)
+                deck0 = random.choice(loaded_decks)
+                deck1 = random.choice(loaded_decks)
+                obs_dict, _ = battle_start(deck0, deck1)
                 obs = to_dataclass(obs_dict, Observation)
                 
                 # Biarkan Random Bot (Player 1) main duluan jika dia menang undian turn pertama
@@ -161,7 +204,7 @@ def worker(remote, parent_remote, worker_id, deck_path):
             break
         except Exception as e:
             print(f"[Worker {worker_id}] Terjadi kesalahan internal: {e}")
-            remote.send((empty_features, -1.0, True))
+            remote.send((empty_features, -1.0, True, {}))
 
 class VectorEnv:
     """
@@ -195,10 +238,10 @@ class VectorEnv:
         glob_inputs = np.stack([res["glob_input"] for res in results])
         return {"seq_input": seq_inputs, "glob_input": glob_inputs}
 
-    def step_async(self, actions):
+    def step_async(self, actions, top_actions):
         """Mendistribusikan array action JAX ke masing-masing worker."""
-        for remote, action in zip(self.remotes, actions):
-            remote.send(('step', action))
+        for remote, action, top_action in zip(self.remotes, actions, top_actions):
+            remote.send(('step', (action, top_action.tolist())))
 
     def step_wait(self):
         """Menunggu eksekusi C++ selesai dan menggabungkan hasilnya menjadi format JAX."""
@@ -210,12 +253,13 @@ class VectorEnv:
         
         rewards = np.array([res[1] for res in results], dtype=np.float32)
         dones = np.array([res[2] for res in results], dtype=np.bool_)
+        infos = [res[3] for res in results]
         
-        return batch_features, rewards, dones
+        return batch_features, rewards, dones, infos
 
-    def step(self, actions):
+    def step(self, actions, top_actions):
         """Convenience function (Gabungan async & wait)."""
-        self.step_async(actions)
+        self.step_async(actions, top_actions)
         return self.step_wait()
         
     def close(self):

@@ -28,10 +28,9 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio=0.2, val_
         # 3. Hitung Log Probabilities
         log_probs_all = jax.nn.log_softmax(masked_logits)
         
-        # Ambil log_prob spesifik dari aksi yang benar-benar dipilih saat rollout
-        # actions berdimensi (Batch,) di-expand untuk take_along_axis lalu diratakan kembali
-        actions_expanded = batch['actions'][..., None]
-        log_probs = jnp.take_along_axis(log_probs_all, actions_expanded, axis=-1).squeeze(-1)
+        # Ambil log_prob dari semua aksi yang dipilih (Multi-Hot / Multi-Choice)
+        # Gradient akan mengalir proporsional ke semua aksi yang terpilih pada turn ini
+        log_probs = jnp.sum(log_probs_all * batch['actions_mask'], axis=-1)
         
         # 4. PPO Actor Loss (Clipped Surrogate Objective)
         ratio = jnp.exp(log_probs - batch['old_log_probs'])
@@ -84,4 +83,4 @@ def get_action_and_value(params, apply_fn, seq_input, glob_input, key):
     log_probs_all = jax.nn.log_softmax(masked_logits)
     log_probs = jnp.take_along_axis(log_probs_all, actions[..., None], axis=-1).squeeze(-1)
     
-    return actions, log_probs, values.squeeze(-1)
+    return actions, log_probs, values.squeeze(-1), masked_logits
