@@ -15,127 +15,64 @@ def load_deck(filepath):
                 deck.append(int(line))
     return deck
 
-def advance_to_player0(obs, params_opp, model_apply, decode_action, rng):
+def advance_to_player0(obs):
     """
     Memajukan simulasi secara otomatis jika giliran saat ini adalah milik Player 1.
-    Player 1 dimainkan oleh Model AI Masa Lalu (Self-Play) menggunakan JAX di CPU.
+    Player 1 akan dimainkan oleh Random Bot murni sampai giliran kembali ke Player 0,
+    atau game berakhir.
     """
     from cg.game import battle_select
-    from cg.api import to_dataclass, Observation, OptionType
-    from agent_rl.feature_extractor import extract_features
-    import random
+    from cg.api import to_dataclass, Observation
     
     while obs.current is not None and obs.current.result == -1 and obs.current.yourIndex != 0:
-        if obs.select is not None and obs.select.option:
+        if obs.select is not None:
+            min_c = obs.select.minCount
+            max_c = obs.select.maxCount
             opt_count = len(obs.select.option)
-            if params_opp is not None:
-                # SELF PLAY MODE
-                features = extract_features(obs.current, obs.select, 1)
-                seq_input = np.expand_dims(features["seq_input"], axis=0)
-                glob_input = np.expand_dims(features["glob_input"], axis=0)
-                
-                import jax
-                import jax.numpy as jnp
-                
-                rng, step_rng = jax.random.split(rng)
-                # Inferensi AI Opponent (Player 1)
-                masked_logits, _ = model_apply(params_opp, seq_input, glob_input)
-                logits_np = np.array(masked_logits[0])
-                sorted_action_indices = np.argsort(logits_np)[::-1].tolist()
-                
-                mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs.select.option]}
-                choices = decode_action(sorted_action_indices, mock_select_dict, obs.select.minCount)
+            choices = []
+            
+            if min_c > 0:
+                max_c = min(max_c, opt_count)
+                max_c = max(max_c, min_c)
+                pick_count = random.randint(min_c, max_c)
+                choices = random.sample(range(opt_count), pick_count)
             else:
-                # FALLBACK RANDOM BOT
-                min_c = obs.select.minCount
-                max_c = obs.select.maxCount
-                choices = []
-                if min_c > 0:
-                    max_c = min(max_c, opt_count)
-                    max_c = max(max_c, min_c)
-                    pick_count = random.randint(min_c, max_c)
+                if opt_count > 0 and random.random() > 0.5:
+                    pick_count = random.randint(1, min(max_c, opt_count))
                     choices = random.sample(range(opt_count), pick_count)
-                else:
-                    if opt_count > 0 and random.random() > 0.5:
-                        pick_count = random.randint(1, min(max_c, opt_count))
-                        choices = random.sample(range(opt_count), pick_count)
-
+            
             try:
                 obs_dict = battle_select(choices)
                 obs = to_dataclass(obs_dict, Observation)
             except Exception as e:
+                # Failsafe jika aksi random menyebabkan crash C++
                 try:
-                    fallback_choices = list(range(min(opt_count, obs.select.minCount))) if obs.select.minCount > 0 else []
-                    obs_dict = battle_select(fallback_choices)
+                    obs_dict = battle_select([0] if opt_count > 0 and min_c > 0 else [])
                     obs = to_dataclass(obs_dict, Observation)
                 except:
                     break
         else:
             break
             
-    return obs, rng
+    return obs
 
-def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
+def worker(remote, parent_remote, worker_id, deck_path):
     """
     Fungsi independen yang berjalan di sub-process untuk mengisolasi State C++ Engine.
     """
-    # KEMBALI KE CPU: Terbukti bahwa inferensi Batch Size 1 di GPU
-    # justru menimbulkan bottleneck transfer data PCIe yang sangat parah.
-    # CPU jauh lebih cepat untuk inferensi 1 per 1.
-    os.environ["CUDA_VISIBLE_DEVICES"] = ""
-    os.environ["JAX_PLATFORMS"] = "cpu"
-    os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
-    
     parent_remote.close()
     
+    # Import diletakkan di dalam worker agar instance C++ DLL dimuat secara independen per proses
     from cg.game import battle_start, battle_finish, battle_select
     from cg.api import to_dataclass, Observation
     from agent_rl.feature_extractor import extract_features
     from agent_rl.reward import calc_potential, calculate_step_reward
     from agent_rl.action_mapping import decode_action
     
-    
-    if is_self_play:
-        import jax
-        import jax.numpy as jnp
-        from flax import serialization
-        from agent_rl.model import PokemonAgent
-    import glob
-    
-    # Pre-load semua deck dari folder atau file tunggal
-    deck_files = []
-    if os.path.isdir(deck_path):
-        deck_files = glob.glob(os.path.join(deck_path, "*.csv"))
-    else:
-        deck_files = [deck_path]
-        
-    if not deck_files:
-        print(f"Peringatan: Tidak ada deck ditemukan di {deck_path}. Menggunakan deck dummy.")
-        loaded_decks = [[1]*56 + [210]*4]
-    else:
-        loaded_decks = [load_deck(f) for f in deck_files]
-        
+    deck = load_deck(deck_path)
     obs = None
     old_potential = 0.0
     your_index = 0
-    rng = None
-    
-    # Inisialisasi Model Player 1 (Frozen)
-    params_opp = None
-    model_apply = None
-    if is_self_play:
-        model = PokemonAgent(num_actions=250)
-        model_apply = jax.jit(model.apply)
-        dummy_seq = jnp.zeros((1, 93, 31))
-        dummy_glob = jnp.zeros((1, 266))
-        rng = jax.random.PRNGKey(worker_id)
-        rng, init_rng = jax.random.split(rng)
-        params_opp = model.init(init_rng, dummy_seq, dummy_glob)
-        
-        cp_path = "checkpoints/model_final.msgpack"
-        if os.path.exists(cp_path):
-            with open(cp_path, 'rb') as f:
-                params_opp = serialization.from_bytes(params_opp, f.read())
     
     empty_features = {
         "seq_input": np.zeros((93, 31), dtype=np.float32), 
@@ -147,54 +84,26 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
             cmd, data = remote.recv()
             
             if cmd == 'step':
-                action_idx, top_actions_list = data
+                action_idx = data
                 
                 # Buat mock_select_dict dari obs.select untuk decode_action
                 from cg.api import OptionType
                 mock_select_dict = {"options": []}
-                min_c = 1
                 if obs and obs.select and obs.select.option:
                     mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs.select.option]}
-                    min_c = obs.select.minCount
-                
-                sorted_action_indices = top_actions_list
-                
-                # Pastikan action_idx utama yang terpilih (sampled action) ada di paling depan
-                if action_idx in sorted_action_indices:
-                    sorted_action_indices.remove(action_idx)
-                sorted_action_indices.insert(0, action_idx)
                 
                 # 1. Player 0 melakukan aksi (Decode JAX -> C++)
-                choices = decode_action(sorted_action_indices, mock_select_dict, min_c)
+                choices = decode_action(action_idx, mock_select_dict)
                 
-                # Buat mask multi-hot dari pilihan yang benar-benar dieksekusi (untuk PPO Gradient)
-                from agent_rl.action_mapping import get_action_index_for_option
-                actions_mask = np.zeros(250, dtype=np.bool_)
-                if mock_select_dict["options"]:
-                    for c in choices:
-                        if c < len(mock_select_dict["options"]):
-                            actions_mask[get_action_index_for_option(mock_select_dict["options"][c])] = True
-                
-                if not np.any(actions_mask):
-                    actions_mask[action_idx] = True
-                    
                 try:
                     obs_dict = battle_select(choices)
                     obs = to_dataclass(obs_dict, Observation)
                 except Exception as e:
-                    # Coba fallback bot jika AI gagal parse
-                    try:
-                        opt_count = len(obs.select.option) if obs.select and obs.select.option else 0
-                        min_c = obs.select.minCount if obs.select else 0
-                        fallback_choices = list(range(min(opt_count, min_c))) if min_c > 0 else []
-                        obs_dict = battle_select(fallback_choices)
-                        obs = to_dataclass(obs_dict, Observation)
-                    except:
-                        # Jika error parah, paksa game over (penalti kalah)
-                        obs = Observation(current=None, select=None, logs=[])
+                    # Jika error parah, paksa game over (penalti kalah)
+                    obs = Observation(current=None, select=None, logs=[])
                     
-                # 2. Majukan game secara otomatis jika sekarang giliran Player 1
-                obs, rng = advance_to_player0(obs, params_opp, model_apply, decode_action, rng)
+                # 2. Majukan game secara otomatis jika sekarang giliran Player 1 (Random Bot)
+                obs = advance_to_player0(obs)
                 
                 # 3. Hitung Reward setelah siklus selesai (kembali ke giliran Player 0 atau Game Over)
                 if obs.current:
@@ -206,18 +115,13 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
                     reward = -1.0
                     done = True
                     
-                info = {"actions_mask": actions_mask}
-                
                 # --- AUTO-RESET LOGIC ---
                 if done:
-                    info["turn"] = obs.current.turn if (obs and getattr(obs, 'current', None)) else 0
                     battle_finish()
                     try:
-                        deck0 = random.choice(loaded_decks)
-                        deck1 = random.choice(loaded_decks)
-                        obs_dict, _ = battle_start(deck0, deck1)
+                        obs_dict, _ = battle_start(deck, deck)
                         obs = to_dataclass(obs_dict, Observation)
-                        obs, rng = advance_to_player0(obs, params_opp, model_apply, decode_action, rng)
+                        obs = advance_to_player0(obs)
                         old_potential = calc_potential(obs.current, your_index) if obs.current else 0.0
                     except Exception as e:
                         print(f"Error during auto-reset: {e}")
@@ -229,17 +133,15 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
                 else:
                     features = empty_features
                     
-                remote.send((features, reward, done, info))
+                remote.send((features, reward, done))
                 
             elif cmd == 'reset':
                 battle_finish()
-                deck0 = random.choice(loaded_decks)
-                deck1 = random.choice(loaded_decks)
-                obs_dict, _ = battle_start(deck0, deck1)
+                obs_dict, _ = battle_start(deck, deck)
                 obs = to_dataclass(obs_dict, Observation)
                 
-                # Biarkan Player 1 main duluan jika dia menang undian turn pertama
-                obs, rng = advance_to_player0(obs, params_opp, model_apply, decode_action, rng)
+                # Biarkan Random Bot (Player 1) main duluan jika dia menang undian turn pertama
+                obs = advance_to_player0(obs)
                 
                 old_potential = calc_potential(obs.current, your_index) if obs.current else 0.0
                 
@@ -259,14 +161,14 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
             break
         except Exception as e:
             print(f"[Worker {worker_id}] Terjadi kesalahan internal: {e}")
-            remote.send((empty_features, -1.0, True, {}))
+            remote.send((empty_features, -1.0, True))
 
 class VectorEnv:
     """
     Manajer Lingkungan Paralel (Actor-Learner Bridge).
     Membungkus banyak environment (worker) agar JAX bisa memprosesnya secara batch.
     """
-    def __init__(self, num_envs, deck_path="agent_rl/deck.csv", is_self_play=False):
+    def __init__(self, num_envs, deck_path="agent_rl/deck.csv"):
         self.num_envs = num_envs
         self.remotes, self.work_remotes = zip(*[mp.Pipe() for _ in range(num_envs)])
         self.processes = []
@@ -275,7 +177,7 @@ class VectorEnv:
         ctx = mp.get_context('spawn')
         
         for i, (work_remote, remote) in enumerate(zip(self.work_remotes, self.remotes)):
-            p = ctx.Process(target=worker, args=(work_remote, remote, i, deck_path, is_self_play))
+            p = ctx.Process(target=worker, args=(work_remote, remote, i, deck_path))
             p.daemon = True
             p.start()
             self.processes.append(p)
@@ -293,10 +195,10 @@ class VectorEnv:
         glob_inputs = np.stack([res["glob_input"] for res in results])
         return {"seq_input": seq_inputs, "glob_input": glob_inputs}
 
-    def step_async(self, actions, top_actions):
+    def step_async(self, actions):
         """Mendistribusikan array action JAX ke masing-masing worker."""
-        for remote, action, top_action in zip(self.remotes, actions, top_actions):
-            remote.send(('step', (action, top_action.tolist())))
+        for remote, action in zip(self.remotes, actions):
+            remote.send(('step', action))
 
     def step_wait(self):
         """Menunggu eksekusi C++ selesai dan menggabungkan hasilnya menjadi format JAX."""
@@ -308,13 +210,12 @@ class VectorEnv:
         
         rewards = np.array([res[1] for res in results], dtype=np.float32)
         dones = np.array([res[2] for res in results], dtype=np.bool_)
-        infos = [res[3] for res in results]
         
-        return batch_features, rewards, dones, infos
+        return batch_features, rewards, dones
 
-    def step(self, actions, top_actions):
+    def step(self, actions):
         """Convenience function (Gabungan async & wait)."""
-        self.step_async(actions, top_actions)
+        self.step_async(actions)
         return self.step_wait()
         
     def close(self):

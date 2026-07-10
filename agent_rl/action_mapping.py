@@ -86,42 +86,27 @@ def create_action_mask(select_data: dict) -> np.ndarray:
     return mask
 
 
-def decode_action(action_indices, select_data: dict, min_count: int = 1) -> list:
+def decode_action(action_index: int, select_data: dict, max_count: int = 1) -> list:
     """
-    Mengonversi daftar indeks JAX (berurutan dari probabilitas tertinggi) 
-    menjadi format list `[int]` yang menunjuk ke indeks di array 'options' C++ engine.
-    Menghindari duplikasi pilihan jika min_count > 1.
+    Mengonversi kembali indeks JAX (0-249) yang dipilih AI menjadi format 
+    list `[int]` yang menunjuk ke indeks aktual di array 'options' milik C++ engine.
+    
+    Contoh: Jika model JAX memilih aksi 180 (End Turn), fungsi ini mencari
+    'option' mana di dalam select_data yang merupakan End Turn, lalu mereturn
+    posisi indeks 'option' tersebut di dalam list C++ (untuk diteruskan ke search_step).
     """
     options = select_data.get("options", [])
-    if not options:
-        return []
-        
-    # Pre-compute valid AI indices for the given options
-    option_to_ai = []
-    for option in options:
-        option_to_ai.append(get_action_index_for_option(option))
-        
-    # Pastikan action_indices adalah list (bisa jadi int tunggal dari code lama)
-    if isinstance(action_indices, int) or isinstance(action_indices, np.integer):
-        action_indices = [int(action_indices)]
-        
-    choices = []
-    for ai_idx in action_indices:
-        # Cari option yang memetakan ai_idx ini, dan belum terpilih
-        for c_idx, opt_ai in enumerate(option_to_ai):
-            if opt_ai == ai_idx and c_idx not in choices:
-                choices.append(c_idx)
-                break  # Satu ai_idx memetakan ke satu option terpilih
-                
-        if len(choices) >= min_count:
-            break
+    
+    # Mencari semua opsi C++ yang memetakan ke action_index ini
+    matched_option_indices = []
+    for i, option in enumerate(options):
+        if get_action_index_for_option(option) == action_index:
+            matched_option_indices.append(i)
             
-    # Fallback/Safe-Return jika AI memilih aksi ilegal atau jumlah pilihan kurang
-    if len(choices) < min_count:
-        for i in range(len(options)):
-            if i not in choices:
-                choices.append(i)
-                if len(choices) >= min_count:
-                    break
-                    
-    return choices
+    # Mengembalikan daftar indeks C++ yang valid (dibatasi oleh max_count untuk Multi-Aksi)
+    if matched_option_indices:
+        return matched_option_indices[:max_count]
+    
+    # Fallback/Safe-Return jika AI memilih aksi ilegal (hal yang harusnya 
+    # dicegah oleh action_mask, tapi tetap perlu di-handle demi stabilitas).
+    return [0] if options else []
