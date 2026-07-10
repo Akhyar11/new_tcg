@@ -285,12 +285,11 @@ def phase_run_ga(iteration: int, args):
     ga_config.MODEL_PATH = model_path
 
     db = CardDB(os.path.join(ROOT, "agent_rl", "EN_Card_Data.csv"))
-    use_gpu = _NUM_GPUS > 0
-    ga = GALoop(db, n_workers=args.ga_workers, use_gpu=use_gpu)
-    if use_gpu:
-        log(f"GA Workers menggunakan GPU (x{_NUM_GPUS})")
-    else:
-        log("GA Workers menggunakan CPU")
+    # GA Workers selalu CPU. Forward pass kecil (93×31 → 250 logits).
+    # Bottleneck adalah C++ engine simulation, bukan model inference.
+    # GPU disimpan untuk RL Training yang butuh throughput tinggi.
+    ga = GALoop(db, n_workers=args.ga_workers, use_gpu=False)
+    log(f"GA Workers menggunakan CPU (GPU reserved untuk RL training)")
 
     # Seed populasi dari generated decks + random fill
     if os.path.isdir(GENERATED_DECK_DIR):
