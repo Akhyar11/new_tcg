@@ -176,5 +176,7 @@ def train():
     save_checkpoint(params, "model_final.msgpack")
 
 if __name__ == "__main__":
+    import multiprocessing as mp
+    mp.set_start_method('spawn', force=True)
     import jax.numpy as jnp # pastikan jnp ter-load
     train()
