@@ -255,7 +255,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 obs, start_data = cg.game.battle_start(deck0, deck1)
                 
                 while obs and not obs.get("current", {}).get("isGameOver", False):
-                    await manager.send_personal_message({"type": "update", "obs": obs}, websocket)
+                    frontend_obs = json.loads(cg.game.visualize_data())[-1]
+                    # Add missing select field to frontend_obs if present in engine obs
+                    if "select" in obs and "select" not in frontend_obs:
+                        frontend_obs["select"] = obs["select"]
+                    
+                    await manager.send_personal_message({"type": "update", "obs": frontend_obs}, websocket)
                     await asyncio.sleep(0.3)
                     
                     select_data = obs.get("select")

@@ -321,12 +321,26 @@ export default function PlayAIVsAIPage() {
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#121212', color: 'white', fontFamily: '"Inter", sans-serif', overflowX: 'hidden' }}>
 
       {/* TOP ROW: OPPONENT HAND */}
-      <div style={{ padding: '0.5rem 1rem', display: 'flex', justifyContent: 'center', gap: '5px', minHeight: '120px', flexShrink: 0 }}>
-        {[...Array(aiHandCount)].map((_, i) => (
-          <div key={i} style={{ width: '75px', height: '105px' }}>
-            <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px' }} alt="Card Back" />
-          </div>
-        ))}
+      <div style={{ padding: '0.5rem 1rem', display: 'flex', justifyContent: 'center', gap: '5px', minHeight: '120px', flexShrink: 0, overflow: 'visible' }}>
+        {Array.isArray(aiHand) && aiHand.length > 0 ? (
+          aiHand.map((card, i) => (
+            <div
+              key={i}
+              style={{ width: '75px', height: '105px', transition: 'transform 0.2s', position: 'relative' }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(10px) scale(1.1)'; e.currentTarget.style.zIndex = '100'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.zIndex = '1'; }}
+              onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: card, energies: [] }); }}
+            >
+              <img src={`/assets/cards/${card['Card ID']}.png`} style={{ width: '100%', height: '100%', borderRadius: '4px', boxShadow: '0 5px 15px rgba(0,0,0,0.5)' }} alt={card['Card Name']} />
+            </div>
+          ))
+        ) : (
+          [...Array(aiHandCount)].map((_, i) => (
+            <div key={i} style={{ width: '75px', height: '105px' }}>
+              <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px' }} alt="Card Back" />
+            </div>
+          ))
+        )}
       </div>
 
       {/* MIDDLE SECTION: PLAYMAT */}
