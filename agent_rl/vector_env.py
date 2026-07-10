@@ -81,9 +81,9 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
     # KEMBALI KE CPU: Terbukti bahwa inferensi Batch Size 1 di GPU
     # justru menimbulkan bottleneck transfer data PCIe yang sangat parah.
     # CPU jauh lebih cepat untuk inferensi 1 per 1.
-    # os.environ["CUDA_VISIBLE_DEVICES"] = ""
-    # os.environ["JAX_PLATFORMS"] = "cpu"
-    # os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    os.environ["JAX_PLATFORMS"] = "cpu"
+    os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
     
     parent_remote.close()
     

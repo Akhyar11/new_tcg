@@ -17,9 +17,9 @@ from agent_rl.vector_env import VectorEnv
 from agent_rl.buffer import RolloutBuffer
 from agent_rl.ppo_update import ppo_update_step, get_action_and_value
 
-# os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-# os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
-# os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = "0.7"
 
 # Konfigurasi Hyperparameter
 NUM_ENVS = 8              # Jumlah klon CPU Game Engine paralel
