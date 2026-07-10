@@ -100,6 +100,7 @@ def train():
         ep_wins_p0 = []
         ep_wins_p1 = []
         ep_steps = []
+        ep_end_reasons = []  # 1=prize, 2=deck-out, 3=no-active, 4=effect
         
         # --- FASE 1: PENGUMPULAN PENGALAMAN (ROLLOUT) ---
         buffer.clear()
@@ -131,6 +132,7 @@ def train():
             for i, d in enumerate(dones):
                 if d:
                     result = infos[i].get("result", -1)
+                    end_reason = infos[i].get("end_reason", 0)
                     if result == 0:
                         ep_wins_p0.append(1)
                         ep_wins_p1.append(0)
@@ -138,6 +140,7 @@ def train():
                         ep_wins_p0.append(0)
                         ep_wins_p1.append(1)
                     ep_steps.append(env_step_counts[i])
+                    ep_end_reasons.append(end_reason)
                     env_step_counts[i] = 0
 
             ep_rewards.extend(rewards)
@@ -201,12 +204,28 @@ def train():
             win_p1 = (np.mean(ep_wins_p1) * 100) if ep_wins_p1 else 0.0
             games_played = len(ep_wins_p0)
             avg_steps = (np.mean(ep_steps) / max(1, games_played)) if ep_steps else 0.0
-            
+
+            # Distribusi alasan game berakhir
+            reason_labels = {1: "Prize", 2: "DeckOut", 3: "NoActive", 4: "Effect"}
+            if ep_end_reasons:
+                reason_counts = {}
+                for r in ep_end_reasons:
+                    reason_counts[r] = reason_counts.get(r, 0) + 1
+                reason_str = " | ".join(
+                    f"{reason_labels.get(r, f'R{r}')}:{c}/{games_played}"
+                    for r, c in sorted(reason_counts.items())
+                )
+            else:
+                reason_str = "N/A"
+
             fps = int((NUM_ENVS * N_STEPS) / (time.time() - start_time + 1e-8))
             start_time = time.time()
-            
-            print(f"Update {update:04d}/{num_updates} | Step: {global_step} | FPS: {fps} | Games: {games_played} | AvgStep/Game: {avg_steps:.0f} | "
-                  f"Loss: {mean_loss:.4f} | Win P0: {win_p0:.1f}% | Win P1: {win_p1:.1f}%")
+
+            print(f"Update {update:04d}/{num_updates} | Step: {global_step} | FPS: {fps} | "
+                  f"Games: {games_played} | Steps/Game: {avg_steps:.0f} | "
+                  f"Win P0: {win_p0:.1f}% | Win P1: {win_p1:.1f}% | "
+                  f"Loss: {mean_loss:.4f}")
+            print(f"  End Reasons ─ {reason_str}")
                   
         if update % 50 == 0:
             save_checkpoint(unreplicate(params_repl), f"model_update_{update}.msgpack")

@@ -33,7 +33,7 @@ def worker(remote, parent_remote, worker_id, deck_path):
     parent_remote.close()
 
     from cg.game import battle_start, battle_finish, battle_select
-    from cg.api import to_dataclass, Observation
+    from cg.api import to_dataclass, Observation, LogType
     from agent_rl.feature_extractor import extract_features
     from agent_rl.reward import detect_events, calculate_step_reward, reset_trackers
     from agent_rl.action_mapping import decode_action, get_action_index_for_option
@@ -54,6 +54,15 @@ def worker(remote, parent_remote, worker_id, deck_path):
 
     obs = None
     old_state = None  # Untuk deteksi event antar-step
+
+    def get_end_reason(obs_data) -> int:
+        """Extract game-end reason from logs. Returns 0 if not found."""
+        if obs_data is None or not obs_data.logs:
+            return 0
+        for log in obs_data.logs:
+            if log.type == LogType.RESULT:
+                return log.reason if log.reason is not None else 0
+        return 0
 
     empty_features = {
         "seq_input": np.zeros((93, 31), dtype=np.float32),
@@ -177,7 +186,8 @@ def worker(remote, parent_remote, worker_id, deck_path):
                     "actions_mask": actions_mask,
                     "glob_mask": legal_mask.astype(np.float32),
                     "active_player": active_p,
-                    "result": obs.current.result if obs.current else -1
+                    "result": obs.current.result if obs.current else -1,
+                    "end_reason": get_end_reason(obs) if done else 0
                 }
 
                 # --- Auto-reset jika game selesai ---
@@ -239,7 +249,8 @@ def worker(remote, parent_remote, worker_id, deck_path):
                 "actions_mask": np.zeros(250, dtype=np.bool_),
                 "glob_mask": np.zeros(250, dtype=np.float32),
                 "active_player": 0,
-                "result": -1
+                "result": -1,
+                "end_reason": 0
             }))
 
 
