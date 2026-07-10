@@ -140,7 +140,10 @@ def train():
             logits_max = np.max(logits_np, axis=-1, keepdims=True)
             log_sum_exp = np.log(np.sum(np.exp(logits_np - logits_max), axis=-1, keepdims=True))
             log_probs_all_np = (logits_np - logits_max) - log_sum_exp
-            multi_log_probs = np.sum(log_probs_all_np * actions_mask_np, axis=-1)
+            
+            # Ganti SUM menjadi MEAN (rata-rata) log probs untuk menghindari ledakan nilai eksponensial (NaN) pada PPO Ratio
+            mask_count = np.maximum(1.0, np.sum(actions_mask_np, axis=-1))
+            multi_log_probs = np.sum(log_probs_all_np * actions_mask_np, axis=-1) / mask_count
             
             # Simpan jejak memori ke Buffer
             buffer.add(

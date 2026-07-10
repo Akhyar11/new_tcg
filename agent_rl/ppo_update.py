@@ -30,7 +30,8 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio):
         
         # Ambil log_prob dari semua aksi yang dipilih (Multi-Hot / Multi-Choice)
         # Gradient akan mengalir proporsional ke semua aksi yang terpilih pada turn ini
-        log_probs = jnp.sum(log_probs_all * batch['actions_mask'], axis=-1)
+        mask_count = jnp.maximum(1.0, jnp.sum(batch['actions_mask'], axis=-1))
+        log_probs = jnp.sum(log_probs_all * batch['actions_mask'], axis=-1) / mask_count
         
         # 4. PPO Actor Loss (Clipped Surrogate Objective)
         ratio = jnp.exp(log_probs - batch['old_log_probs'])
