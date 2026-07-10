@@ -3,6 +3,41 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 import uvicorn
 import json
+import os
+
+# Limit JAX resource usage on server
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["JAX_PLATFORMS"] = "cpu"
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+
+import jax
+import jax.numpy as jnp
+import numpy as np
+from flax import serialization
+
+AI_MODEL_PARAMS = None
+AI_MODEL_APPLY = None
+try:
+    from agent_rl.model import PokemonAgent
+    print("Memuat JAX AI Model...")
+    model = PokemonAgent(num_actions=250)
+    rng = jax.random.PRNGKey(42)
+    rng, init_rng = jax.random.split(rng)
+    dummy_seq = jnp.zeros((1, 93, 31))
+    dummy_glob = jnp.zeros((1, 266))
+    AI_MODEL_PARAMS = model.init(init_rng, dummy_seq, dummy_glob)
+    
+    cp_path = "checkpoints/model_final.msgpack"
+    if os.path.exists(cp_path):
+        with open(cp_path, 'rb') as f:
+            AI_MODEL_PARAMS = serialization.from_bytes(AI_MODEL_PARAMS, f.read())
+        print(f"JAX AI Model Checkpoint Loaded: {cp_path}")
+    else:
+        print("JAX AI Checkpoint not found, using random weights!")
+    
+    AI_MODEL_APPLY = jax.jit(model.apply)
+except Exception as e:
+    print(f"Gagal memuat JAX AI Model: {e}")
 
 app = FastAPI(title="Pokemon TCG AI Server")
 
@@ -137,6 +172,10 @@ async def websocket_endpoint(websocket: WebSocket):
         import random
         import asyncio
         import cg.game
+        from cg.api import to_dataclass, Observation, OptionType
+        from agent_rl.feature_extractor import extract_features
+        from agent_rl.action_mapping import decode_action
+        
         while obs and obs.get("current", {}).get("yourIndex") == 1:
             await manager.send_personal_message({"type": "update", "obs": obs}, websocket)
             await asyncio.sleep(0.5) # Beri delay sedikit agar UI frontend sempat render animasi
@@ -146,9 +185,39 @@ async def websocket_endpoint(websocket: WebSocket):
                 break
                 
             opts = select_data["option"]
-            idx = random.randint(0, len(opts)-1)
-            print(f"AI auto-playing idx {idx} out of {len(opts)}")
-            obs = cg.game.battle_select([idx])
+            opt_count = len(opts)
+            min_c = select_data.get("minCount", 1)
+            
+            # Jika JAX model tersedia, gunakan model
+            if AI_MODEL_APPLY is not None and AI_MODEL_PARAMS is not None:
+                try:
+                    obs_dataclass = to_dataclass(obs, Observation)
+                    features = extract_features(obs_dataclass.current, obs_dataclass.select, 1) # Giliran AI = 1
+                    
+                    seq_input = np.expand_dims(features["seq_input"], axis=0)
+                    glob_input = np.expand_dims(features["glob_input"], axis=0)
+                    
+                    masked_logits, _ = AI_MODEL_APPLY(AI_MODEL_PARAMS, seq_input, glob_input)
+                    logits_np = np.array(masked_logits[0])
+                    sorted_action_indices = np.argsort(logits_np)[::-1].tolist()
+                    
+                    mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs_dataclass.select.option]}
+                    choices = decode_action(sorted_action_indices, mock_select_dict, min_c)
+                    
+                    print(f"JAX AI (RL Model) auto-playing choices {choices}")
+                    obs = cg.game.battle_select(choices)
+                except Exception as e:
+                    import traceback
+                    print(f"Error pada JAX AI Inference: {e}")
+                    traceback.print_exc()
+                    print("Fallback ke random agent!")
+                    idx = random.randint(0, opt_count-1)
+                    obs = cg.game.battle_select([idx])
+            else:
+                idx = random.randint(0, opt_count-1)
+                print(f"Random AI auto-playing idx {idx} out of {opt_count}")
+                obs = cg.game.battle_select([idx])
+                
         return obs
 
     try:
@@ -158,27 +227,113 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             data = await websocket.receive_text()
             action_data = json.loads(data)
-            
-            if action_data.get("type") == "start":
+            if action_data.get("type") == "start_ai_vs_ai":
+                import cg.game
+                import glob
+                import random
+                import asyncio
+                from cg.api import to_dataclass, Observation, OptionType
+                from agent_rl.feature_extractor import extract_features
+                from agent_rl.action_mapping import decode_action
+
+                print("Starting AI vs AI battle...")
+                deck_files = glob.glob("agent_rl/deck/*.csv")
+                
+                # Pick deck for Player 0
+                deck0_file = random.choice(deck_files) if deck_files else "agent_rl/deck/gen_deck_000.csv"
+                with open(deck0_file, "r") as f:
+                    deck0 = [int(line.strip()) for line in f if line.strip().isdigit()]
+                
+                # Pick deck for Player 1
+                deck1_file = random.choice(deck_files) if deck_files else "agent_rl/deck/gen_deck_000.csv"
+                with open(deck1_file, "r") as f:
+                    deck1 = [int(line.strip()) for line in f if line.strip().isdigit()]
+
+                print(f"Player 0 Deck: {deck0_file}")
+                print(f"Player 1 Deck: {deck1_file}")
+
+                obs, start_data = cg.game.battle_start(deck0, deck1)
+                
+                while obs and not obs.get("current", {}).get("isGameOver", False):
+                    await manager.send_personal_message({"type": "update", "obs": obs}, websocket)
+                    await asyncio.sleep(0.3)
+                    
+                    select_data = obs.get("select")
+                    if not select_data or not select_data.get("option"):
+                        print("No options available. Game over?")
+                        break
+                        
+                    opts = select_data["option"]
+                    opt_count = len(opts)
+                    min_c = select_data.get("minCount", 1)
+                    curr_player = obs.get("current", {}).get("yourIndex", 0)
+
+                    # Jika JAX model tersedia, gunakan model
+                    if AI_MODEL_APPLY is not None and AI_MODEL_PARAMS is not None:
+                        try:
+                            obs_dataclass = to_dataclass(obs, Observation)
+                            features = extract_features(obs_dataclass.current, obs_dataclass.select, curr_player)
+                            
+                            seq_input = np.expand_dims(features["seq_input"], axis=0)
+                            glob_input = np.expand_dims(features["glob_input"], axis=0)
+                            
+                            masked_logits, _ = AI_MODEL_APPLY(AI_MODEL_PARAMS, seq_input, glob_input)
+                            logits_np = np.array(masked_logits[0])
+                            sorted_action_indices = np.argsort(logits_np)[::-1].tolist()
+                            
+                            mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs_dataclass.select.option]}
+                            choices = decode_action(sorted_action_indices, mock_select_dict, min_c)
+                            
+                            print(f"JAX AI (Player {curr_player}) auto-playing choices {choices}")
+                            obs = cg.game.battle_select(choices)
+                        except Exception as e:
+                            import traceback
+                            print(f"Error pada JAX AI Inference (Player {curr_player}): {e}")
+                            traceback.print_exc()
+                            idx = random.randint(0, opt_count-1)
+                            obs = cg.game.battle_select([idx])
+                    else:
+                        idx = random.randint(0, opt_count-1)
+                        print(f"Random AI (Player {curr_player}) auto-playing idx {idx}")
+                        obs = cg.game.battle_select([idx])
+
+                await manager.send_personal_message({"type": "update", "obs": obs}, websocket)
+
+            elif action_data.get("type") == "start":
                 import cg.game
                 player_deck = action_data.get("deck")
                 print(f"Received start request. Deck length: {len(player_deck) if player_deck else 0}")
                 
                 if not player_deck or len(player_deck) != 60:
                     print("Deck is not 60 cards! Falling back to gen_deck_000.csv")
-                    with open("agent_rl/deck_generated/gen_deck_000.csv", "r") as f:
+                    with open("agent_rl/deck/gen_deck_000.csv", "r") as f:
                         player_deck = [int(line.strip()) for line in f]
                 
                 try:
                     player_deck = [int(x) for x in player_deck]
-                    ai_deck = player_deck.copy()
+                    
+                    import glob
+                    import random
+                    deck_files = glob.glob("agent_rl/deck/*.csv")
+                    if deck_files:
+                        chosen_deck = random.choice(deck_files)
+                        print(f"Loading AI deck from: {chosen_deck}")
+                        with open(chosen_deck, "r") as f:
+                            ai_deck = [int(line.strip()) for line in f if line.strip().isdigit()]
+                        if len(ai_deck) != 60:
+                            print("AI deck length is not 60, fallback to player deck.")
+                            ai_deck = player_deck.copy()
+                    else:
+                        print("No decks found in agent_rl/deck/, fallback to player deck.")
+                        ai_deck = player_deck.copy()
+                    
                     print(f"Deck first 10 cards: {player_deck[:10]}")
                     print("Starting battle in C++ Engine...")
                     obs, start_data = cg.game.battle_start(player_deck, ai_deck)
                     
                     if obs is None:
                         print("ERROR: User deck is invalid (obs is None)! Trying fallback deck...")
-                        with open("agent_rl/deck_generated/gen_deck_000.csv", "r") as f:
+                        with open("agent_rl/deck/gen_deck_000.csv", "r") as f:
                             fallback_deck = [int(line.strip()) for line in f]
                         obs, start_data = cg.game.battle_start(fallback_deck, fallback_deck)
                         
@@ -189,6 +344,19 @@ async def websocket_endpoint(websocket: WebSocket):
                     else:
                         print(f"Battle started successfully! obs keys: {list(obs.keys())}")
                         obs = await process_ai_turns(obs)
+                        
+                        # Auto-skip early game YES/NO prompts for Player
+                        while obs and obs.get("current", {}).get("yourIndex") == 0:
+                            opts = obs.get("select", {}).get("option", [])
+                            # Type 1 = YES, 2 = NO
+                            if len(opts) > 0 and all(o["type"] in [1, 2] for o in opts) and any(o["type"] == 1 for o in opts):
+                                print("Auto-accepting startup prompt (YES)...")
+                                yes_idx = next(i for i, o in enumerate(opts) if o["type"] == 1)
+                                obs = cg.game.battle_select([yes_idx])
+                                obs = await process_ai_turns(obs)
+                            else:
+                                break
+                                
                         await manager.send_personal_message({"type": "update", "obs": obs}, websocket)
                 except Exception as e:
                     import traceback

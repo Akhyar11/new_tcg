@@ -10,7 +10,7 @@ interface Card {
   [key: string]: any;
 }
 
-export default function PlayAIPage() {
+export default function PlayAIVsAIPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [gameState, setGameState] = useState<'SELECT_DECK' | 'PLAYING'>('SELECT_DECK');
@@ -83,9 +83,8 @@ export default function PlayAIPage() {
       // ================= C++ ENGINE WEBSOCKET INTEGRATION =================
       const socket = new WebSocket('ws://localhost:8001/ws');
       socket.onopen = () => {
-        console.log("Connected to C++ Engine!");
-        const deckIds = loadedCards.map((c: any) => c['Card ID']);
-        socket.send(JSON.stringify({ type: 'start', deck: deckIds }));
+        console.log("Connected to C++ Engine for AI vs AI!");
+        socket.send(JSON.stringify({ type: 'start_ai_vs_ai' }));
       };
 
       socket.onmessage = (event) => {
@@ -293,101 +292,26 @@ export default function PlayAIPage() {
     );
   }
 
-  // ================= PRE-GAME: DECK SELECTION =================
+  // ================= PRE-GAME =================
   if (gameState === 'SELECT_DECK') {
     return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f172a', color: 'white', fontFamily: '"Inter", sans-serif', padding: '4rem 2rem', alignItems: 'center' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f172a', color: 'white', fontFamily: '"Inter", sans-serif', padding: '4rem 2rem', alignItems: 'center', justifyContent: 'center' }}>
 
         <Link href="/" style={{ position: 'absolute', top: '2rem', left: '2rem', color: '#94a3b8', textDecoration: 'none', fontWeight: 'bold' }}>← Kembali</Link>
 
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', background: 'linear-gradient(to right, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Pilih Deck Anda
+        <h1 style={{ fontSize: '3rem', marginBottom: '1rem', background: 'linear-gradient(to right, #38bdf8, #818cf8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textAlign: 'center' }}>
+          AI vs AI Spectator Mode
         </h1>
-        <p style={{ color: '#94a3b8', marginBottom: '3rem' }}>Pilih salah satu deck yang telah Anda rakit untuk menghadapi JAX AI.</p>
+        <p style={{ color: '#94a3b8', marginBottom: '3rem', fontSize: '1.2rem', textAlign: 'center' }}>Saksikan dua agent AI bermain menggunakan deck secara acak dengan jeda aksi 0.3 detik.</p>
 
-        <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '1000px' }}>
-          {availableDecks.map(d => {
-            const parsedIds = JSON.parse(d.cards);
-            const cardCount = parsedIds.length;
-            // Gunakan kartu pertama di deck sebagai gambar cover (atau 1 jika kosong)
-            const coverCardId = cardCount > 0 ? parsedIds[0] : 1;
-
-            return (
-              <div
-                key={d.id}
-                onClick={() => startGameWithDeck(d)}
-                style={{
-                  width: '300px',
-                  height: '180px',
-                  borderRadius: '20px',
-                  cursor: 'pointer',
-                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'flex-end',
-                  padding: '1.5rem',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  boxShadow: '0 10px 30px -10px rgba(0,0,0,0.5)'
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)';
-                  e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.6)';
-                  e.currentTarget.style.boxShadow = '0 20px 40px -10px rgba(56, 189, 248, 0.3)';
-                  const img = e.currentTarget.querySelector('.deck-bg') as HTMLElement;
-                  if (img) img.style.transform = 'scale(1.1)';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                  e.currentTarget.style.boxShadow = '0 10px 30px -10px rgba(0,0,0,0.5)';
-                  const img = e.currentTarget.querySelector('.deck-bg') as HTMLElement;
-                  if (img) img.style.transform = 'scale(1)';
-                }}
-              >
-                {/* Background Image Layer */}
-                <div
-                  className="deck-bg"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    backgroundImage: `url(/assets/cards/${coverCardId}.png)`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center 25%',
-                    transition: 'transform 0.6s ease-out',
-                    zIndex: 0
-                  }}
-                ></div>
-
-                {/* Gradient Overlay to make text readable */}
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(15,23,42,1) 0%, rgba(15,23,42,0.6) 50%, rgba(15,23,42,0.2) 100%)', zIndex: 1 }}></div>
-
-                {/* Content Layer */}
-                <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '900', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
-                    {d.name}
-                  </h3>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{
-                      color: cardCount === 60 ? '#34d399' : '#fbbf24',
-                      fontWeight: 'bold',
-                      background: 'rgba(0,0,0,0.5)',
-                      padding: '0.3rem 0.8rem',
-                      borderRadius: '20px',
-                      fontSize: '0.85rem',
-                      border: `1px solid ${cardCount === 60 ? 'rgba(52, 211, 153, 0.3)' : 'rgba(251, 191, 36, 0.3)'}`,
-                      backdropFilter: 'blur(4px)'
-                    }}>
-                      {cardCount} / 60 Kartu
-                    </span>
-                    {cardCount < 60 && <span style={{ fontSize: '0.8rem', color: '#f87171', fontWeight: 'bold', background: 'rgba(0,0,0,0.5)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>Incomplete</span>}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <button 
+          onClick={() => startGameWithDeck({cards: "[]"})} 
+          style={{ padding: '1.5rem 4rem', fontSize: '1.5rem', background: 'linear-gradient(to right, #ef4444, #f97316)', color: 'white', border: 'none', borderRadius: '50px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 10px 25px rgba(239, 68, 68, 0.4)', transition: 'transform 0.2s' }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+        >
+          MULAI PERTANDINGAN AI VS AI
+        </button>
       </div>
     );
   }
@@ -478,30 +402,12 @@ export default function PlayAIPage() {
           </div>
         </div>
 
-        {/* ACTION PANEL */}
-        {obs?.select && obs.current?.yourIndex === 0 && (
+        {/* ACTION PANEL (Disabled for AI vs AI) */}
+        {obs?.select && (
           <div style={{ position: 'absolute', left: '250px', top: '60%', transform: 'translateY(-50%)', background: 'rgba(30, 30, 30, 0.95)', border: '1px solid #444', borderRadius: '8px', padding: '1rem', zIndex: 100, width: '250px' }}>
-            <h3 style={{ margin: '0 0 1rem 0', color: '#38bdf8', fontSize: '1rem' }}>Pilih Aksi <span style={{ fontSize: '0.7rem', color: '#888' }}>(Ctx: {obs.select.context})</span></h3>
+            <h3 style={{ margin: '0 0 1rem 0', color: '#f59e0b', fontSize: '1rem' }}>AI sedang berpikir... <span style={{ fontSize: '0.7rem', color: '#888' }}>(Ctx: {obs.select.context})</span></h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '40vh', overflowY: 'auto' }}>
-              {obs.select.minCount === 0 && (
-                <button onClick={() => sendSelect(-1)} style={{ background: '#3b82f6', border: '1px solid #2563eb', borderRadius: '4px', padding: '0.6rem', color: 'white', textAlign: 'center', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>SELESAI / LANJUT</button>
-              )}
-              {obs.select.option.map((opt: any, idx: number) => {
-                if (opt.type === 7 || opt.type === 8 || opt.type === 9 || opt.type === 13 || (opt.type === 3 && opt.area === 2)) return null;
-                if (opt.type === 3 && (opt.area === 6 || opt.area === 1 || opt.area === 3)) return null; // Sembunyikan opsi Prize/Deck/Discard di Panel Action
-                let label = `Option ${idx}`;
-                if (opt.type === 1) label = "YES";
-                else if (opt.type === 2) label = "NO";
-                else if (opt.type === 14) label = "END TURN";
-                else if (opt.type === 12) label = "RETREAT";
-                else if (opt.type === 10) label = `USE ABILITY (Area ${opt.area} Idx ${opt.index})`;
-                else if (opt.type === 13) label = `ATTACK ${opt.attackId}`;
-                else if (opt.type === 3) label = `SELECT CARD (Area ${opt.area} Idx ${opt.index})`;
-
-                return (
-                  <button key={idx} onClick={() => sendSelect(idx)} style={{ background: '#2a2a2a', border: '1px solid #444', borderRadius: '4px', padding: '0.6rem', color: 'white', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem' }}>{label}</button>
-                )
-              })}
+              <p style={{color: '#94a3b8', fontSize: '0.85rem'}}>Player {obs.current?.yourIndex} turn</p>
             </div>
           </div>
         )}
@@ -750,82 +656,6 @@ export default function PlayAIPage() {
           <button onClick={() => setDiscardViewer(null)} style={{ marginTop: '2rem', padding: '0.8rem 2rem', background: '#334155', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Tutup</button>
         </div>
       )}
-
-        {/* CARD SELECTOR MODAL (Deck / Discard) */}
-        {deckOrDiscardOptions.length > 0 && obs.current?.yourIndex === 0 && (
-          <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.9)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            <h2 style={{ color: 'white', marginBottom: '1rem', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
-              Pilih Kartu (Min: {obs.select.minCount}, Max: {obs.select.maxCount})
-            </h2>
-            
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', maxWidth: '80%', maxHeight: '60%', overflowY: 'auto', justifyContent: 'center', padding: '20px' }}>
-              {deckOrDiscardOptions.map((opt: any) => {
-                let cardObj: any = null;
-                if (opt.area === 1 && obs.select.deck) cardObj = obs.select.deck[opt.index];
-                else if (opt.area === 3 && obs.players) cardObj = obs.players[obs.current.yourIndex].discard[opt.index];
-                
-                if (cardObj && !cardObj.name) {
-                   cardObj = getCardInfo(cardObj.id);
-                }
-
-                const isSelected = multiSelectIndices.includes(opt.originalIdx);
-                
-                return (
-                  <div 
-                    key={opt.originalIdx} 
-                    onClick={() => {
-                      if (isSelected) {
-                        setMultiSelectIndices(prev => prev.filter(i => i !== opt.originalIdx));
-                      } else {
-                        if (multiSelectIndices.length < obs.select.maxCount) {
-                          setMultiSelectIndices(prev => [...prev, opt.originalIdx]);
-                        }
-                      }
-                    }}
-                    style={{ 
-                      width: '120px', height: '168px', 
-                      border: isSelected ? '4px solid #ef4444' : '2px solid transparent', 
-                      borderRadius: '8px', cursor: 'pointer',
-                      transform: isSelected ? 'translateY(-10px)' : 'none',
-                      transition: 'all 0.2s',
-                      boxShadow: isSelected ? '0 10px 20px rgba(239, 68, 68, 0.5)' : '0 4px 6px rgba(0,0,0,0.3)',
-                      background: '#222'
-                    }}
-                  >
-                    {cardObj ? (
-                      <img src={`/assets/cards/${cardObj.id}.png`} alt={cardObj.name || "Card"} style={{ width: '100%', height: '100%', borderRadius: '4px' }} />
-                    ) : (
-                      <div style={{ color: 'white', padding: '10px', textAlign: 'center', fontSize: '0.8rem', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        Tutup / Tidak Diketahui
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-            
-            <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
-              <button 
-                disabled={multiSelectIndices.length < obs.select.minCount}
-                onClick={() => {
-                  socketRef.current?.send(JSON.stringify({ type: 'select', options: multiSelectIndices }));
-                  setMultiSelectIndices([]);
-                }}
-                style={{ 
-                  background: multiSelectIndices.length >= obs.select.minCount ? '#ef4444' : '#666', 
-                  color: 'white', padding: '1rem 3rem', borderRadius: '8px', 
-                  fontWeight: 'bold', border: 'none', 
-                  cursor: multiSelectIndices.length >= obs.select.minCount ? 'pointer' : 'not-allowed', 
-                  fontSize: '1.2rem',
-                  boxShadow: multiSelectIndices.length >= obs.select.minCount ? '0 4px 15px rgba(239, 68, 68, 0.4)' : 'none',
-                  transition: 'background 0.3s'
-                }}
-              >
-                KONFIRMASI ({multiSelectIndices.length} / {obs.select.maxCount})
-              </button>
-            </div>
-          </div>
-        )}
 
     </div>
   );

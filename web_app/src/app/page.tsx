@@ -85,7 +85,20 @@ export default function Home() {
                 </div>
                 <div>
                   <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>Multiplayer (PvP)</h3>
-                  <p margin={{ margin: 0, color: '#94a3b8', fontSize: '1rem' }}>Undang temanmu atau cari lawan secara acak di arena global.</p>
+                  <p style={{ margin: 0, color: '#94a3b8', fontSize: '1rem' }}>Undang temanmu atau cari lawan secara acak di arena global.</p>
+                </div>
+              </div>
+            </Link>
+
+            {/* CARD 4: AI vs AI Spectator */}
+            <Link href="/play/ai-vs-ai" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '2rem', borderRadius: '24px', backdropFilter: 'blur(10px)', transition: 'all 0.3s', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1.5rem' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; e.currentTarget.style.transform = 'translateX(10px)'; e.currentTarget.style.borderColor = 'rgba(249, 115, 22, 0.5)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'; e.currentTarget.style.transform = 'translateX(0)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)'; }}>
+                <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'linear-gradient(135deg, #f97316, #ea580c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', boxShadow: '0 10px 15px -3px rgba(249, 115, 22, 0.3)' }}>
+                  👀
+                </div>
+                <div>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>AI vs AI (Spectator)</h3>
+                  <p style={{ margin: 0, color: '#94a3b8', fontSize: '1rem' }}>Tonton simulasi pertarungan otomatis antara dua Agent AI.</p>
                 </div>
               </div>
             </Link>

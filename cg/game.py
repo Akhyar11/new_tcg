@@ -62,7 +62,7 @@ def battle_select(select_list: list[int]) -> dict:
         if err == 30:
             raise ValueError("battle_ptr broken.")
         else:
-            raise IndexError()
+            raise IndexError(f"Engine Select Error {err} with options {select_list}")
     return _get_battle_data()
 
 
