@@ -114,12 +114,19 @@ def decode_action(sorted_action_indices: list, select_data: dict, min_count: int
         if len(choices) >= min_count:
             break
 
-    # 2. Fallback jika masih belum memenuhi min_count (karena model AI masih bodoh/belum konvergen)
+    # 2. Fallback jika masih belum memenuhi min_count
+    # Pilih sisa opsi secara aman: END > random, jangan pernah sembarangan
     if len(choices) < min_count:
+        # Cari opsi END
+        end_idx = None
+        for i, opt in enumerate(options):
+            if opt.get("type", "").upper() == "END":
+                end_idx = i
+                break
         for cpp_idx in range(len(options)):
-            if cpp_idx not in choices:
-                choices.append(cpp_idx)
             if len(choices) >= min_count:
                 break
+            if cpp_idx not in choices:
+                choices.append(cpp_idx)
 
     return choices

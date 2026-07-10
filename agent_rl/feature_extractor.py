@@ -143,7 +143,15 @@ def extract_features(state: State, select_data: SelectData, your_index: int) -> 
     glob_input[9] = opp_state.deckCount / 60.0
     glob_input[10] = len(my_state.prize) / 6.0
     glob_input[11] = len(opp_state.prize) / 6.0
-    
+
+    # minCount / maxCount dari SelectData (biar model tahu perlu pilih 1 atau N)
+    if select_data is not None:
+        glob_input[12] = select_data.minCount / 10.0
+        glob_input[13] = select_data.maxCount / 10.0
+    else:
+        glob_input[12] = 0.0
+        glob_input[13] = 0.0
+
     # JAX Action Mask Processing
     # Convert SelectData objects into python dict to match create_action_mask prototype
     try:

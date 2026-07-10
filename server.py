@@ -172,38 +172,60 @@ async def websocket_endpoint(websocket: WebSocket):
         import random
         import asyncio
         import cg.game
+        import numpy as np
         from cg.api import to_dataclass, Observation, OptionType
         from agent_rl.feature_extractor import extract_features
-        from agent_rl.action_mapping import decode_action
-        
+        from agent_rl.action_mapping import get_action_index_for_option, create_action_mask
+
         while obs and obs.get("current", {}).get("yourIndex") == 1:
             await manager.send_personal_message({"type": "update", "obs": obs}, websocket)
-            await asyncio.sleep(0.5) # Beri delay sedikit agar UI frontend sempat render animasi
-            
+            await asyncio.sleep(0.5)
+
             select_data = obs.get("select")
             if not select_data or not select_data.get("option"):
                 break
-                
+
             opts = select_data["option"]
             opt_count = len(opts)
             min_c = select_data.get("minCount", 1)
-            
+
             # Jika JAX model tersedia, gunakan model
             if AI_MODEL_APPLY is not None and AI_MODEL_PARAMS is not None:
                 try:
                     obs_dataclass = to_dataclass(obs, Observation)
-                    features = extract_features(obs_dataclass.current, obs_dataclass.select, 1) # Giliran AI = 1
-                    
+                    features = extract_features(obs_dataclass.current, obs_dataclass.select, 1)
+
                     seq_input = np.expand_dims(features["seq_input"], axis=0)
                     glob_input = np.expand_dims(features["glob_input"], axis=0)
-                    
+
                     masked_logits, _ = AI_MODEL_APPLY(AI_MODEL_PARAMS, seq_input, glob_input)
                     logits_np = np.array(masked_logits[0])
-                    sorted_action_indices = np.argsort(logits_np)[::-1].tolist()
-                    
+
+                    # === Categorical sampling tanpa pengembalian ===
                     mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs_dataclass.select.option]}
-                    choices = decode_action(sorted_action_indices, mock_select_dict, min_c)
-                    
+                    mask_array = create_action_mask(mock_select_dict)
+                    masked = logits_np - 1e9 * (1.0 - mask_array)
+                    logits_exp = np.exp(masked - np.max(masked))
+                    probs = logits_exp / (logits_exp.sum() + 1e-10)
+
+                    sampled_indices = []
+                    remaining = probs.copy()
+                    for _ in range(min_c):
+                        if remaining.sum() <= 0:
+                            break
+                        p = remaining / remaining.sum()
+                        idx = int(np.random.choice(len(p), p=p))
+                        sampled_indices.append(idx)
+                        remaining[idx] = 0.0
+
+                    choices = []
+                    for jax_idx in sampled_indices:
+                        for cpp_idx, opt in enumerate(mock_select_dict["options"]):
+                            mapped_idx = get_action_index_for_option(opt)
+                            if mapped_idx == jax_idx and cpp_idx not in choices:
+                                choices.append(cpp_idx)
+                                break
+
                     print(f"JAX AI (RL Model) auto-playing choices {choices}")
                     obs = cg.game.battle_select(choices)
                 except Exception as e:
@@ -232,9 +254,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 import glob
                 import random
                 import asyncio
+                import numpy as np
                 from cg.api import to_dataclass, Observation, OptionType
                 from agent_rl.feature_extractor import extract_features
-                from agent_rl.action_mapping import decode_action
+                from agent_rl.action_mapping import get_action_index_for_option, create_action_mask
 
                 print("Starting AI vs AI battle...")
                 deck_files = glob.glob("agent_rl/deck/*.csv")
@@ -254,7 +277,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 obs, start_data = cg.game.battle_start(deck0, deck1)
                 
-                while obs and not obs.get("current", {}).get("isGameOver", False):
+                while obs and obs.get("current", {}).get("result", -1) == -1:
                     frontend_obs = json.loads(cg.game.visualize_data())[-1]
                     # Add missing select field to frontend_obs if present in engine obs
                     if "select" in obs and "select" not in frontend_obs:
@@ -278,17 +301,38 @@ async def websocket_endpoint(websocket: WebSocket):
                         try:
                             obs_dataclass = to_dataclass(obs, Observation)
                             features = extract_features(obs_dataclass.current, obs_dataclass.select, curr_player)
-                            
+
                             seq_input = np.expand_dims(features["seq_input"], axis=0)
                             glob_input = np.expand_dims(features["glob_input"], axis=0)
-                            
+
                             masked_logits, _ = AI_MODEL_APPLY(AI_MODEL_PARAMS, seq_input, glob_input)
                             logits_np = np.array(masked_logits[0])
-                            sorted_action_indices = np.argsort(logits_np)[::-1].tolist()
-                            
+
+                            # === Categorical sampling tanpa pengembalian ===
                             mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs_dataclass.select.option]}
-                            choices = decode_action(sorted_action_indices, mock_select_dict, min_c)
-                            
+                            mask_array = create_action_mask(mock_select_dict)
+                            masked = logits_np - 1e9 * (1.0 - mask_array)
+                            logits_exp = np.exp(masked - np.max(masked))
+                            probs = logits_exp / (logits_exp.sum() + 1e-10)
+
+                            sampled_indices = []
+                            remaining = probs.copy()
+                            for _ in range(min_c):
+                                if remaining.sum() <= 0:
+                                    break
+                                p = remaining / remaining.sum()
+                                idx = int(np.random.choice(len(p), p=p))
+                                sampled_indices.append(idx)
+                                remaining[idx] = 0.0
+
+                            choices = []
+                            for jax_idx in sampled_indices:
+                                for cpp_idx, opt in enumerate(mock_select_dict["options"]):
+                                    mapped_idx = get_action_index_for_option(opt)
+                                    if mapped_idx == jax_idx and cpp_idx not in choices:
+                                        choices.append(cpp_idx)
+                                        break
+
                             print(f"JAX AI (Player {curr_player}) auto-playing choices {choices}")
                             obs = cg.game.battle_select(choices)
                         except Exception as e:

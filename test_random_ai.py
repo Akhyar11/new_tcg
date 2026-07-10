@@ -10,7 +10,7 @@ obs, start_data = cg.game.battle_start(deck, deck)
 turn = 0
 actions = {"ATTACK": 0, "PLAY": 0, "ATTACH": 0, "EVOLVE": 0, "END": 0}
 
-while obs and not obs.get("current", {}).get("isGameOver", False):
+while obs and obs.get("current", {}).get("result", -1) == -1:
     turn += 1
     select_data = obs.get("select")
     if not select_data or not select_data.get("option"):

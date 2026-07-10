@@ -92,7 +92,6 @@ def train():
     global_step = 0
     start_time = time.time()
     env_step_counts = np.zeros(NUM_ENVS, dtype=np.int32)
-    last_active_players = np.zeros(NUM_ENVS, dtype=np.int32)
     
     print("\n=== MEMULAI MAIN TRAINING LOOP ===")
     for update in range(1, num_updates + 1):
@@ -114,28 +113,21 @@ def train():
             next_seq_sharded = next_seq.reshape((num_devices, NUM_ENVS // num_devices, *next_seq.shape[1:]))
             next_glob_sharded = next_glob.reshape((num_devices, NUM_ENVS // num_devices, *next_glob.shape[1:]))
             
-            actions_sharded, log_probs_sharded, values_sharded, logits_sharded = get_action_and_value(
+            _, _, values_sharded, logits_sharded = get_action_and_value(
                 params_repl, model.apply, next_seq_sharded, next_glob_sharded, step_rngs
             )
-            
-            # Transfer actions ke numpy dan gabungkan shard (CPU)
-            actions_np = np.array(actions_sharded).reshape((NUM_ENVS,))
+
+            # Transfer logits ke numpy (CPU)
             logits_np = np.array(logits_sharded).reshape((NUM_ENVS, -1))
             values_np = np.array(values_sharded).reshape((NUM_ENVS,))
-            
-            # Urutkan dan ambil top 10 aksi terbaik (Untuk memperkecil overhead IPC Pipe)
-            top_actions_np = np.argsort(logits_np, axis=-1)[:, ::-1][:, :10]
-            
-            # Melangkah di dunia nyata (C++)
-            # Mengakomodasi return infos dari VectorEnv versi baru
-            next_obs, rewards, dones, infos = env.step(actions_np, top_actions_np)
+
+            # Melangkah: worker menerima raw logits, melakukan categorical sampling
+            # tanpa pengembalian sesuai minCount, lalu eksekusi di C++ engine.
+            next_obs, rewards, dones, infos = env.step(logits_np)
             
             # Lacak Metrik (Hanya saat terminal)
             env_step_counts += 1
-            current_active_players = np.stack([info["active_player"] for info in infos])
-            turn_switched = (current_active_players != last_active_players)
-            last_active_players = current_active_players
-            
+
             for i, d in enumerate(dones):
                 if d:
                     result = infos[i].get("result", -1)
@@ -147,31 +139,33 @@ def train():
                         ep_wins_p1.append(1)
                     ep_steps.append(env_step_counts[i])
                     env_step_counts[i] = 0
-                    
+
             ep_rewards.extend(rewards)
-            
-            # Ekstrak actions_mask dari infos
+
+            # Ekstrak actions_mask dan glob_mask dari infos
             actions_mask_np = np.stack([info["actions_mask"] for info in infos])
-            
-            # Hitung old_log_probs aktual menggunakan NumPy MURNI (mencegah overhead Eager Dispatch JAX)
-            logits_max = np.max(logits_np, axis=-1, keepdims=True)
-            log_sum_exp = np.log(np.sum(np.exp(logits_np - logits_max), axis=-1, keepdims=True))
-            log_probs_all_np = (logits_np - logits_max) - log_sum_exp
-            
-            # Ganti SUM menjadi MEAN (rata-rata) log probs untuk menghindari ledakan nilai eksponensial (NaN) pada PPO Ratio
+            glob_mask_np = np.stack([info["glob_mask"] for info in infos])
+
+            # Hitung old_log_probs: masking logits sama seperti di ppo_update loss
+            # agar training dan inference konsisten
+            masked_logits_np = logits_np - 1e9 * (1.0 - glob_mask_np)
+            logits_max = np.max(masked_logits_np, axis=-1, keepdims=True)
+            log_sum_exp = np.log(np.sum(np.exp(masked_logits_np - logits_max), axis=-1, keepdims=True))
+            log_probs_all_np = (masked_logits_np - logits_max) - log_sum_exp
+
+            # MEAN log-prob dari actions yang benar-benar di-sampling
             mask_count = np.maximum(1.0, np.sum(actions_mask_np, axis=-1))
             multi_log_probs = np.sum(log_probs_all_np * actions_mask_np, axis=-1) / mask_count
-            
+
             # Simpan jejak memori ke Buffer
             buffer.add(
-                next_seq, next_glob, actions_mask_np, multi_log_probs, 
-                rewards, values_np, dones.astype(np.float32), turn_switched
+                next_seq, next_glob, actions_mask_np, multi_log_probs,
+                rewards, values_np, dones.astype(np.float32)
             )
-            
+
             next_seq = next_obs["seq_input"]
             next_glob = next_obs["glob_input"]
             next_done = dones.astype(np.float32)
-            next_turn_switched = turn_switched
             
         # Hitung Nilai Masa Depan (Bootstrap)
         next_seq_sharded = next_seq.reshape((num_devices, NUM_ENVS // num_devices, *next_seq.shape[1:]))
@@ -180,7 +174,7 @@ def train():
         
         _, _, next_values_sharded, _ = get_action_and_value(params_repl, model.apply, next_seq_sharded, next_glob_sharded, step_rngs)
         next_values = np.array(next_values_sharded).reshape((NUM_ENVS,))
-        buffer.compute_returns_and_advantages(next_values, next_done, next_turn_switched, GAMMA, GAE_LAMBDA)
+        buffer.compute_returns_and_advantages(next_values, next_done, GAMMA, GAE_LAMBDA)
         
         # --- FASE 2: OPTIMASI GRADIENT (PPO UPDATE) ---
         mean_loss = 0.0

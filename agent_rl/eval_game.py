@@ -182,21 +182,43 @@ def run_eval_game():
             
             # Inferensi
             masked_logits, _ = model_apply(params, seq_input, glob_input)
-            
-            # Eksekusi aksi (Urutkan dari probabilitas/logit tertinggi)
+
+            # --- FIX: Categorical sampling tanpa pengembalian (sama seperti training) ---
             logits_np = np.array(masked_logits[0])
-            sorted_action_indices = np.argsort(logits_np)[::-1].tolist()
-            
-            # Action utama yang diambil (untuk info log)
-            main_action_idx = sorted_action_indices[0]
-            print(f"  > AI Raw Action Index (0-249): {main_action_idx} (minCount={min_c})")
-            
+
+            # 1. Build action mask
             mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs.select.option]}
-            
-            # Decode action berdasarkan probabilitas (mendukung pilihan majemuk)
-            choices = decode_action(sorted_action_indices, mock_select_dict, min_c)
-            
-            print(f"  > AI Final Choice (C++ Engine Format): {choices}")
+            from agent_rl.action_mapping import get_action_index_for_option, create_action_mask
+            mask_array = create_action_mask(mock_select_dict)
+
+            # 2. Mask logits
+            masked = logits_np - 1e9 * (1.0 - mask_array)
+
+            # 3. Softmax → probs
+            logits_exp = np.exp(masked - np.max(masked))
+            probs = logits_exp / (logits_exp.sum() + 1e-10)
+
+            # 4. Sample min_c tanpa pengembalian
+            sampled_indices = []
+            remaining = probs.copy()
+            for _ in range(min_c):
+                if remaining.sum() <= 0:
+                    break
+                p = remaining / remaining.sum()
+                idx = int(np.random.choice(len(p), p=p))
+                sampled_indices.append(idx)
+                remaining[idx] = 0.0
+
+            # 5. Map ke C++ options
+            choices = []
+            for jax_idx in sampled_indices:
+                for cpp_idx, opt in enumerate(mock_select_dict["options"]):
+                    mapped_idx = get_action_index_for_option(opt)
+                    if mapped_idx == jax_idx and cpp_idx not in choices:
+                        choices.append(cpp_idx)
+                        break
+
+            print(f"  > Sampled JAX indices: {sampled_indices} → C++ choices: {choices} (minCount={min_c})")
             
             try:
                 obs_dict = battle_select(choices)
