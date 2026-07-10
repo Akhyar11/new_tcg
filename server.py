@@ -302,8 +302,13 @@ async def websocket_endpoint(websocket: WebSocket):
                         print(f"Random AI (Player {curr_player}) auto-playing idx {idx}")
                         obs = cg.game.battle_select([idx])
 
-                await manager.send_personal_message({"type": "update", "obs": obs}, websocket)
-
+                if obs:
+                    frontend_obs = json.loads(cg.game.visualize_data())[-1]
+                    if "current" in obs and "result" in obs["current"]:
+                        frontend_obs.setdefault("current", {})["result"] = obs["current"]["result"]
+                    await manager.send_personal_message({"type": "update", "obs": frontend_obs}, websocket)
+                else:
+                    await manager.send_personal_message({"type": "update", "obs": obs}, websocket)
             elif action_data.get("type") == "start":
                 import cg.game
                 player_deck = action_data.get("deck")

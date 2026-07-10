@@ -26,8 +26,6 @@ export default function PlayAIVsAIPage() {
   // =====================================================
 
   const [aiBenchCount, setAiBenchCount] = useState(0);
-  const [aiHandCount, setAiHandCount] = useState(5);
-
   const [previewCard, setPreviewCard] = useState<{ card: Card, energies: Card[] } | null>(null);
   const [discardViewer, setDiscardViewer] = useState<{cards: any[], title: string} | null>(null);
   const [showAttackMenu, setShowAttackMenu] = useState(false);
@@ -193,6 +191,8 @@ export default function PlayAIVsAIPage() {
   let aiActive: any = null;
   let aiBench: any[] = [null, null, null, null, null];
   let aiDiscard: any[] = [];
+  let aiHand: any[] = [];
+  let aiHandCount: number = 0;
 
   const deckOrDiscardOptions = useMemo(() => {
     if (!obs?.select?.option) return [];
@@ -242,6 +242,15 @@ export default function PlayAIVsAIPage() {
     }
 
     // Player 1 (AI)
+    if (p1.hand) {
+      if (typeof p1.hand === 'number') {
+        aiHandCount = p1.hand;
+      } else if (Array.isArray(p1.hand)) {
+        aiHandCount = p1.hand.length;
+        aiHand = p1.hand.map((c: any) => ({ ...getCardInfo(c.id), engineSerial: c.serial, engineId: c.id }));
+      }
+    }
+    
     if (p1.active && p1.active.length > 0) {
       if (p1.active[0] === null) {
         aiActive = { isFacedown: true };
