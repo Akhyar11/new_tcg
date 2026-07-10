@@ -118,6 +118,7 @@ class PokemonAgent(nn.Module):
 
         # Add (Residual Connection)
         res_add = mlp_1 + mlp_2
+        res_add = nn.LayerNorm()(res_add)
 
         # 4. Output Heads
         # Action Masking Extraction from glob_input (Index 16-265)
@@ -125,6 +126,7 @@ class PokemonAgent(nn.Module):
 
         # Actor Head (Policy)
         logits = nn.Dense(self.num_actions)(res_add)
+        logits = jnp.clip(logits, -10.0, 10.0) # Mencegah logits meledak yang bisa menyebabkan NaN
         # Action Masking (logits - 1e9)
         masked_logits = jnp.where(action_mask == 1.0, logits, logits - 1e9)
 

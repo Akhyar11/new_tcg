@@ -34,7 +34,9 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio):
         log_probs = jnp.sum(log_probs_all * batch['actions_mask'], axis=-1) / mask_count
         
         # 4. PPO Actor Loss (Clipped Surrogate Objective)
-        ratio = jnp.exp(log_probs - batch['old_log_probs'])
+        log_ratio = jnp.clip(log_probs - batch['old_log_probs'], -10.0, 10.0)
+        ratio = jnp.exp(log_ratio)
+        
         surr1 = ratio * batch['advantages']
         surr2 = jnp.clip(ratio, 1.0 - clip_ratio, 1.0 + clip_ratio) * batch['advantages']
         actor_loss = -jnp.minimum(surr1, surr2).mean()
@@ -42,10 +44,10 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio):
         # 5. PPO Critic Loss (Mean Squared Error dari TD-Returns)
         value_loss = 0.5 * jnp.square(values - batch['returns']).mean()
         
-        # 6. Entropy Penalty (Mendorong eksplorasi / mencegah model terlalu cepat yakin)
+        # 6. Entropy Bonus (Untuk mendorong eksplorasi)
         probs = jax.nn.softmax(masked_logits)
-        # Sum(P * logP)
-        entropy = -jnp.sum(probs * log_probs_all, axis=-1).mean()
+        # Sum(P * logP) hanya untuk aksi yang legal
+        entropy = -jnp.sum(probs * log_probs_all * action_mask, axis=-1).mean()
         
         # 7. Total Loss Kombinasi
         total_loss = actor_loss + (0.5 * value_loss) - (0.01 * entropy)
