@@ -147,7 +147,7 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
             cmd, data = remote.recv()
             
             if cmd == 'step':
-                action_idx, logits = data
+                action_idx, top_actions_list = data
                 
                 # Buat mock_select_dict dari obs.select untuk decode_action
                 from cg.api import OptionType
@@ -157,8 +157,7 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
                     mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs.select.option]}
                     min_c = obs.select.minCount
                 
-                # Mengurutkan logit dari yang terbesar ke terkecil
-                sorted_action_indices = np.argsort(logits)[::-1].tolist()
+                sorted_action_indices = top_actions_list
                 
                 # Pastikan action_idx utama yang terpilih (sampled action) ada di paling depan
                 if action_idx in sorted_action_indices:
@@ -294,10 +293,10 @@ class VectorEnv:
         glob_inputs = np.stack([res["glob_input"] for res in results])
         return {"seq_input": seq_inputs, "glob_input": glob_inputs}
 
-    def step_async(self, actions, logits):
+    def step_async(self, actions, top_actions):
         """Mendistribusikan array action JAX ke masing-masing worker."""
-        for remote, action, logit in zip(self.remotes, actions, logits):
-            remote.send(('step', (action, logit)))
+        for remote, action, top_action in zip(self.remotes, actions, top_actions):
+            remote.send(('step', (action, top_action.tolist())))
 
     def step_wait(self):
         """Menunggu eksekusi C++ selesai dan menggabungkan hasilnya menjadi format JAX."""
@@ -313,9 +312,9 @@ class VectorEnv:
         
         return batch_features, rewards, dones, infos
 
-    def step(self, actions, logits):
+    def step(self, actions, top_actions):
         """Convenience function (Gabungan async & wait)."""
-        self.step_async(actions, logits)
+        self.step_async(actions, top_actions)
         return self.step_wait()
         
     def close(self):

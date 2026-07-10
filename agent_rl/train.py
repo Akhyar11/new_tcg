@@ -113,9 +113,12 @@ def train():
             actions_np = np.array(actions)
             logits_np = np.array(logits)
             
+            # Urutkan dan ambil top 10 aksi terbaik (Untuk memperkecil overhead IPC Pipe)
+            top_actions_np = np.argsort(logits_np, axis=-1)[:, ::-1][:, :10]
+            
             # Melangkah di dunia nyata (C++)
             # Mengakomodasi return infos dari VectorEnv versi baru
-            next_obs, rewards, dones, infos = env.step(actions_np, logits_np)
+            next_obs, rewards, dones, infos = env.step(actions_np, top_actions_np)
             
             # Lacak Metrik (Hanya saat terminal)
             for i, d in enumerate(dones):
@@ -127,13 +130,15 @@ def train():
             # Ekstrak actions_mask dari infos
             actions_mask_np = np.stack([info["actions_mask"] for info in infos])
             
-            # Hitung old_log_probs aktual berdasarkan mask (Jumlah dari semua log_prob aksi yang diambil)
-            log_probs_all = jax.nn.log_softmax(logits)
-            multi_log_probs = jnp.sum(log_probs_all * actions_mask_np, axis=-1)
+            # Hitung old_log_probs aktual menggunakan NumPy MURNI (mencegah overhead Eager Dispatch JAX)
+            logits_max = np.max(logits_np, axis=-1, keepdims=True)
+            log_sum_exp = np.log(np.sum(np.exp(logits_np - logits_max), axis=-1, keepdims=True))
+            log_probs_all_np = (logits_np - logits_max) - log_sum_exp
+            multi_log_probs = np.sum(log_probs_all_np * actions_mask_np, axis=-1)
             
             # Simpan jejak memori ke Buffer
             buffer.add(
-                next_seq, next_glob, actions_mask_np, np.array(multi_log_probs), 
+                next_seq, next_glob, actions_mask_np, multi_log_probs, 
                 rewards, np.array(values), dones.astype(np.float32)
             )
             
