@@ -37,14 +37,13 @@ def advance_to_player0(obs, params_opp, model_apply, decode_action, rng):
                 glob_input = np.expand_dims(features["glob_input"], axis=0)
                 
                 rng, step_rng = jax.random.split(rng)
+                # Inferensi AI Opponent (Player 1)
                 masked_logits, _ = model_apply(params_opp, seq_input, glob_input)
-                
-                # Gunakan gumbel softmax / categorical untuk sedikit variasi atau argmax langsung
-                # Menggunakan argmax untuk performa stabil
-                action_idx = int(jnp.argmax(masked_logits[0]))
+                logits_np = np.array(masked_logits[0])
+                sorted_action_indices = np.argsort(logits_np)[::-1].tolist()
                 
                 mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs.select.option]}
-                choices = decode_action(action_idx, mock_select_dict)
+                choices = decode_action(sorted_action_indices, mock_select_dict, obs.select.minCount)
             else:
                 # FALLBACK RANDOM BOT
                 min_c = obs.select.minCount
@@ -65,7 +64,8 @@ def advance_to_player0(obs, params_opp, model_apply, decode_action, rng):
                 obs = to_dataclass(obs_dict, Observation)
             except Exception as e:
                 try:
-                    obs_dict = battle_select([0] if opt_count > 0 and obs.select.minCount > 0 else [])
+                    fallback_choices = list(range(min(opt_count, obs.select.minCount))) if obs.select.minCount > 0 else []
+                    obs_dict = battle_select(fallback_choices)
                     obs = to_dataclass(obs_dict, Observation)
                 except:
                     break
@@ -143,23 +143,41 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
             cmd, data = remote.recv()
             
             if cmd == 'step':
-                action_idx = data
+                action_idx, logits = data
                 
                 # Buat mock_select_dict dari obs.select untuk decode_action
                 from cg.api import OptionType
                 mock_select_dict = {"options": []}
+                min_c = 1
                 if obs and obs.select and obs.select.option:
                     mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs.select.option]}
+                    min_c = obs.select.minCount
+                
+                # Mengurutkan logit dari yang terbesar ke terkecil
+                sorted_action_indices = np.argsort(logits)[::-1].tolist()
+                
+                # Pastikan action_idx utama yang terpilih (sampled action) ada di paling depan
+                if action_idx in sorted_action_indices:
+                    sorted_action_indices.remove(action_idx)
+                sorted_action_indices.insert(0, action_idx)
                 
                 # 1. Player 0 melakukan aksi (Decode JAX -> C++)
-                choices = decode_action(action_idx, mock_select_dict)
+                choices = decode_action(sorted_action_indices, mock_select_dict, min_c)
                 
                 try:
                     obs_dict = battle_select(choices)
                     obs = to_dataclass(obs_dict, Observation)
                 except Exception as e:
-                    # Jika error parah, paksa game over (penalti kalah)
-                    obs = Observation(current=None, select=None, logs=[])
+                    # Coba fallback bot jika AI gagal parse
+                    try:
+                        opt_count = len(obs.select.option) if obs.select and obs.select.option else 0
+                        min_c = obs.select.minCount if obs.select else 0
+                        fallback_choices = list(range(min(opt_count, min_c))) if min_c > 0 else []
+                        obs_dict = battle_select(fallback_choices)
+                        obs = to_dataclass(obs_dict, Observation)
+                    except:
+                        # Jika error parah, paksa game over (penalti kalah)
+                        obs = Observation(current=None, select=None, logs=[])
                     
                 # 2. Majukan game secara otomatis jika sekarang giliran Player 1
                 obs, rng = advance_to_player0(obs, params_opp, model_apply, decode_action, rng)
@@ -261,10 +279,10 @@ class VectorEnv:
         glob_inputs = np.stack([res["glob_input"] for res in results])
         return {"seq_input": seq_inputs, "glob_input": glob_inputs}
 
-    def step_async(self, actions):
+    def step_async(self, actions, logits):
         """Mendistribusikan array action JAX ke masing-masing worker."""
-        for remote, action in zip(self.remotes, actions):
-            remote.send(('step', action))
+        for remote, action, logit in zip(self.remotes, actions, logits):
+            remote.send(('step', (action, logit)))
 
     def step_wait(self):
         """Menunggu eksekusi C++ selesai dan menggabungkan hasilnya menjadi format JAX."""
@@ -280,9 +298,9 @@ class VectorEnv:
         
         return batch_features, rewards, dones, infos
 
-    def step(self, actions):
+    def step(self, actions, logits):
         """Convenience function (Gabungan async & wait)."""
-        self.step_async(actions)
+        self.step_async(actions, logits)
         return self.step_wait()
         
     def close(self):

@@ -74,4 +74,4 @@ def get_action_and_value(params, apply_fn, seq_input, glob_input, key):
     log_probs_all = jax.nn.log_softmax(logits)
     log_probs = jnp.take_along_axis(log_probs_all, actions[..., None], axis=-1).squeeze(-1)
     
-    return actions, log_probs, values.squeeze(-1)
+    return actions, log_probs, values.squeeze(-1), logits

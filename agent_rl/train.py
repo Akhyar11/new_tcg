@@ -105,16 +105,17 @@ def train():
             
             # Inferensi Cepat JAX
             rng, step_rng = jax.random.split(rng)
-            actions, log_probs, values = get_action_and_value(
+            actions, log_probs, values, logits = get_action_and_value(
                 params, model.apply, next_seq, next_glob, step_rng
             )
             
-            # Transfer actions ke numpy untuk VectorEnv (CPU)
+            # Transfer actions dan logits ke numpy untuk VectorEnv (CPU)
             actions_np = np.array(actions)
+            logits_np = np.array(logits)
             
             # Melangkah di dunia nyata (C++)
             # Mengakomodasi return infos dari VectorEnv versi baru
-            next_obs, rewards, dones, infos = env.step(actions_np)
+            next_obs, rewards, dones, infos = env.step(actions_np, logits_np)
             
             # Lacak Metrik (Hanya saat terminal)
             for i, d in enumerate(dones):
@@ -134,7 +135,7 @@ def train():
             next_done = dones.astype(np.float32)
             
         # Hitung Nilai Masa Depan (Bootstrap)
-        _, _, next_values = get_action_and_value(params, model.apply, next_seq, next_glob, rng)
+        _, _, next_values, _ = get_action_and_value(params, model.apply, next_seq, next_glob, rng)
         buffer.compute_returns_and_advantages(np.array(next_values), next_done, GAMMA, GAE_LAMBDA)
         
         # --- FASE 2: OPTIMASI GRADIENT (PPO UPDATE) ---
