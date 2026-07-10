@@ -23,8 +23,6 @@ def advance_to_player0(obs, params_opp, model_apply, decode_action, rng):
     from cg.game import battle_select
     from cg.api import to_dataclass, Observation, OptionType
     from agent_rl.feature_extractor import extract_features
-    import jax
-    import jax.numpy as jnp
     import random
     
     while obs.current is not None and obs.current.result == -1 and obs.current.yourIndex != 0:
@@ -35,6 +33,9 @@ def advance_to_player0(obs, params_opp, model_apply, decode_action, rng):
                 features = extract_features(obs.current, obs.select, 1)
                 seq_input = np.expand_dims(features["seq_input"], axis=0)
                 glob_input = np.expand_dims(features["glob_input"], axis=0)
+                
+                import jax
+                import jax.numpy as jnp
                 
                 rng, step_rng = jax.random.split(rng)
                 # Inferensi AI Opponent (Player 1)
@@ -93,10 +94,12 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
     from agent_rl.reward import calc_potential, calculate_step_reward
     from agent_rl.action_mapping import decode_action
     
-    import jax
-    import jax.numpy as jnp
-    from flax import serialization
-    from agent_rl.model import PokemonAgent
+    
+    if is_self_play:
+        import jax
+        import jax.numpy as jnp
+        from flax import serialization
+        from agent_rl.model import PokemonAgent
     import glob
     
     # Pre-load semua deck dari folder atau file tunggal
@@ -115,7 +118,7 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
     obs = None
     old_potential = 0.0
     your_index = 0
-    rng = jax.random.PRNGKey(worker_id)
+    rng = None
     
     # Inisialisasi Model Player 1 (Frozen)
     params_opp = None
@@ -125,6 +128,7 @@ def worker(remote, parent_remote, worker_id, deck_path, is_self_play):
         model_apply = jax.jit(model.apply)
         dummy_seq = jnp.zeros((1, 93, 31))
         dummy_glob = jnp.zeros((1, 266))
+        rng = jax.random.PRNGKey(worker_id)
         rng, init_rng = jax.random.split(rng)
         params_opp = model.init(init_rng, dummy_seq, dummy_glob)
         
