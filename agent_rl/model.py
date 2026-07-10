@@ -118,7 +118,6 @@ class PokemonAgent(nn.Module):
 
         # Add (Residual Connection)
         res_add = mlp_1 + mlp_2
-        res_add = nn.LayerNorm()(res_add)
 
         # 4. Output Heads
         # Action Masking Extraction from glob_input (Index 16-265)
