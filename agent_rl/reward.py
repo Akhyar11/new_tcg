@@ -260,11 +260,19 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
         if end_reason == 2:
             r_terminal = 0.0
         elif new_state.result == player_index:
-            r_terminal = 3.0    # Menang besar
+            # Hanya Prize win yang dikasih full reward.
+            # NoActive/Effect win dikasih reward kecil agar model ngejar Prize,
+            # bukan exploit lawan yang gagal set-up di awal.
+            if end_reason == 1:
+                r_terminal = 3.0    # Prize → full reward
+            elif end_reason in (3, 4):
+                r_terminal = 0.5    # NoActive/Effect → hollow win, reward kecil
+            else:
+                r_terminal = 1.5    # Fallback untuk reason lain
         elif new_state.result == 2:
             r_terminal = -0.5   # Draw
         else:
-            r_terminal = -3.0   # Kalah besar
+            r_terminal = -3.0   # Kalah besar (semua jenis kekalahan = real loss)
 
     total = r_step + r_event + r_terminal
     return float(np.clip(total, -5.0, 5.0))

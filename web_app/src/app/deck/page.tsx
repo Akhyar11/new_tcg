@@ -144,6 +144,39 @@ export default function DeckBuilder() {
   const countEnergy = energyList.reduce((acc, curr) => acc + curr.count, 0);
   const countTrainer = trainerList.reduce((acc, curr) => acc + curr.count, 0);
 
+  const importDeckFromCSV = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (!text) return;
+      
+      const lines = text.split('\n');
+      const cardIds = lines
+        .map(line => line.trim())
+        .filter(line => line !== '')
+        .map(line => parseInt(line, 10))
+        .filter(id => !isNaN(id));
+        
+      if (cardIds.length === 0) {
+        setError('CSV tidak memiliki ID kartu yang valid!');
+        setTimeout(() => setError(''), 3000);
+        return;
+      }
+      
+      const loadedCards = cardIds.map(id => cards.find(c => c['Card ID'] === id)).filter(Boolean) as Card[];
+      setDeck(loadedCards);
+      setDeckName(file.name.replace('.csv', ''));
+      setSelectedDeckId(null);
+      setSuccess(`Berhasil mengimpor ${loadedCards.length} kartu dari ${file.name}`);
+      setTimeout(() => setSuccess(''), 3000);
+    };
+    reader.readAsText(file);
+    event.target.value = ''; // reset input
+  };
+
   const saveDeck = async () => {
     if (deck.length !== 60) {
       setError('Deck harus berjumlah tepat 60 kartu!');
@@ -334,9 +367,16 @@ export default function DeckBuilder() {
 
         </div>
 
-        <button onClick={saveDeck} style={{ marginTop: '1rem', padding: '1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#2563eb'} onMouseLeave={e => e.currentTarget.style.background = '#3b82f6'}>
-          SIMPAN DECK
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+          <button onClick={saveDeck} style={{ flex: 1, padding: '1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#2563eb'} onMouseLeave={e => e.currentTarget.style.background = '#3b82f6'}>
+            SIMPAN
+          </button>
+          
+          <label style={{ flex: 1, padding: '1rem', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', letterSpacing: '1px', transition: 'background 0.2s', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onMouseEnter={e => e.currentTarget.style.background = '#059669'} onMouseLeave={e => e.currentTarget.style.background = '#10b981'}>
+            IMPORT CSV
+            <input type="file" accept=".csv" style={{ display: 'none' }} onChange={importDeckFromCSV} />
+          </label>
+        </div>
       </div>
 
       {/* RIGHT PANE: GALLERY */}

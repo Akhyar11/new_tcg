@@ -246,7 +246,7 @@ class GALoop:
             reason_labels = {1: "Prize", 2: "DeckOut", 3: "NoActive", 4: "Effect"}
             reason_str = " | ".join(
                 f"{reason_labels.get(r, f'R{r}')}:{c}"
-                for r, c in sorted(all_reasons.items())
+                for r, c in sorted(all_reasons.items(), key=lambda x: x[1], reverse=True)
             ) if all_reasons else "N/A"
 
             best_deck = self.population[0] if self.population else None
