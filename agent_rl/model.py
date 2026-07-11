@@ -123,11 +123,9 @@ class PokemonAgent(nn.Module):
         # Action Masking Extraction from glob_input (Index 16-265)
         action_mask = glob_input[:, 16:16 + self.num_actions]
 
-        # Actor Head (Policy)
+        # Actor Head (Policy) — return raw logits. Masking dilakukan di PPO update.
         logits = nn.Dense(self.num_actions)(res_add)
         logits = jnp.clip(logits, -10.0, 10.0) # Mencegah logits meledak yang bisa menyebabkan NaN
-        # Action Masking (logits - 1e9)
-        masked_logits = jnp.where(action_mask == 1.0, logits, logits - 1e9)
 
         # Critic Head (Value) — linear, tanpa bound.
         # Gradient exploding dicegah oleh optax.clip_by_global_norm(0.5) di train.py
@@ -135,4 +133,4 @@ class PokemonAgent(nn.Module):
         # sistematis besar dan mencegah konvergensi.
         value = nn.Dense(1, kernel_init=nn.initializers.normal(stddev=0.01))(res_add)
 
-        return masked_logits, value
+        return logits, value
