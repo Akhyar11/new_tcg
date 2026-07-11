@@ -157,9 +157,11 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
     4. Diminishing returns per event type → spam dikurangi
     5. **Deck-out (end_reason=2) → terminal reward = 0**
        → Model tidak belajar apa-apa dari deck-out, abaikan.
-    6. Evolusi diverifikasi via serial tracking (bukan heuristic energi)
+    6. **No active card (end_reason=3) & Effect (end_reason=4) → terminal reward = 0.1**
+       → Mencegah model belajar menang lewat cara selain Prize card.
+    7. Evolusi diverifikasi via serial tracking (bukan heuristic energi)
        → Switch/retreat gak salah detek sebagai evolve
-    7. Item/Supporter reward kecil + decaying → hanya bantu eksplorasi awal
+    8. Item/Supporter reward kecil + decaying → hanya bantu eksplorasi awal
 
     Anti-Hacking Matrix:
     ┌─────────────────────────────┬──────────────────┬──────────────────────────┐
@@ -263,14 +265,18 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
                 # Deck-out (reason=2): abaikan — terminal reward = 0 untuk pemenang.
                 # Mencegah model belajar menang lewat stalling/mill (menunggu lawan kehabisan kartu).
                 r_terminal = 0.0
-            elif end_reason in (3, 4):
-                r_terminal = 0.5    # NoActive/Effect → hollow win, reward kecil
+            elif end_reason == 3:
+                # No active card (reason=3): 0.1 untuk pemenang
+                r_terminal = 0.1
+            elif end_reason == 4:
+                # Card effect (reason=4): 0.1 untuk pemenang
+                r_terminal = 0.1
             else:
                 r_terminal = 1.5    # Fallback untuk reason lain
         elif new_state.result == 2:
             r_terminal = -0.5   # Draw
         else:
-            r_terminal = -3.0   # Kalah besar (termasuk kalah karena deck-out sendiri)
+            r_terminal = -3.0   # Kalah besar (termasuk kalah karena deck-out atau no active card)
 
     total = r_step + r_event + r_terminal
     return float(np.clip(total, -5.0, 5.0))
