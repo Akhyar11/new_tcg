@@ -39,17 +39,27 @@ from flax.jax_utils import replicate, unreplicate
 NUM_ENVS = int(os.environ.get("RL_NUM_ENVS", "8"))
 N_STEPS = 128
 BATCH_SIZE = int(os.environ.get("RL_BATCH_SIZE", "64"))
-EPOCHS = 4
 
-# 8M timesteps ≈ 7.5 jam di 300 FPS (Kaggle-safe)
-# Override: TOTAL_TIMESTEPS=10000000 python train.py
-TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "8000000"))
+# Fine-Tuning Mode (Cycle 2-5: GA deck → RL refine)
+# Gunakan: FINETUNE_MODE=1 RL_DECK_PATH=agent_rl/ga_top_decks TOTAL_TIMESTEPS=2000000
+FINETUNE_MODE = int(os.environ.get("FINETUNE_MODE", "0"))
+if FINETUNE_MODE:
+    TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "2000000"))
+    LEARNING_RATE = 1e-4               # Lower LR — refine, not relearn
+    ENTROPY_COEF = 0.02                # Lower initial entropy
+    EPOCHS = 2                         # Fewer epochs — avoid overfit
+    print(f"[FineTune] MODE AKTIF — LR={LEARNING_RATE}, Entropy={ENTROPY_COEF}, Epochs={EPOCHS}, Steps={TOTAL_TIMESTEPS}")
+else:
+    # 8M timesteps ≈ 7.5 jam di 300 FPS (Kaggle-safe)
+    # Override: TOTAL_TIMESTEPS=10000000 python train.py
+    TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "8000000"))
+    LEARNING_RATE = 3e-4
+    ENTROPY_COEF = 0.05                # Starting entropy (akan di-anneal)
+    EPOCHS = 4
 
-LEARNING_RATE = 3e-4
 GAMMA = 0.99
 GAE_LAMBDA = 0.95
 CLIP_RATIO = 0.2       # Starting clip ratio (akan di-anneal)
-ENTROPY_COEF = 0.05    # Starting entropy (akan di-anneal)
 # VF_COEF = 0.5        # Di ppo_update.py sudah hardcoded 0.5
 
 SAVE_DIR = "checkpoints"
@@ -162,9 +172,12 @@ def train():
 
     print("\n=== MAIN TRAINING LOOP ===")
     for update in range(1, num_updates + 1):
-        # Anneal entropy coefficient (linear: 0.05 → 0.005)
+        # Anneal entropy coefficient
         progress = update / num_updates
-        current_entropy_coef = max(0.005, ENTROPY_COEF * (1.0 - progress * 0.9))
+        if FINETUNE_MODE:
+            current_entropy_coef = max(0.003, ENTROPY_COEF * (1.0 - progress * 0.85))
+        else:
+            current_entropy_coef = max(0.005, ENTROPY_COEF * (1.0 - progress * 0.9))
 
         # Anneal clip ratio (linear: 0.2 → 0.05)
         current_clip_ratio = max(0.05, CLIP_RATIO * (1.0 - progress * 0.75))
