@@ -1,7 +1,17 @@
 import numpy as np
+from cg.api import all_card_data, CardType, LogType
 
 # Counter global per-game untuk diminishing returns (direset via reset_trackers())
 _event_counters = {}
+
+# Cache card database per-worker (lazy-init, masing-masing worker fork punya sendiri)
+_CARD_DB = None
+
+def _get_card_db():
+    global _CARD_DB
+    if _CARD_DB is None:
+        _CARD_DB = {c.cardId: c for c in all_card_data()}
+    return _CARD_DB
 
 
 def reset_trackers():
@@ -16,15 +26,16 @@ def _increment_counter(key: str) -> int:
     return val
 
 
-def detect_events(old_state, new_state, player_index: int) -> dict:
+def detect_events(old_state, new_state, player_index: int, logs: list = None) -> dict:
     """
     Mendeteksi event apa yang terjadi dalam satu step dengan membandingkan
-    state sebelum dan sesudah aksi dieksekusi.
+    state sebelum dan sesudah aksi dieksekusi, dilengkapi verifikasi dari logs.
 
     Anti-hacking:
     - Hanya mendeteksi perubahan NET (bukan gross)
     - Damage dicek dari state aktual (bisa diverifikasi)
     - Prize hanya terdeteksi jika prize beneran berkurang
+    - Evolusi diverifikasi via serial tracking (bukan heuristic energi)
 
     Returns:
         dict: events yang terdeteksi
@@ -79,18 +90,57 @@ def detect_events(old_state, new_state, player_index: int) -> dict:
         # Track damage received sebagai negatif (penalty)
         events['damage_received'] = damage_received
 
-    # 4. Evolusi: cek ID berubah (hanya naik, bukan ganti Pokemon)
+    # ──────────────────────────────────────────────
+    # 4. Evolusi Active: verifikasi via serial tracking (bukan heuristic energi)
+    # ──────────────────────────────────────────────
     if old_my_active and old_my_active[0] and new_my_active and new_my_active[0]:
         old_id = old_my_active[0].id
         new_id = new_my_active[0].id
         if old_id != new_id:
-            # Verifikasi: ini evolusi (bukan retreat/switch) dengan cek bench
-            # Kalau jumlah energi di bench naik, berarti switch, bukan evolve
-            old_bench_count = sum(len(p.energies) for p in my_old.bench if p)
-            new_bench_count = sum(len(p.energies) for p in my_new.bench if p)
-            if new_bench_count == old_bench_count:
-                events['evolved'] = True
-            # Jika bench energi berubah, kemungkinan switch — jangan reward sebagai evolve
+            old_serial = old_my_active[0].serial
+            # Cek apakah old active pindah ke bench (switch/retreat)
+            old_on_bench = any(p.serial == old_serial for p in my_new.bench if p)
+            if not old_on_bench:
+                # Bisa evolusi atau pengganti setelah KO.
+                # Exclude KO: bench berkurang karena 1 pindah ke active.
+                old_bench_n = sum(1 for p in my_old.bench if p)
+                new_bench_n = sum(1 for p in my_new.bench if p)
+                if new_bench_n >= old_bench_n:
+                    events['evolved'] = True
+
+    # ──────────────────────────────────────────────
+    # 5. Evolusi Bench: cek serial bench yg hilang tanpa pengurangan bench
+    # ──────────────────────────────────────────────
+    for old_b in [p for p in my_old.bench if p]:
+        old_serial_b = old_b.serial
+        still_on_field = any(
+            (p and p.serial == old_serial_b)
+            for p in list(my_new.bench) + list(my_new.active)
+        )
+        if not still_on_field:
+            old_bench_n = sum(1 for p in my_old.bench if p)
+            new_bench_n = sum(1 for p in my_new.bench if p)
+            if new_bench_n >= old_bench_n:
+                events['bench_evolved'] = True
+                break  # cukup 1 event per step
+
+    # ──────────────────────────────────────────────
+    # 6. Item / Supporter: deteksi dari game logs
+    # ──────────────────────────────────────────────
+    if logs:
+        card_db = _get_card_db()
+        for log in logs:
+            if log.type != LogType.PLAY or log.playerIndex != player_index:
+                continue
+            if log.cardId is None:
+                continue
+            card = card_db.get(log.cardId)
+            if card is None:
+                continue
+            if card.cardType == CardType.SUPPORTER:
+                events['supporter_played'] = True
+            elif card.cardType == CardType.ITEM:
+                events['item_played'] = True
 
     return events
 
@@ -107,26 +157,35 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
     4. Diminishing returns per event type → spam dikurangi
     5. **Deck-out (end_reason=2) → terminal reward = 0**
        → Model tidak belajar apa-apa dari deck-out, abaikan.
+    6. Evolusi diverifikasi via serial tracking (bukan heuristic energi)
+       → Switch/retreat gak salah detek sebagai evolve
+    7. Item/Supporter reward kecil + decaying → hanya bantu eksplorasi awal
 
     Anti-Hacking Matrix:
-    ┌──────────────────────┬──────────────────┬───────────────────────┐
-    │ Skenario             │ Dampak           │ Mitigasi             │
-    ├──────────────────────┼──────────────────┼───────────────────────┤
-    │ Energy attach spam   │ Farming +0.1/ea  │ Diminishing + cek    │
-    │ Damage trade loop    │ +0.1 each side   │ Net damage (dealt -   │
-    │                      │                  │ received)             │
-    │ Stalling             │ Kumpulin reward  │ Step penalty naik per │
-    │                      │                  │ turn (+scaling)       │
-    │ Self-damage exploit  │ Double count     │ Damage received       │
-    │                      │                  │ mengurangi reward     │
-    │ Symmetric self-play  │ Net zero learning│ Terminal ±3.0         │
-    │                      │                  │ memecah simetri       │
-    │ Deck-out win/loss    │ Stalling farm    │ Terminal = 0          │
-    │                      │                  │ (diabaikan training)  │
-    │ Prize delay          │ Skip KO, farm    │ Prize reward          │
-    │                      │ damage           │ (0.50) >> damage      │
-    │                      │                  │ (max 0.25)            │
-    └──────────────────────┴──────────────────┴───────────────────────┘
+    ┌─────────────────────────────┬──────────────────┬──────────────────────────┐
+    │ Skenario                    │ Dampak           │ Mitigasi                │
+    ├─────────────────────────────┼──────────────────┼──────────────────────────┤
+    │ Energy attach spam          │ Farming +0.1/ea  │ Diminishing + cek       │
+    │ Damage trade loop           │ +0.1 each side   │ Net damage (dealt -     │
+    │                             │                  │ received)               │
+    │ Stalling                    │ Kumpulin reward  │ Step penalty naik per   │
+    │                             │                  │ turn (+scaling)          │
+    │ Self-damage exploit         │ Double count     │ Damage received         │
+    │                             │                  │ mengurangi reward       │
+    │ Symmetric self-play         │ Net zero learning│ Terminal ±3.0           │
+    │                             │                  │ memecah simetri          │
+    │ Deck-out win/loss           │ Stalling farm    │ Terminal = 0            │
+    │                             │                  │ (diabaikan training)    │
+    │ Prize delay                 │ Skip KO, farm    │ Prize reward            │
+    │                             │ damage           │ (0.50) >> damage        │
+    │                             │                  │ (max 0.25)              │
+    │ Switch/retreat sebagai      │ False positive   │ Serial tracking: cek    │
+    │ evolusi                     │ evolve reward    │ apakah old active       │
+    │                             │                  │ pindah ke bench         │
+    │ Item/Supporter spam         │ Farming reward   │ Diminishing returns     │
+    │                             │ tanpa efek       │ (0.80**n → cepat habis) │
+    │                             │ in-game          │                         │
+    └─────────────────────────────┴──────────────────┴──────────────────────────┘
     """
     if new_state is None:
         return 0.0
@@ -152,6 +211,24 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
             n = _increment_counter('evolve')
             decay = 0.70 ** n  # 1st: 0.15, 2nd: 0.105, 3rd: 0.074, ...
             r_event += 0.15 * decay
+
+        # Bench evolution (reward lebih kecil dari active evolution)
+        if events.get('bench_evolved'):
+            n = _increment_counter('bench_evolve')
+            decay = 0.70 ** n
+            r_event += 0.10 * decay
+
+        # Supporter reward: dorong eksplorasi draw engine (decaying)
+        if events.get('supporter_played'):
+            n = _increment_counter('supporter')
+            decay = 0.80 ** n  # 1st: 0.03, 2nd: 0.024, 3rd: 0.019, ...
+            r_event += 0.03 * decay
+
+        # Item reward: dorong eksplorasi search item (decaying)
+        if events.get('item_played'):
+            n = _increment_counter('item')
+            decay = 0.80 ** n
+            r_event += 0.02 * decay
 
         # Net damage: reward proporsional, tapi kecilan
         if events.get('net_damage', 0) > 0:

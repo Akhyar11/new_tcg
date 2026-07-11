@@ -129,8 +129,10 @@ class PokemonAgent(nn.Module):
         # Action Masking (logits - 1e9)
         masked_logits = jnp.where(action_mask == 1.0, logits, logits - 1e9)
 
-        # Critic Head (Value)
-        value = nn.Dense(1)(res_add)
-        value = nn.tanh(value) # Bounds to [-1.0, 1.0]
+        # Critic Head (Value) — linear, tanpa bound.
+        # Gradient exploding dicegah oleh optax.clip_by_global_norm(0.5) di train.py
+        # Reward range [-5, 5]; bounded activation (tanh) di [-1,1] membuat TD-error
+        # sistematis besar dan mencegah konvergensi.
+        value = nn.Dense(1, kernel_init=nn.initializers.normal(stddev=0.01))(res_add)
 
         return masked_logits, value

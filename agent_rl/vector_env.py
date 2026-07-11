@@ -5,14 +5,17 @@ import os
 
 
 def load_deck(filepath):
+    """Load deck dari CSV (satu card ID per baris). Skip baris non-numeric."""
     deck = []
     if not os.path.exists(filepath):
         return [1]*56 + [210]*4
     with open(filepath, 'r') as f:
         for line in f:
             line = line.strip()
-            if line:
+            if line and line.isdigit():
                 deck.append(int(line))
+    if len(deck) != 60:
+        return [1]*56 + [210]*4  # Fallback jika deck invalid
     return deck
 
 
@@ -33,7 +36,7 @@ def worker(remote, parent_remote, worker_id, deck_path):
     parent_remote.close()
 
     from cg.game import battle_start, battle_finish, battle_select
-    from cg.api import to_dataclass, Observation, LogType
+    from cg.api import to_dataclass, Observation, LogType, OptionType
     from agent_rl.feature_extractor import extract_features
     from agent_rl.reward import detect_events, calculate_step_reward, reset_trackers
     from agent_rl.action_mapping import decode_action, get_action_index_for_option
@@ -77,7 +80,6 @@ def worker(remote, parent_remote, worker_id, deck_path):
                 logits = data  # (250,) numpy array — raw logits dari model
 
                 # Buat mock_select_dict dari obs.select
-                from cg.api import OptionType
                 mock_select_dict = {"options": []}
                 min_c = 1
                 if obs and obs.select and obs.select.option:
@@ -172,7 +174,7 @@ def worker(remote, parent_remote, worker_id, deck_path):
                 if obs.current:
                     # Extract end_reason dari logs untuk deck-out detection
                     end_reason = get_end_reason(obs)
-                    events = detect_events(old_state, obs.current, prev_player)
+                    events = detect_events(old_state, obs.current, prev_player, obs.logs)
                     reward = calculate_step_reward(obs.current, prev_player, events, end_reason)
                     old_state = obs.current
                     done = (obs.current.result != -1)

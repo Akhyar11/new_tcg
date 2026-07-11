@@ -146,6 +146,9 @@ def copy_ga_decks_to_rl(n: int = 10):
         log("WARNING: Tidak ada deck hasil GA! Skip copy.")
         return 0
 
+    # Filter: buang file metadata (history.csv) — bukan deck
+    ga_files = [f for f in ga_files if "history" not in os.path.basename(f).lower()]
+
     # Prioritaskan best_current.csv, lalu best_gen_*.csv sorted by gen
     ga_files.sort(key=lambda f: os.path.getmtime(f), reverse=True)
 

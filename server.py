@@ -260,15 +260,15 @@ async def websocket_endpoint(websocket: WebSocket):
                 from agent_rl.action_mapping import get_action_index_for_option, create_action_mask
 
                 print("Starting AI vs AI battle...")
-                deck_files = glob.glob("agent_rl/deck/*.csv")
+                deck_files = glob.glob("agent_rl/deck_generated/*.csv")
                 
                 # Pick deck for Player 0
-                deck0_file = random.choice(deck_files) if deck_files else "agent_rl/deck/gen_deck_000.csv"
+                deck0_file = random.choice(deck_files) if deck_files else "agent_rl/deck_generated/gen_deck_100.csv"
                 with open(deck0_file, "r") as f:
                     deck0 = [int(line.strip()) for line in f if line.strip().isdigit()]
                 
                 # Pick deck for Player 1
-                deck1_file = random.choice(deck_files) if deck_files else "agent_rl/deck/gen_deck_000.csv"
+                deck1_file = random.choice(deck_files) if deck_files else "agent_rl/deck_generated/gen_deck_200.csv"
                 with open(deck1_file, "r") as f:
                     deck1 = [int(line.strip()) for line in f if line.strip().isdigit()]
 

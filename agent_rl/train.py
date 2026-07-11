@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import time
 import jax
+import jax.numpy as jnp
 # pyrefly: ignore [missing-import]
 import optax
 import numpy as np
@@ -114,15 +115,17 @@ def train():
     next_seq = obs["seq_input"]
     next_glob = obs["glob_input"]
     next_done = np.zeros(NUM_ENVS, dtype=np.float32)
-    
+
     global_step = 0
     start_time = time.time()
     env_step_counts = np.zeros(NUM_ENVS, dtype=np.int32)
-    
+    # Track accumulated reward per env untuk episodic return
+    episodic_returns = np.zeros(NUM_ENVS, dtype=np.float32)
+
     print("\n=== MEMULAI MAIN TRAINING LOOP ===")
     for update in range(1, num_updates + 1):
         # Array metrik sementara
-        ep_rewards = []
+        ep_returns = []  # total return per episode yang selesai
         ep_wins_p0 = []
         ep_wins_p1 = []
         ep_steps = []
@@ -148,15 +151,17 @@ def train():
             logits_np = np.array(logits_sharded).reshape((NUM_ENVS, -1))
             values_np = np.array(values_sharded).reshape((NUM_ENVS,))
 
-            # Melangkah: worker menerima raw logits, melakukan categorical sampling
-            # tanpa pengembalian sesuai minCount, lalu eksekusi di C++ engine.
+            # Melangkah
             next_obs, rewards, dones, infos = env.step(logits_np)
             
-            # Lacak Metrik (Hanya saat terminal)
+            # Akumulasi reward per env untuk metrik episodic return
+            episodic_returns += rewards
             env_step_counts += 1
 
             for i, d in enumerate(dones):
                 if d:
+                    ep_returns.append(float(episodic_returns[i]))
+                    episodic_returns[i] = 0.0
                     result = infos[i].get("result", -1)
                     end_reason = infos[i].get("end_reason", 0)
                     if result == 0:
@@ -168,8 +173,6 @@ def train():
                     ep_steps.append(env_step_counts[i])
                     ep_end_reasons.append(end_reason)
                     env_step_counts[i] = 0
-
-            ep_rewards.extend(rewards)
 
             # Ekstrak actions_mask dan glob_mask dari infos
             actions_mask_np = np.stack([info["actions_mask"] for info in infos])
@@ -225,11 +228,11 @@ def train():
         
         # --- FASE 3: MONITORING & CHECKPOINT ---
         if update % 1 == 0:
-            avg_rew = np.mean(ep_rewards) if ep_rewards else 0.0
+            avg_ret = np.mean(ep_returns) if ep_returns else 0.0
             win_p0 = (np.mean(ep_wins_p0) * 100) if ep_wins_p0 else 0.0
             win_p1 = (np.mean(ep_wins_p1) * 100) if ep_wins_p1 else 0.0
             games_played = len(ep_wins_p0)
-            avg_steps = (np.mean(ep_steps) / max(1, games_played)) if ep_steps else 0.0
+            avg_steps = np.mean(ep_steps) if ep_steps else 0.0
 
             # Distribusi alasan game berakhir
             reason_labels = {1: "Prize", 2: "DeckOut", 3: "NoActive", 4: "Effect"}
@@ -249,6 +252,7 @@ def train():
 
             print(f"Update {update:04d}/{num_updates} | Step: {global_step} | FPS: {fps} | "
                   f"Games: {games_played} | Steps/Game: {avg_steps:.0f} | "
+                  f"Return: {avg_ret:+.2f} | "
                   f"Win P0: {win_p0:.1f}% | Win P1: {win_p1:.1f}% | "
                   f"Loss: {mean_loss:.4f}")
             print(f"  End Reasons ─ {reason_str}")

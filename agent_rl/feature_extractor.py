@@ -1,6 +1,6 @@
 import numpy as np
 from .action_mapping import create_action_mask, NUM_ACTIONS
-from cg.api import all_card_data, all_attack, State, SelectData, PlayerState, Pokemon, Card
+from cg.api import all_card_data, all_attack, State, SelectData, PlayerState, Pokemon, Card, OptionType
 
 # Memuat data statis secara global untuk mempercepat lookup saat simulasi berjalan
 CARD_DB = {c.cardId: c for c in all_card_data()}
@@ -155,7 +155,6 @@ def extract_features(state: State, select_data: SelectData, your_index: int) -> 
     # JAX Action Mask Processing
     # Convert SelectData objects into python dict to match create_action_mask prototype
     try:
-        from cg.api import OptionType
         if select_data is not None and select_data.option is not None:
             mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in select_data.option]}
         else:
