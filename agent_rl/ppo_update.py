@@ -37,10 +37,11 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio, entropy_
         log_probs = jnp.sum(log_probs_all * batch['actions_mask'], axis=-1) / mask_count
 
         # 4. PPO Actor Loss (Clipped Surrogate Objective)
-        # Clip ratio langsung, bukan log_ratio — standard PPO.
-        # log_ratio clipping di [-10,10] membuat ratio bisa exp(10)≈22026
-        # sebelum PPO clipping bekerja, merusak stabilitas training.
-        ratio = jnp.exp(log_probs - batch['old_log_probs'])
+        # ⚠️ Log-ratio CLIPPING di [-10, +10] → ratio maksimal exp(10)≈22026
+        # Tanpa clipping, kalau old_log_probs = -50 dan log_probs ≈ 0,
+        # ratio = exp(50) = 5e21 → PPO clip tidak bisa menyelamatkan → LOSS LEDAKAN
+        log_ratio = jnp.clip(log_probs - batch['old_log_probs'], -10.0, 10.0)
+        ratio = jnp.exp(log_ratio)
 
         surr1 = ratio * batch['advantages']
         surr2 = jnp.clip(ratio, 1.0 - clip_ratio, 1.0 + clip_ratio) * batch['advantages']

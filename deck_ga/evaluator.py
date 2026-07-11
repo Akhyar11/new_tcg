@@ -276,6 +276,39 @@ class DeckEvaluator:
 
         return total
 
+    def evaluate_batch_varied(self, deck: list[int],
+                               opponents: list[tuple[list[int], int]]) -> list[dict]:
+        """
+        Evaluasi deck vs multiple opponents dengan jumlah game berbeda tiap lawan.
+
+        Args:
+            deck: card IDs deck yang dievaluasi
+            opponents: list of (opponent_ids, num_games)
+
+        Returns:
+            list[dict] — hasil dalam urutan yang sama dengan opponents
+
+        Semua evaluasi dikirim ke worker secara concurrent (round-robin),
+        lalu hasil dikumpulkan. Dengan N worker dan >= N opponent,
+        eksekusi berjalan paralel penuh.
+        """
+        if not opponents:
+            return []
+
+        # Kirim semua evaluasi ke worker (concurrent — non-blocking send)
+        pipes_used = []
+        for opp_ids, num_games in opponents:
+            pipe = self._next_pipe()
+            pipe.send(("eval", (deck, opp_ids, num_games)))
+            pipes_used.append(pipe)
+
+        # Kumpulkan hasil (blocking recv, tapi worker berjalan paralel)
+        results = []
+        for pipe in pipes_used:
+            result = pipe.recv()
+            results.append(result)
+        return results
+
     def close(self):
         for pipe in self.pipes:
             try:

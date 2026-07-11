@@ -179,44 +179,52 @@ class GALoop:
         return config.DIVERSITY_PENALTY * avg_sim
 
     # ─── Fitness Evaluation ───
-    def evaluate_fitness_vs_opponent(self, deck: DeckGenome, opponent_ids: list[int],
-                                     num_games: int) -> dict:
-        """Evaluate a single deck vs a single opponent."""
-        result = self.evaluator.evaluate(deck.card_ids, opponent_ids, num_games)
-        return result
-
     def evaluate_fitness(self, deck: DeckGenome, num_games: int = None):
         """
-        Evaluate fitness of a single deck.
-        - vs random opponents dari populasi (diversity)
-        - vs benchmark decks (stability)
+        Evaluate fitness of a single deck — SEMUA lawan dikirim CONCURRENT ke worker.
+
+        - 3 random opponents dari populasi (diversity)
+        - 2 benchmark decks (stability)
+
+        Dengan 4 worker, 5 evaluasi hampir sepenuhnya paralel.
         """
         if num_games is None:
             num_games = config.GAMES_PER_EVAL
 
+        # ── Kumpulkan semua opponent dan jumlah gamenya ──
+        tasks: list[tuple[list[int], int]] = []  # (card_ids, num_games)
+
+        # 1. Random opponents
+        random_opponents = random.sample(self.population, min(3, len(self.population)))
+        for opp in random_opponents:
+            tasks.append((opp.card_ids, num_games))
+
+        # 2. Benchmark opponents
+        for bench in self.benchmark_decks:
+            tasks.append((bench.card_ids, config.BENCHMARK_EVAL_GAMES))
+
+        # ── Kirim SEMUA ke worker concurrently, lalu kumpulkan ──
+        raw_results = self.evaluator.evaluate_batch_varied(deck.card_ids, tasks)
+
+        # ── Aggregasi hasil ──
         total_wins = 0
         total_games = 0
         all_steps = []
         all_reasons = {}
 
-        # 1. Lawan random dari populasi
-        opponents = random.sample(self.population, min(3, len(self.population)))
-        for opp in opponents:
-            result = self.evaluate_fitness_vs_opponent(deck, opp.card_ids, num_games)
-            total_wins += result["wins_p0"]
-            total_games += num_games
-            all_steps.extend(result["steps"])
-            for r, c in result["reasons"].items():
-                all_reasons[r] = all_reasons.get(r, 0) + c
-
-        # 2. Lawan benchmark (jika ada) — lebih banyak game untuk akurasi
         benchmark_wins = 0
         benchmark_games = 0
-        for bench in self.benchmark_decks:
-            result = self.evaluate_fitness_vs_opponent(deck, bench.card_ids,
-                                                        config.BENCHMARK_EVAL_GAMES)
-            benchmark_wins += result["wins_p0"]
-            benchmark_games += config.BENCHMARK_EVAL_GAMES
+
+        for i, result in enumerate(raw_results):
+            is_benchmark = i >= len(random_opponents)
+
+            if is_benchmark:
+                benchmark_wins += result["wins_p0"]
+                benchmark_games += config.BENCHMARK_EVAL_GAMES
+            else:
+                total_wins += result["wins_p0"]
+                total_games += num_games
+
             all_steps.extend(result["steps"])
             for r, c in result["reasons"].items():
                 all_reasons[r] = all_reasons.get(r, 0) + c
@@ -341,6 +349,7 @@ class GALoop:
         print(f"  Games/Deck vs Benchmark: {config.BENCHMARK_EVAL_GAMES}")
         print(f"  Benchmark Decks: {len(self.benchmark_decks)}")
         print(f"  Workers: {len(self.evaluator.pipes)}")
+        print(f"  Parallel Batch: YES (5 opponents concurrent)")
         print(f"  Diversity Penalty: {config.DIVERSITY_PENALTY}")
         print(f"  Tournament Size: {config.TOURNAMENT_SIZE}")
         print(f"  Elitism: {config.ELITISM}")

@@ -97,6 +97,8 @@ def worker(remote, parent_remote, worker_id, deck_path):
 
     obs = None
     old_state = None  # Untuk deteksi event antar-step
+    game_step_counter = 0  # ⭐ Counter langkah dalam satu game
+    MAX_GAME_STEPS = 300   # ⭐ Safety limit — normal game ~100-150 steps
 
     def get_end_reason(obs_data) -> int:
         if obs_data is None or not obs_data.logs:
@@ -189,6 +191,56 @@ def worker(remote, parent_remote, worker_id, deck_path):
                 # Simpan player index SEBELUM execute
                 prev_player = obs.current.yourIndex if obs.current else 0
 
+                # ⭐ Increment step counter untuk safety limit
+                game_step_counter += 1
+
+                # ⭐ Force-reset jika game terlalu panjang (engine stuck / R9 loop)
+                if game_step_counter >= MAX_GAME_STEPS:
+                    # Force end: treat sebagai draw, reward 0
+                    battle_finish()
+                    done = True
+                    reward = 0.0
+                    end_reason = 9  # Timeout / stuck
+                    events = {}
+                    actions_mask = np.zeros(250, dtype=np.bool_)
+                    actions_mask[160] = True  # ACTION_END
+
+                    # Auto-reset untuk game berikutnya
+                    reset_trackers()
+                    try:
+                        if len(loaded_decks) >= 2:
+                            idx0 = random.randint(0, len(loaded_decks) - 1)
+                            idx1 = random.randint(0, len(loaded_decks) - 1)
+                            while idx1 == idx0 and len(loaded_decks) > 1:
+                                idx1 = random.randint(0, len(loaded_decks) - 1)
+                            deck_list = [loaded_decks[idx0], loaded_decks[idx1]]
+                        else:
+                            deck_list = [loaded_decks[0], loaded_decks[0]]
+
+                        obs_dict, _ = battle_start(deck_list[0], deck_list[1])
+                        obs = to_dataclass(obs_dict, Observation)
+                        old_state = obs.current
+                    except Exception as e:
+                        print(f"[Worker {worker_id}] Force-reset error: {e}")
+                        obs = Observation(current=None, select=None, logs=[])
+                        old_state = None
+
+                    game_step_counter = 0
+
+                    if obs.current and obs.select and obs.current.result == -1:
+                        features = extract_features(obs.current, obs.select, obs.current.yourIndex)
+                    else:
+                        features = empty_features
+
+                    remote.send((features, reward, done, {
+                        "actions_mask": actions_mask,
+                        "glob_mask": np.zeros(250, dtype=np.float32),
+                        "active_player": prev_player,
+                        "result": -1,
+                        "end_reason": end_reason
+                    }))
+                    continue  # ⭐ Skip sisa step handler — sudah kirim response
+
                 # Execute di C++ engine
                 try:
                     obs_dict = battle_select(choices)
@@ -227,6 +279,7 @@ def worker(remote, parent_remote, worker_id, deck_path):
 
                 # Auto-reset jika game selesai
                 if done:
+                    game_step_counter = 0
                     reset_trackers()
                     battle_finish()
                     try:
@@ -262,6 +315,7 @@ def worker(remote, parent_remote, worker_id, deck_path):
                 remote.send((features, reward, done, info))
 
             elif cmd == 'reset':
+                game_step_counter = 0
                 reset_trackers()
                 battle_finish()
                 try:

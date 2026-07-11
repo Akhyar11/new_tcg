@@ -29,6 +29,16 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
 
 
+def _gpu_available() -> bool:
+    """Cek apakah NVIDIA GPU tersedia (via nvidia-smi)."""
+    import subprocess
+    try:
+        r = subprocess.run(["nvidia-smi"], capture_output=True, text=True, timeout=5)
+        return "NVIDIA-SMI" in r.stdout
+    except Exception:
+        return False
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Run GA → Export top N decks for Kaggle fine-tuning"
@@ -37,10 +47,10 @@ def parse_args():
                         help="Path ke model_final.msgpack hasil download dari Kaggle")
     parser.add_argument("--top-n", "-n", type=int, default=50,
                         help="Jumlah deck terbaik yang diexport (default: 50)")
-    parser.add_argument("--generations", "-g", type=int, default=40,
-                        help="Generasi GA (default: 40)")
-    parser.add_argument("--population", "-p", type=int, default=100,
-                        help="Populasi GA (default: 100)")
+    parser.add_argument("--generations", "-g", type=int, default=10,
+                        help="Generasi GA (default: 10 untuk laptop)")
+    parser.add_argument("--population", "-p", type=int, default=60,
+                        help="Populasi GA (default: 60 untuk laptop)")
     parser.add_argument("--games", type=int, default=8,
                         help="Games per evaluasi (default: 8)")
     parser.add_argument("--workers", "-w", type=int, default=4,
@@ -50,8 +60,15 @@ def parse_args():
     parser.add_argument("--output-dir", "-o", type=str, default=None,
                         help="Output directory (default: agent_rl/ga_top_decks/)")
     parser.add_argument("--gpu", action="store_true",
-                        help="Gunakan GPU untuk inference (default: CPU)")
-    return parser.parse_args()
+                        help="Gunakan GPU untuk inference (auto-detect jika tidak diset)")
+    args = parser.parse_args()
+
+    # Auto-detect GPU jika flag tidak diexplicit
+    if not args.gpu and _gpu_available():
+        args.gpu = True
+        print("[INFO] GPU terdeteksi, mengaktifkan GPU inference (--gpu)")
+
+    return args
 
 
 def main():
@@ -88,14 +105,22 @@ def main():
         n_decks = len(glob.glob(os.path.join(seed_dir, "*.csv")))
         print(f"[OK] Seed decks: {seed_dir} ({n_decks} decks)")
 
+    # ── Override config dengan argumen CLI ──
+    config.GAMES_PER_EVAL = args.games
+    config.POPULATION_SIZE = args.population
+    config.NUM_GENERATIONS = args.generations
+
     # ── 3. Inisialisasi GA ──
     print(f"\n{'='*60}")
     print(f"  RUNNING GENETIC ALGORITHM")
     print(f"  Model: {model_dst}")
-    print(f"  Population: {args.population}")
-    print(f"  Generations: {args.generations}")
-    print(f"  Games/Deck: {args.games}")
+    print(f"  Population: {config.POPULATION_SIZE}")
+    print(f"  Generations: {config.NUM_GENERATIONS}")
+    print(f"  Games/Deck: {config.GAMES_PER_EVAL}")
+    print(f"  Benchmark Games: {config.BENCHMARK_EVAL_GAMES}")
+    print(f"  Total games/deck: {config.GAMES_PER_EVAL * 3 + config.BENCHMARK_EVAL_GAMES * 2}")
     print(f"  Workers: {args.workers}")
+    print(f"  GPU: {'YES' if args.gpu else 'NO'}")
     print(f"  Target export: {args.top_n} best decks")
     print(f"{'='*60}")
 

@@ -28,6 +28,7 @@ import jax.numpy as jnp
 import optax
 import numpy as np
 from flax import serialization
+import psutil
 
 from agent_rl.model import PokemonAgent
 from agent_rl.vector_env import VectorEnv
@@ -67,6 +68,9 @@ DECK_PATH = os.environ.get(
     "RL_DECK_PATH",
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "deck_generated")
 )
+
+# Memory monitoring — cetak setiap N update
+MEM_LOG_INTERVAL = 100
 
 
 def save_checkpoint(params, filename):
@@ -282,6 +286,10 @@ def train():
         mean_loss = 0.0
         update_count = 0
 
+        # ⭐ Simpan params sebelum update untuk rollback jika NaN
+        from flax.core import freeze
+        params_before = freeze(params_repl)
+
         for epoch in range(EPOCHS):
             for batch in buffer.get_batches(BATCH_SIZE):
                 batch_sharded = {
@@ -298,6 +306,12 @@ def train():
 
         mean_loss /= update_count
 
+        # ⭐ NaN guard: rollback ke params sebelumnya jika loss NaN/Inf
+        if not np.isfinite(mean_loss):
+            print(f"  ⚠️ WARNING: Loss NaN/Inf ({mean_loss})! Rollback params ke update sebelumnya.")
+            params_repl = params_before
+            mean_loss = 0.0
+
         # ── Phase 4: Logging ──
         if update % 1 == 0:
             avg_ret = np.mean(ep_returns) if ep_returns else 0.0
@@ -305,7 +319,7 @@ def train():
             games_played = len(ep_wins_p0)
             avg_steps = np.mean(ep_steps) if ep_steps else 0.0
 
-            reason_labels = {1: "Prize", 2: "DeckOut", 3: "NoActive", 4: "Effect"}
+            reason_labels = {1: "Prize", 2: "DeckOut", 3: "NoActive", 4: "Effect", 9: "Timeout"}
             if ep_end_reasons:
                 reason_counts = {}
                 for r in ep_end_reasons:
@@ -343,6 +357,16 @@ def train():
             best_reward = avg_ret
             save_checkpoint(unreplicate(params_repl), "model_best.msgpack")
             print(f"  ⭐ New best model saved! Avg return: {best_reward:+.2f}")
+
+        # ⭐ Memory monitoring — deteksi leak
+        if update % MEM_LOG_INTERVAL == 0:
+            proc = psutil.Process()
+            mem_mb = proc.memory_info().rss / 1e6
+            cpu_percent = proc.cpu_percent(interval=0.1)
+            print(f"  [MEM] RSS={mem_mb:.0f}MB | CPU={cpu_percent:.0f}%")
+            # Peringatan jika memory > 12GB (Kaggle limit ~16GB)
+            if mem_mb > 12000:
+                print(f"  ⚠️ WARNING: Memory usage tinggi ({mem_mb:.0f}MB)! Berisiko OOM.")
 
         # Update entropy & clip ratio di ppo_update function via closure approach
         # Actually, we need to pass these params. Let me update the ppo_update call.

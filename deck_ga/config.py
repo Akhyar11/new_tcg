@@ -4,8 +4,8 @@ Hyperparameter Genetic Algorithm untuk Deck Optimization.
 import os
 
 # ─── GA Core ───
-POPULATION_SIZE = 100
-NUM_GENERATIONS = 50
+POPULATION_SIZE = 60              # ↓ Turun dari 100 untuk laptop
+NUM_GENERATIONS = 10              # ↓ Turun dari 50 untuk laptop (set manual via CLI untuk lebih)
 TOURNAMENT_SIZE = 7              # ↑ Naik dari 3 → selection pressure lebih kuat
 ELITISM = 5                      # ↑ Naik dari 2 → lebih banyak elite dipertahankan
 CROSSOVER_RATE = 0.85            # ↑ Naik sedikit dari 0.80
@@ -63,7 +63,7 @@ TARGET_POKEMON_RANGE = (12, 16)      # Ideal: 12-16 Pokemon
 TARGET_TRAINER_RANGE = (29, 38)      # Ideal: 29-38 Trainers
 TARGET_ENERGY_RANGE = (10, 15)       # Ideal: 10-15 Energy
 TARGET_EVO_LINES = (2, 3)            # Ideal evolution lines per deck
-BENCHMARK_EVAL_GAMES = 10            # Game vs benchmark (lebih banyak untuk akurasi)
+BENCHMARK_EVAL_GAMES = 6             # Game vs benchmark (turun dari 10 untuk laptop)
 
 # ─── Paths ───
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
