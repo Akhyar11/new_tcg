@@ -1,21 +1,42 @@
+"""
+VectorEnv — Paralel environment manager untuk PPO training.
+
+v3 — Non-Symmetric Opponents
+=============================
+P0 dan P1 selalu memulai dengan deck BERBEDA.
+P1 menggunakan deck dari deck_generated/ (1000 deck diverse).
+P0 menggunakan deck dari deck_generated/ JUGA tapi berbeda dari P1.
+
+Ini memecah simetri self-play: terminal gradient tidak saling membatalkan
+karena starting deck berbeda → win rate tidak selalu 50%.
+
+Alur deck assignment per game:
+  1. P0 deck = random sample dari loaded_decks
+  2. P1 deck = random sample dari loaded_decks (diFFERENT from P0)
+  3. Kedua player menggunakan model YANG SAMA untuk bermain
+  4. Karena deck berbeda, satu sisi punya keunggulan → gradient jelas
+
+Untuk Kaggle: cukup 1 folder deck_generated/ dengan 1000 deck random.
+"""
 import multiprocessing as mp
 import numpy as np
 import random
 import os
+import glob
 
 
 def load_deck(filepath):
-    """Load deck dari CSV (satu card ID per baris). Skip baris non-numeric."""
+    """Load deck dari CSV (satu card ID per baris)."""
     deck = []
     if not os.path.exists(filepath):
-        return [1]*56 + [210]*4
+        return None
     with open(filepath, 'r') as f:
         for line in f:
             line = line.strip()
             if line and line.isdigit():
                 deck.append(int(line))
     if len(deck) != 60:
-        return [1]*56 + [210]*4  # Fallback jika deck invalid
+        return None
     return deck
 
 
@@ -28,10 +49,8 @@ def softmax(x):
 
 def worker(remote, parent_remote, worker_id, deck_path):
     """
-    Worker independen di sub-process. Menangani:
-    - Eksekusi aksi di C++ engine
-    - Sampling aksi dari logits model (categorical tanpa pengembalian)
-    - Deteksi event untuk intermediate reward
+    Worker independen di sub-process.
+    Menangani eksekusi aksi, sampling, dan reward calculation.
     """
     parent_remote.close()
 
@@ -40,26 +59,46 @@ def worker(remote, parent_remote, worker_id, deck_path):
     from agent_rl.feature_extractor import extract_features
     from agent_rl.reward import detect_events, calculate_step_reward, reset_trackers
     from agent_rl.action_mapping import decode_action, get_action_index_for_option
-    import glob
 
     # Pre-load decks
     deck_files = []
-    if os.path.isdir(deck_path):
-        deck_files = glob.glob(os.path.join(deck_path, "*.csv"))
-    else:
-        deck_files = [deck_path]
+    deck_paths_checked = []
 
-    if not deck_files:
-        print(f"Peringatan: Tidak ada deck ditemukan di {deck_path}. Menggunakan deck dummy.")
+    # Cari deck di beberapa kemungkinan lokasi
+    possible_paths = [
+        deck_path,
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "deck_generated"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "agent_rl", "deck_generated"),
+    ]
+    for p in possible_paths:
+        if p not in deck_paths_checked:
+            deck_paths_checked.append(p)
+            if os.path.isdir(p):
+                files = sorted(glob.glob(os.path.join(p, "*.csv")))
+                deck_files.extend(files)
+            elif os.path.isfile(p):
+                deck_files.append(p)
+
+    # Deduplicate
+    deck_files = list(dict.fromkeys(deck_files))
+
+    loaded_decks = []
+    for f in deck_files:
+        d = load_deck(f)
+        if d is not None:
+            loaded_decks.append(d)
+
+    if len(loaded_decks) < 2:
+        print(f"[Worker {worker_id}] WARNING: hanya {len(loaded_decks)} deck valid. "
+              f"Menggunakan deck dummy fallback.")
         loaded_decks = [[1]*56 + [210]*4]
-    else:
-        loaded_decks = [load_deck(f) for f in deck_files]
+
+    print(f"[Worker {worker_id}] Loaded {len(loaded_decks)} decks from {len(deck_files)} files")
 
     obs = None
     old_state = None  # Untuk deteksi event antar-step
 
     def get_end_reason(obs_data) -> int:
-        """Extract game-end reason from logs. Returns 0 if not found."""
         if obs_data is None or not obs_data.logs:
             return 0
         for log in obs_data.logs:
@@ -77,9 +116,8 @@ def worker(remote, parent_remote, worker_id, deck_path):
             cmd, data = remote.recv()
 
             if cmd == 'step':
-                logits = data  # (250,) numpy array — raw logits dari model
+                logits = data  # (250,) numpy array
 
-                # Buat mock_select_dict dari obs.select
                 mock_select_dict = {"options": []}
                 min_c = 1
                 if obs and obs.select and obs.select.option:
@@ -93,21 +131,20 @@ def worker(remote, parent_remote, worker_id, deck_path):
 
                 options = mock_select_dict["options"]
 
-                # --- FIX: Sampling min_c actions dari categorical distribution ---
-                # 1. Build action mask dari options
+                # 1. Build action mask
                 legal_mask = np.zeros(250, dtype=np.float32)
                 for opt in options:
                     idx = get_action_index_for_option(opt)
                     if 0 <= idx < 250:
                         legal_mask[idx] = 1.0
 
-                # 2. Mask logits (zero out illegal)
+                # 2. Mask logits
                 masked_logits = logits - 1e9 * (1.0 - legal_mask)
 
-                # 3. Convert to probabilities
+                # 3. Softmax → probs
                 probs = softmax(masked_logits)
 
-                # 4. Sample min_c actions WITHOUT replacement
+                # 4. Sample min_c actions tanpa replacement
                 if probs.sum() > 0:
                     remaining = probs.copy()
                     sampled_jax_indices = []
@@ -119,10 +156,9 @@ def worker(remote, parent_remote, worker_id, deck_path):
                         sampled_jax_indices.append(int(idx))
                         remaining[idx] = 0.0
                 else:
-                    # Fallback: semua aksi illegal → pilih END
                     sampled_jax_indices = [160]  # ACTION_END
 
-                # 5. Map JAX indices ke C++ option indices
+                # 5. Map ke C++ indices
                 choices = []
                 for jax_idx in sampled_jax_indices:
                     for cpp_idx, opt in enumerate(options):
@@ -131,7 +167,6 @@ def worker(remote, parent_remote, worker_id, deck_path):
                             choices.append(cpp_idx)
                             break
 
-                # Fallback jika mapping gagal penuhi min_c
                 if len(choices) < min_c:
                     for cpp_idx in range(len(options)):
                         if cpp_idx not in choices:
@@ -139,7 +174,7 @@ def worker(remote, parent_remote, worker_id, deck_path):
                         if len(choices) >= min_c:
                             break
 
-                # 6. Build actions_mask dari choices yang benar-benar dipilih
+                # 6. Build actions_mask
                 actions_mask = np.zeros(250, dtype=np.bool_)
                 for c in choices:
                     if c < len(options):
@@ -148,15 +183,13 @@ def worker(remote, parent_remote, worker_id, deck_path):
                             actions_mask[idx] = True
 
                 if not np.any(actions_mask):
-                    # Safety: set END
                     actions_mask[160] = True
                     choices = [0]
 
-                # Simpan player index SEBELUM execute — reward harus dari perspektif
-                # player yang BARU SAJA BERTINDAK, bukan player yang akan giliran berikutnya.
+                # Simpan player index SEBELUM execute
                 prev_player = obs.current.yourIndex if obs.current else 0
 
-                # --- Execute di C++ engine ---
+                # Execute di C++ engine
                 try:
                     obs_dict = battle_select(choices)
                     obs = to_dataclass(obs_dict, Observation)
@@ -170,9 +203,8 @@ def worker(remote, parent_remote, worker_id, deck_path):
                     except:
                         obs = Observation(current=None, select=None, logs=[])
 
-                # --- Hitung reward untuk prev_player (yang baru saja bertindak) ---
+                # Hitung reward untuk prev_player
                 if obs.current:
-                    # Extract end_reason dari logs untuk deck-out detection
                     end_reason = get_end_reason(obs)
                     events = detect_events(old_state, obs.current, prev_player, obs.logs)
                     reward = calculate_step_reward(obs.current, prev_player, events, end_reason)
@@ -193,23 +225,31 @@ def worker(remote, parent_remote, worker_id, deck_path):
                     "end_reason": get_end_reason(obs) if done else 0
                 }
 
-                # --- Auto-reset jika game selesai ---
+                # Auto-reset jika game selesai
                 if done:
-                    reset_trackers()  # Reset diminishing return counters
+                    reset_trackers()
                     battle_finish()
                     try:
-                        deck0 = random.choice(loaded_decks)
-                        deck1 = random.choice(loaded_decks)
-                        obs_dict, _ = battle_start(deck0, deck1)
+                        # P0 dan P1 selalu dapat deck BERBEDA
+                        if len(loaded_decks) >= 2:
+                            idx0 = random.randint(0, len(loaded_decks) - 1)
+                            idx1 = random.randint(0, len(loaded_decks) - 1)
+                            while idx1 == idx0 and len(loaded_decks) > 1:
+                                idx1 = random.randint(0, len(loaded_decks) - 1)
+                            deck_list = [loaded_decks[idx0], loaded_decks[idx1]]
+                        else:
+                            deck_list = [loaded_decks[0], loaded_decks[0]]
+
+                        obs_dict, _ = battle_start(deck_list[0], deck_list[1])
                         obs = to_dataclass(obs_dict, Observation)
-                        old_state = obs.current  # Reset state tracker
+                        old_state = obs.current
 
                         if obs.current and obs.select and obs.current.result == -1:
                             features = extract_features(obs.current, obs.select, obs.current.yourIndex)
                         else:
                             features = empty_features
                     except Exception as e:
-                        print(f"Error during auto-reset: {e}")
+                        print(f"[Worker {worker_id}] Auto-reset error: {e}")
                         obs = Observation(current=None, select=None, logs=[])
                         features = empty_features
                         old_state = None
@@ -222,18 +262,32 @@ def worker(remote, parent_remote, worker_id, deck_path):
                 remote.send((features, reward, done, info))
 
             elif cmd == 'reset':
-                reset_trackers()  # Reset diminishing return counters
+                reset_trackers()
                 battle_finish()
-                deck0 = random.choice(loaded_decks)
-                deck1 = random.choice(loaded_decks)
-                obs_dict, _ = battle_start(deck0, deck1)
-                obs = to_dataclass(obs_dict, Observation)
-                old_state = obs.current  # Reset state tracker
+                try:
+                    # P0 dan P1 deck berbeda
+                    if len(loaded_decks) >= 2:
+                        idx0 = random.randint(0, len(loaded_decks) - 1)
+                        idx1 = random.randint(0, len(loaded_decks) - 1)
+                        while idx1 == idx0 and len(loaded_decks) > 1:
+                            idx1 = random.randint(0, len(loaded_decks) - 1)
+                        deck_list = [loaded_decks[idx0], loaded_decks[idx1]]
+                    else:
+                        deck_list = [loaded_decks[0], loaded_decks[0]]
 
-                if obs.current and obs.select and obs.current.result == -1:
-                    features = extract_features(obs.current, obs.select, obs.current.yourIndex)
-                else:
+                    obs_dict, _ = battle_start(deck_list[0], deck_list[1])
+                    obs = to_dataclass(obs_dict, Observation)
+                    old_state = obs.current
+
+                    if obs.current and obs.select and obs.current.result == -1:
+                        features = extract_features(obs.current, obs.select, obs.current.yourIndex)
+                    else:
+                        features = empty_features
+                except Exception as e:
+                    print(f"[Worker {worker_id}] Reset error: {e}")
+                    obs = Observation(current=None, select=None, logs=[])
                     features = empty_features
+                    old_state = None
 
                 remote.send(features)
 
@@ -259,11 +313,22 @@ def worker(remote, parent_remote, worker_id, deck_path):
 
 class VectorEnv:
     """
-    Manajer Lingkungan Paralel (Actor-Learner Bridge).
-    Membungkus banyak environment (worker) agar JAX bisa memprosesnya secara batch.
+    Manajer Lingkungan Paralel.
+    P0 dan P1 selalu mendapat deck BERBEDA → self-play gradient tidak saling cancel.
     """
-    def __init__(self, num_envs, deck_path="agent_rl/deck"):
+    def __init__(self, num_envs, deck_path="agent_rl/deck_generated"):
         self.num_envs = num_envs
+        # Auto-resolve deck_path
+        if not os.path.exists(deck_path):
+            alt = os.path.join(os.path.dirname(os.path.abspath(__file__)), "deck_generated")
+            if os.path.exists(alt):
+                deck_path = alt
+            else:
+                alt2 = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                    "agent_rl", "deck_generated")
+                if os.path.exists(alt2):
+                    deck_path = alt2
+
         self.remotes, self.work_remotes = zip(*[mp.Pipe() for _ in range(num_envs)])
         self.processes = []
 
@@ -286,12 +351,10 @@ class VectorEnv:
         return {"seq_input": seq_inputs, "glob_input": glob_inputs}
 
     def step_async(self, logits_batch):
-        """Mendistribusikan logits dari model ke masing-masing worker."""
         for remote, logits in zip(self.remotes, logits_batch):
             remote.send(('step', logits))
 
     def step_wait(self):
-        """Mengumpulkan hasil dari semua worker."""
         results = [remote.recv() for remote in self.remotes]
 
         seq_inputs = np.stack([res[0]["seq_input"] for res in results])
@@ -305,7 +368,6 @@ class VectorEnv:
         return batch_features, rewards, dones, infos
 
     def step(self, logits_batch):
-        """Gabungan async & wait — menerima logits (N, 250), return (obs, reward, done, info)."""
         self.step_async(logits_batch)
         return self.step_wait()
 

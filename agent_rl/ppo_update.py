@@ -6,11 +6,14 @@ from functools import partial
 
 # Definisi fungsi Update murni (Pure Function) untuk JAX XLA Compilation
 # Menggunakan partial untuk menandai fungsi apply sebagai argumen statis agar bisa di-JIT
-@partial(jax.pmap, static_broadcasted_argnums=(3, 4, 5), axis_name='gpu')
-def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio):
+@partial(jax.pmap, static_broadcasted_argnums=(3, 4, 5, 6), axis_name='gpu')
+def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio, entropy_coef=0.01):
     """
     Satu langkah optimasi (Gradient Descent) menggunakan algoritma PPO.
     Seluruh perhitungan di fungsi ini berjalan murni di dalam GPU/TPU via XLA.
+
+    Args:
+        entropy_coef: Koefisien entropy bonus (bisa di-anneal).
     """
 
     def loss_fn(p):
@@ -52,7 +55,7 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio):
         entropy = -jnp.sum(probs * log_probs_all * action_mask, axis=-1).mean()
 
         # 7. Total Loss Kombinasi
-        total_loss = actor_loss + (0.5 * value_loss) - (0.01 * entropy)
+        total_loss = actor_loss + (0.5 * value_loss) - (entropy_coef * entropy)
 
         # Kembalikan tuple (Loss untuk gradient, dan metrik untuk logistik/monitoring)
         return total_loss, (actor_loss, value_loss, entropy)

@@ -2,32 +2,41 @@
 """
 Pipeline: Alternating GA → RL Training (3 iterasi).
 
-Asumsi:
-    - Model RL sudah ditrain di Kaggle (checkpoints/model_final.msgpack sudah ada).
-    - 1000 generated decks di agent_rl/deck_generated/ (seed populasi GA).
+v3 — Convergence-Grade
+=======================
+Perbaikan untuk konvergensi training:
 
-Alur:
-    Iterasi 1: GA di-seed dari 1000 generated decks → cari deck optimal
-               → Copy deck terbaik ke agent_rl/deck/
-               → RL resume training dengan deck GA → model_v1
-    Iterasi 2-3: Sama, model makin kuat → deck makin optimal → model_final
+RL Training (train.py v3):
+  - 8M timesteps default (configurable via TOTAL_TIMESTEPS env)
+  - Entropy schedule: 0.05 → 0.005
+  - Clip ratio schedule: 0.2 → 0.05
+  - Non-symmetric opponents (P0 ≠ P1 deck) → gradient tidak cancel
+  - Running reward normalization
+  - Value tanh bounding [-5, +5]
+  - Best model separate saving
 
-Deck Flow:
-    agent_rl/deck_generated/ (1000 deck)
-        ↓ seed GA population
-    GA evolution (15-50 generasi)
-        ↓ crossover + mutasi
-    deck_ga/best_decks/ (deck optimal)
-        ↓ copy_ga_decks_to_rl()
-    agent_rl/deck/ (10 GA terbaik + fill random)
-        ↓ load
-    VectorEnv worker → battle_start(deck0, deck1)
+GA (deck_ga v2):
+  - Benchmark fixed opponents untuk stabilitas fitness
+  - Diversity penalty (cegah premature convergence)
+  - Template-based random generation (ratio realistis)
+  - Evolution line-aware crossover + trainer core preservation
+  - Evo line swap mutation
+
+Alur per Iterasi:
+  1. GA: seeded dari generated decks, evaluasi dengan RL agent frozen
+  2. Copy N deck GA terbaik → agent_rl/deck/
+  3. RL: resume training dengan deck GA sebagai opponent
+
+Deck Assignment:
+  P0 dan P1 selalu mendapat deck BERBEDA → self-play gradient
+  tidak saling membatalkan. Win rate tidak stuck di 50%.
 
 Usage:
     python pipeline.py                          # Full pipeline (3 iterasi)
-    python pipeline.py --quick                  # Quick test (1 iterasi, 5 gen GA)
+    python pipeline.py --quick                  # Quick test (1 iterasi, 5 gen GA, 100k RL)
     python pipeline.py --iterations 5           # 5 iterations
     python pipeline.py --resume                 # Resume dari iterasi terakhir
+    python pipeline.py --rl-steps 2000000       # 2M steps per iterasi RL
 """
 import os
 import sys
@@ -72,6 +81,10 @@ GA_DECK_DIR = os.path.join(ROOT, "deck_ga", "best_decks")
 GENERATED_DECK_DIR = os.path.join(ROOT, "agent_rl", "deck_generated")
 PIPELINE_STATE = os.path.join(ROOT, "pipeline_state.json")
 DECK_BACKUP_DIR = os.path.join(ROOT, "pipeline_deck_backups")
+
+# RL defaults — cocok untuk convergence-grade training
+DEFAULT_RL_STEPS = 1_000_000     # Per iterasi (3 iterasi = 3M)
+QUICK_RL_STEPS = 100_000
 
 REASON_LABELS = {1: "Prize✓", 2: "DeckOut✗", 3: "NoActive✓", 4: "Effect✓"}
 
@@ -194,7 +207,7 @@ def phase_train_rl(iteration: int, args, total_steps: int):
     log(f"{'='*60}")
 
     # Modify train.py hyperparameters via env override
-    os.environ["RL_TOTAL_STEPS"] = str(total_steps)
+    os.environ["TOTAL_TIMESTEPS"] = str(total_steps)    # ← dibaca train.py v3
     os.environ["RL_DECK_PATH"] = RL_DECK_DIR
 
     # GPU-aware scaling: naikkan NUM_ENVS dan BATCH_SIZE untuk multiple GPU
@@ -327,13 +340,13 @@ def run_pipeline(args):
     log(f"  Resume: {args.resume}")
     log(f"{'='*60}")
 
-    # Hitung steps per RL phase
+    # Hitung steps per RL phase — pipeline menggunakan train.py v3 (convergence-grade)
     if args.quick:
-        rl_steps = 100_000
+        rl_steps = QUICK_RL_STEPS
     elif args.rl_steps:
         rl_steps = args.rl_steps
     else:
-        rl_steps = 300_000
+        rl_steps = DEFAULT_RL_STEPS  # 1M per iterasi
 
     # Verifikasi model sudah ada
     model_path = os.path.join(CHECKPOINT_DIR, "model_final.msgpack")
@@ -376,10 +389,6 @@ def run_pipeline(args):
 
             deck_files = glob.glob(os.path.join(RL_DECK_DIR, "*.csv"))
             log(f"Deck folder has {len(deck_files)} decks (GA optimized)")
-
-            if args.rl_workers:
-                import agent_rl.train as rl_train
-                rl_train.NUM_ENVS = args.rl_workers
 
             phase_train_rl(iteration, args, rl_steps)
 

@@ -223,6 +223,7 @@ class DeckEvaluator:
         self.use_gpu = use_gpu
         self.pipes = []
         self.processes = []
+        self._rr_counter = 0  # Round-robin counter
 
         ctx = mp.get_context("spawn")
         for i in range(n_workers):
@@ -235,24 +236,44 @@ class DeckEvaluator:
 
         print(f"[Evaluator] Started {n_workers} worker(s)")
 
+    def _next_pipe(self):
+        """Return next pipe via round-robin."""
+        pipe = self.pipes[self._rr_counter % self.n_workers]
+        self._rr_counter += 1
+        return pipe
+
     def evaluate(self, deck_a: list[int], deck_b: list[int], num_games: int = 5) -> dict:
         """Evaluasi deck_a (P0) vs deck_b (P1) selama num_games."""
-        # Pick worker with least load (round robin)
-        pipe = self.pipes[0]
+        pipe = self._next_pipe()
         pipe.send(("eval", (deck_a, deck_b, num_games)))
         return pipe.recv()
 
     def evaluate_batch(self, deck: list[int], opponents: list[list[int]], num_games_per_opp: int = 3) -> dict:
-        """Evaluasi deck vs multiple opponents, aggregated results."""
-        total = {"wins_p0": 0, "wins_p1": 0, "draws": 0, "steps": [], "reasons": {}}
+        """Evaluasi deck vs multiple opponents, aggregated results.
+
+        Distribusi kerja ke semua worker secara paralel.
+        """
+        if not opponents:
+            return {"wins_p0": 0, "wins_p1": 0, "draws": 0, "steps": [], "reasons": {}}
+
+        # Kirim semua evaluasi ke worker via round-robin
+        pipes_used = []
         for opp in opponents:
-            result = self.evaluate(deck, opp, num_games_per_opp)
+            pipe = self._next_pipe()
+            pipe.send(("eval", (deck, opp, num_games_per_opp)))
+            pipes_used.append(pipe)
+
+        # Kumpulkan hasil
+        total = {"wins_p0": 0, "wins_p1": 0, "draws": 0, "steps": [], "reasons": {}}
+        for pipe in pipes_used:
+            result = pipe.recv()
             total["wins_p0"] += result["wins_p0"]
             total["wins_p1"] += result["wins_p1"]
             total["draws"] += result["draws"]
             total["steps"].extend(result["steps"])
             for r, c in result["reasons"].items():
                 total["reasons"][r] = total["reasons"].get(r, 0) + c
+
         return total
 
     def close(self):

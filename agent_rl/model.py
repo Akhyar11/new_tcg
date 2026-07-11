@@ -127,10 +127,11 @@ class PokemonAgent(nn.Module):
         logits = nn.Dense(self.num_actions)(res_add)
         logits = jnp.clip(logits, -10.0, 10.0) # Mencegah logits meledak yang bisa menyebabkan NaN
 
-        # Critic Head (Value) — linear, tanpa bound.
-        # Gradient exploding dicegah oleh optax.clip_by_global_norm(0.5) di train.py
-        # Reward range [-5, 5]; bounded activation (tanh) di [-1,1] membuat TD-error
-        # sistematis besar dan mencegah konvergensi.
-        value = nn.Dense(1, kernel_init=nn.initializers.normal(stddev=0.01))(res_add)
+        # Critic Head (Value) — tanh bounded ke [-5, +5]
+        # kernel_init std=0.2: cukup besar agar value bisa belajar dari awal
+        # (tidak stuck di ~0 saat returns=±3), cukup kecil untuk gradien stabil.
+        # Tanh bounding mencegah nilai absurd yang merusak GAE.
+        value = nn.Dense(1, kernel_init=nn.initializers.normal(stddev=0.2))(res_add)
+        value = jnp.tanh(value) * 5.0  # Bound: [-5, +5]
 
         return logits, value
