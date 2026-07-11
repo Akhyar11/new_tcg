@@ -255,16 +255,14 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
     # 3. Terminal reward (DOMINAN — menjamin kemenangan > farming)
     r_terminal = 0.0
     if new_state.result != -1:
-        # Deck-out (reason=2): abaikan — terminal reward = 0
-        # Model TIDAK belajar apa-apa dari game yang berakhir deck-out.
-        if end_reason == 2:
-            r_terminal = 0.0
-        elif new_state.result == player_index:
+        if new_state.result == player_index:
             # Hanya Prize win yang dikasih full reward.
-            # NoActive/Effect win dikasih reward kecil agar model ngejar Prize,
-            # bukan exploit lawan yang gagal set-up di awal.
             if end_reason == 1:
                 r_terminal = 3.0    # Prize → full reward
+            elif end_reason == 2:
+                # Deck-out (reason=2): abaikan — terminal reward = 0 untuk pemenang.
+                # Mencegah model belajar menang lewat stalling/mill (menunggu lawan kehabisan kartu).
+                r_terminal = 0.0
             elif end_reason in (3, 4):
                 r_terminal = 0.5    # NoActive/Effect → hollow win, reward kecil
             else:
@@ -272,7 +270,7 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
         elif new_state.result == 2:
             r_terminal = -0.5   # Draw
         else:
-            r_terminal = -3.0   # Kalah besar (semua jenis kekalahan = real loss)
+            r_terminal = -3.0   # Kalah besar (termasuk kalah karena deck-out sendiri)
 
     total = r_step + r_event + r_terminal
     return float(np.clip(total, -5.0, 5.0))
