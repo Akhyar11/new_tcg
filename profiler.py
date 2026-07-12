@@ -62,57 +62,42 @@ def profile_component(name, n_warmup=3, n_trials=10, max_time=30.0):
 # 1. GPU Inference — pure JAX
 # ═══════════════════════════════════════════
 def profile_gpu_inference(model, params):
-    """Ukur raw JAX inference time (GPU)."""
+    """Ukur raw JAX inference time (GPU) — warmup per batch size."""
     import jax
     import jax.numpy as jnp
     from flax.jax_utils import replicate, unreplicate
 
-    dummy_seq = jnp.zeros((1, 93, 31))
-    dummy_glob = jnp.zeros((1, 266))
-
-    # JIT compile dulu
     apply_jit = jax.jit(model.apply)
-    _ = apply_jit(params, dummy_seq, dummy_glob)
-    wait_for_gpu_quiet()
 
-    # Benchmark: batch 1
-    timings_single = []
-    for _ in range(50):
-        t0 = time.perf_counter()
-        logits, values = apply_jit(params, dummy_seq, dummy_glob)
-        logits.block_until_ready()
-        t1 = time.perf_counter()
-        timings_single.append((t1 - t0) * 1000)
+    def bench_batch(bs, n_trials=50):
+        """Benchmark satu batch size — warmup dulu baru timing."""
+        dummy_seq = jnp.zeros((bs, 93, 31))
+        dummy_glob = jnp.zeros((bs, 266))
+        # Warmup: JIT compile untuk shape ini
+        _ = apply_jit(params, dummy_seq, dummy_glob)
+        wait_for_gpu_quiet()
+        # Benchmark
+        timings = []
+        for _ in range(n_trials):
+            t0 = time.perf_counter()
+            logits, values = apply_jit(params, dummy_seq, dummy_glob)
+            logits.block_until_ready()
+            t1 = time.perf_counter()
+            timings.append((t1 - t0) * 1000)
+        return timings
 
-    # Benchmark: batch 4
-    dummy_seq_4 = jnp.zeros((4, 93, 31))
-    dummy_glob_4 = jnp.zeros((4, 266))
-    timings_batch4 = []
-    for _ in range(30):
-        t0 = time.perf_counter()
-        logits, values = apply_jit(params, dummy_seq_4, dummy_glob_4)
-        logits.block_until_ready()
-        t1 = time.perf_counter()
-        timings_batch4.append((t1 - t0) * 1000)
-
-    # Benchmark: batch 8
-    dummy_seq_8 = jnp.zeros((8, 93, 31))
-    dummy_glob_8 = jnp.zeros((8, 266))
-    timings_batch8 = []
-    for _ in range(20):
-        t0 = time.perf_counter()
-        logits, values = apply_jit(params, dummy_seq_8, dummy_glob_8)
-        logits.block_until_ready()
-        t1 = time.perf_counter()
-        timings_batch8.append((t1 - t0) * 1000)
+    t1 = bench_batch(1, 50)
+    t4 = bench_batch(4, 30)
+    t8 = bench_batch(8, 30)
 
     return {
-        "batch_1_mean_ms": np.mean(timings_single),
-        "batch_1_fps": 1000 / np.mean(timings_single),
-        "batch_4_mean_ms": np.mean(timings_batch4),
-        "batch_4_fps": 4000 / np.mean(timings_batch4),
-        "batch_8_mean_ms": np.mean(timings_batch8),
-        "batch_8_fps": 8000 / np.mean(timings_batch8),
+        "batch_1_mean_ms": np.mean(t1),
+        "batch_1_fps": 1000 / np.mean(t1),
+        "batch_4_mean_ms": np.mean(t4),
+        "batch_4_fps": 4000 / np.mean(t4),
+        "batch_8_mean_ms": np.mean(t8),
+        "batch_8_fps": 8000 / np.mean(t8),
+        "overhead_per_env_ms": (np.mean(t8) - np.mean(t1)) / 7,
     }
 
 
@@ -174,28 +159,31 @@ def profile_cpp_engine():
 # ═══════════════════════════════════════════
 # 4. Pipe communication
 # ═══════════════════════════════════════════
+def _pipe_worker(pipe):
+    """Module-level worker untuk pipe benchmark (harus top-level agar bisa di-pickle)."""
+    import numpy as np
+    try:
+        while True:
+            cmd, data = pipe.recv()
+            if cmd == 'step':
+                result = (
+                    np.random.randn(93, 31).astype(np.float32),
+                    np.random.randn(266).astype(np.float32),
+                    float(np.random.randn()),
+                    float(np.random.randn()),
+                    {'a': 1}
+                )
+                pipe.send(result)
+            elif cmd == 'close':
+                break
+    except EOFError:
+        pass
+
+
 def profile_pipe_communication():
     """Ukur overhead pipe send/recv untuk data volume training."""
     import multiprocessing as mp
     import numpy as np
-
-    def worker(pipe):
-        while True:
-            try:
-                cmd, data = pipe.recv()
-                if cmd == 'step':
-                    result = (
-                        np.random.randn(93, 31).astype(np.float32),
-                        np.random.randn(266).astype(np.float32),
-                        float(np.random.randn()),
-                        float(np.random.randn()),
-                        {'a': 1}
-                    )
-                    pipe.send(result)
-                elif cmd == 'close':
-                    break
-            except:
-                break
 
     results = {}
     for n in [1, 2, 4, 8]:
@@ -203,7 +191,7 @@ def profile_pipe_communication():
         ctx = mp.get_context('spawn')
         for i in range(n):
             parent, child = mp.Pipe()
-            p = ctx.Process(target=worker, args=(child,))
+            p = ctx.Process(target=_pipe_worker, args=(child,))
             p.daemon = True
             p.start()
             child.close()
@@ -241,9 +229,11 @@ def profile_full_step(model, params):
     from agent_rl.vector_env import VectorEnv
 
     apply_jit = jax.jit(model.apply)
-    dummy_seq = jnp.zeros((1, 93, 31))
-    dummy_glob = jnp.zeros((1, 266))
-    _ = apply_jit(params, dummy_seq, dummy_glob)
+    # Warmup: JIT untuk batch 8 (shape yang bakal dipakai)
+    warm_seq = jnp.zeros((8, 93, 31))
+    warm_glob = jnp.zeros((8, 266))
+    _ = apply_jit(params, warm_seq, warm_glob)
+    wait_for_gpu_quiet()
 
     deck_path = os.path.join(ROOT, "agent_rl", "deck_generated")
     if not os.path.exists(deck_path):
@@ -255,26 +245,29 @@ def profile_full_step(model, params):
     seq = obs["seq_input"]
     glob = obs["glob_input"]
 
-    # Breakdown per sub-step
     breakdown = defaultdict(list)
 
-    for step in range(100):
-        # 5a. JAX inference
+    for step in range(50):  # kurangi jadi 50 step, buang 5 pertama
         t0 = time.perf_counter()
         logits_np = np.array(apply_jit(params, seq, glob)[0])
         t1 = time.perf_counter()
-        breakdown["jax_inference"].append((t1 - t0) * 1000)
 
-        # 5b. Send to all workers + wait (full step)
         t2 = time.perf_counter()
         next_obs, rewards, dones, infos = env.step(logits_np)
         t3 = time.perf_counter()
-        breakdown["env_step_total"].append((t3 - t2) * 1000)
 
         seq = next_obs["seq_input"]
         glob = next_obs["glob_input"]
 
+        # Skip 5 first steps (cold start / JIT / worker warmup)
+        if step >= 5:
+            breakdown["jax_inference"].append((t1 - t0) * 1000)
+            breakdown["env_step_total"].append((t3 - t2) * 1000)
+
     env.close()
+
+    if not breakdown["jax_inference"]:
+        return {}
 
     return {k: {"mean_ms": np.mean(v), "std_ms": np.std(v)}
             for k, v in breakdown.items()}
@@ -401,20 +394,20 @@ def _load_sample_deck():
                 deck = [int(line.strip()) for line in f if line.strip().isdigit()]
                 if len(deck) == 60:
                     return deck
-    # Fallback: dummy deck
-    return [1]*56 + [210]*4
+    # Fallback: random valid-range IDs
+    import random
+    return [random.randint(1, 1267) for _ in range(60)]
 
 
 def _generate_dummy_decks(path, n=10):
+    """Generate dummy decks untuk profiling — isi random yang diterima engine."""
     import glob
+    import random
     existing = len(glob.glob(os.path.join(path, "*.csv")))
     if existing >= n:
         return
     for i in range(n):
-        deck = _load_sample_deck()
-        if deck and deck[0] != 1:
-            import random
-            deck = [random.randint(1, 1000) for _ in range(60)]
+        deck = [random.randint(1, 1267) for _ in range(60)]
         with open(os.path.join(path, f"profiler_deck_{i}.csv"), "w") as f:
             for cid in deck:
                 f.write(f"{cid}\n")
@@ -544,53 +537,57 @@ def main():
     # SUMMARY — FPS Breakdown
     # ═══════════════════════════════════════════
     print("=" * 65)
-    print("  FPS BREAKDOWN — Per 1 Step (8 envs × 128 steps)")
+    print("  FPS BREAKDOWN — Per 1 Step (8 envs)")
     print("=" * 65)
 
-    # Estimate from what we measured
-    fps_breakdown = []
+    # Ambil data dari berbagai benchmark
+    gi = results.get("gpu_inference", {})
 
-    if "full_step" in results:
-        fs = results["full_step"]
-        step_total_ms = fs.get("jax_inference", {}).get("mean_ms", 0)
-        env_total_ms = fs.get("env_step_total", {}).get("mean_ms", 0)
-        fps_breakdown = [
-            ("JAX inference (8 env batch)", step_total_ms),
-            ("Env step (8 workers + pipe)", env_total_ms),
-            ("  └ Feature extract (each)", results.get("feature_extraction", {}).get("mean_ms", 0)),
-            ("  └ C++ engine (each)", results.get("cpp_engine", {}).get("mean_ms", 0)),
-            ("  └ Pipe overhead", results.get("pipe", {}).get("8_envs_mean_ms", 0)),
-        ]
-        total = step_total_ms + env_total_ms
+    # Full-step measurement (real environment)
+    fs = results.get("full_step", {})
+    if fs:
+        jax_ms = fs.get("jax_inference", {}).get("mean_ms", 0)
+        env_ms = fs.get("env_step_total", {}).get("mean_ms", 0)
     else:
-        gi = results.get("gpu_inference", {})
-        gpu_ms = gi.get("batch_8_mean_ms", 0)
-        feat_ms = results.get("feature_extraction", {}).get("mean_ms", 0)
-        pipe_ms = results.get("pipe", {}).get("8_envs_mean_ms", 0)
-        cpp_ms = results.get("cpp_engine", {}).get("mean_ms", 0)
+        # Fallback ke GPU batch 8
+        jax_ms = gi.get("batch_8_mean_ms", 0)
+        env_ms = 0
 
-        fps_breakdown = [
-            ("JAX inference (8 env batch)", gpu_ms),
-            ("  └ Feature extract (×8)", feat_ms * 8),
-            ("  └ C++ engine (×8)", cpp_ms * 8),
-            ("  └ Pipe overhead (×16)", pipe_ms),
-        ]
-        total = gpu_ms + feat_ms * 8 + cpp_ms * 8 + pipe_ms
+    # Data pendukung
+    feat_ms = results.get("feature_extraction", {}).get("mean_ms", 0)
+    pipe_ms_total = results.get("pipe", {}).get("8_envs_mean_ms", 0)
+    cpp_ms = results.get("cpp_engine", {}).get("mean_ms", 0)
+
+    # Pure GPU estimate (dari GPU benchmark bersih)
+    gpu_pure = gi.get("batch_8_mean_ms", 0)
+
+    fps_breakdown = [
+        ("GPU inference (batch 8, pure)", gpu_pure),
+        ("JAX inference (in pipeline, with sync)", jax_ms),
+        ("Env step (send + 8 workers + recv)", env_ms),
+        ("  └ C++ engine (1 call)", cpp_ms),
+        ("  └ Feature extraction (1 call)", feat_ms),
+        ("  └ Pipe comm (8 env × roundtrip)", pipe_ms_total),
+    ]
+
+    total = jax_ms + env_ms
 
     for label, ms in fps_breakdown:
         pct = (ms / total * 100) if total > 0 else 0
         bar = "█" * int(pct / 2) + "░" * (50 - int(pct / 2))
-        print(f"  {label:40s} {ms:7.2f}ms ({pct:5.1f}%)")
-        if not label.startswith("  └"):
-            print(f"  {'':40s} {bar}")
+        if ms > 0:
+            print(f"  {label:40s} {ms:7.2f}ms ({pct:5.1f}%)")
+            if not label.startswith("  └"):
+                print(f"  {'':40s} {bar}")
+        else:
+            print(f"  {label:40s}    N/A")
 
     if total > 0:
-        estimated_fps = 1000 / total
         print()
         print(f"  {40*' '} {'──────'} {'─────'}")
         print(f"  {'TOTAL per step':40s} {total:7.2f}ms")
-        print(f"  {'ESTIMATED FPS':40s} {1000/total:7.0f} FPS")
-        print(f"  {'FPS with 4 envs':40s} {4000/(total*4/8):7.0f} FPS")
+        print(f"  {'ESTIMATED FPS (8 env)':40s} {1000/total:7.0f} FPS")
+        print(f"  {'GPU theoretical peak':40s} {gi.get('batch_8_fps', 0):7.0f} FPS")
 
     print()
     print("=" * 65)
