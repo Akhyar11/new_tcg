@@ -31,7 +31,7 @@ from flax import serialization
 import psutil
 
 from agent_rl.model import PokemonAgent
-from agent_rl.vector_env import VectorEnv, ShmVectorEnv
+from agent_rl.vector_env import VectorEnv
 from agent_rl.buffer import RolloutBuffer
 from agent_rl.ppo_update import ppo_update_step, get_action_and_value
 from flax.jax_utils import replicate, unreplicate
@@ -124,9 +124,9 @@ def train():
 
     rng = jax.random.PRNGKey(42)
 
-    # 1. Init parallel environments (shared memory — zero pipe overhead!)
+    # 1. Init parallel environments
     print(f"Starting {NUM_ENVS} parallel envs from '{DECK_PATH}'...")
-    env = ShmVectorEnv(num_envs=NUM_ENVS, deck_path=DECK_PATH)
+    env = VectorEnv(num_envs=NUM_ENVS, deck_path=DECK_PATH)
 
     # 2. Init model & optimizer
     model = PokemonAgent(num_actions=250)
