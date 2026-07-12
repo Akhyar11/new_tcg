@@ -51,7 +51,7 @@ def _worker_main(pipe, worker_id, use_gpu=False):
         model = PokemonAgent(num_actions=250)
         rng = jax.random.PRNGKey(42)
         rng, init_rng = jax.random.split(rng)
-        jnp_seq = jnp.zeros((1, 93, 31))
+        jnp_seq = jnp.zeros((1, 113, 31))
         jnp_glob = jnp.zeros((1, 266))
         params = model.init(init_rng, jnp_seq, jnp_glob)
 
