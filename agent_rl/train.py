@@ -31,10 +31,11 @@ from flax import serialization
 import psutil
 
 from agent_rl.model import PokemonAgent
-from agent_rl.vector_env import VectorEnv
+from agent_rl.vector_env import VectorEnv, ShmVectorEnv
 from agent_rl.buffer import RolloutBuffer
 from agent_rl.ppo_update import ppo_update_step, get_action_and_value
 from flax.jax_utils import replicate, unreplicate
+from flax.core import freeze
 
 # ─── Hyperparameters ───
 NUM_ENVS = int(os.environ.get("RL_NUM_ENVS", "8"))
@@ -117,9 +118,9 @@ def train():
 
     rng = jax.random.PRNGKey(42)
 
-    # 1. Init parallel environments
+    # 1. Init parallel environments (shared memory — zero pipe overhead!)
     print(f"Starting {NUM_ENVS} parallel envs from '{DECK_PATH}'...")
-    env = VectorEnv(num_envs=NUM_ENVS, deck_path=DECK_PATH)
+    env = ShmVectorEnv(num_envs=NUM_ENVS, deck_path=DECK_PATH)
 
     # 2. Init model & optimizer
     model = PokemonAgent(num_actions=250)
@@ -215,6 +216,9 @@ def train():
 
             next_obs, rewards, dones, infos = env.step(logits_np)
 
+            # ⭐ NaN guard — reward saja yang mungkin NaN (division di reward.py)
+            rewards = np.nan_to_num(rewards, nan=0.0, posinf=1.0, neginf=-1.0)
+
             # ── Running reward normalization ──
             reward_norm_steps += NUM_ENVS
             # Update running stats (Welford-style)
@@ -225,8 +229,8 @@ def train():
                 reward_running_std += delta * delta2
             running_std = np.sqrt(reward_running_std / max(reward_norm_steps, 1))
             running_std = max(running_std, 0.01)
-            # Normalize rewards (simpan raw untuk logging)
-            normalized_rewards = rewards / running_std
+            # Normalize rewards — clamp ke [-5, +5] cegah outlier ekstrim
+            normalized_rewards = np.clip(rewards / running_std, -5.0, 5.0)
 
             episodic_returns += rewards
             env_step_counts += 1
@@ -286,9 +290,9 @@ def train():
         mean_loss = 0.0
         update_count = 0
 
-        # ⭐ Simpan params sebelum update untuk rollback jika NaN
-        from flax.core import freeze
+        # ⭐ Simpan params DAN opt_state sebelum update untuk rollback jika NaN
         params_before = freeze(params_repl)
+        opt_state_before = freeze(opt_state_repl)
 
         for epoch in range(EPOCHS):
             for batch in buffer.get_batches(BATCH_SIZE):
@@ -306,10 +310,11 @@ def train():
 
         mean_loss /= update_count
 
-        # ⭐ NaN guard: rollback ke params sebelumnya jika loss NaN/Inf
+        # ⭐ NaN guard: rollback params DAN opt_state jika loss NaN/Inf
         if not np.isfinite(mean_loss):
-            print(f"  ⚠️ WARNING: Loss NaN/Inf ({mean_loss})! Rollback params ke update sebelumnya.")
+            print(f"  ⚠️ WARNING: Loss NaN/Inf ({mean_loss})! Rollback ke update sebelumnya.")
             params_repl = params_before
+            opt_state_repl = opt_state_before
             mean_loss = 0.0
 
         # ── Phase 4: Logging ──
