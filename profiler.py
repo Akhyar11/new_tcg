@@ -9,6 +9,7 @@ Output:
     Profil timing per komponen, FPS breakdown, dan bottleneck terbesar.
 """
 import os, sys, time, json, platform
+import numpy as np
 from collections import defaultdict
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
