@@ -250,11 +250,18 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
                     old_state = obs.current
                     done = (obs.current.result != -1)
                     active_p = prev_player
+                    
+                    # Simpan result dan end_reason sebelum auto-reset
+                    done_result = obs.current.result
+                    done_end_reason = end_reason
                 else:
                     active_p = prev_player
                     reward = -2.0
                     done = True
                     events = {}
+                    
+                    done_result = -1
+                    done_end_reason = 0
 
                 if done:
                     game_step_counter = 0
@@ -301,8 +308,8 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
                 np.copyto(actions_mask_buf, actions_mask)
                 np.copyto(glob_mask_buf, legal_mask)
                 active_player_buf[worker_id] = active_p
-                result_buf[worker_id] = obs.current.result if obs.current else -1
-                end_reason_buf[worker_id] = get_end_reason(obs) if done else 0
+                result_buf[worker_id] = done_result if done else (obs.current.result if obs.current else -1)
+                end_reason_buf[worker_id] = done_end_reason if done else 0
 
                 remote.send('done')
 

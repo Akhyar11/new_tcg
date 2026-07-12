@@ -6,7 +6,7 @@ from functools import partial
 
 # Definisi fungsi Update murni (Pure Function) untuk JAX XLA Compilation
 # Menggunakan partial untuk menandai fungsi apply sebagai argumen statis agar bisa di-JIT
-@partial(jax.pmap, static_broadcasted_argnums=(3, 4, 5, 6), axis_name='gpu')
+@partial(jax.pmap, in_axes=(0, 0, 0, None, None, None, None), static_broadcasted_argnums=(3, 4), axis_name='gpu')
 def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio, entropy_coef=0.01):
     """
     Satu langkah optimasi (Gradient Descent) menggunakan algoritma PPO.
