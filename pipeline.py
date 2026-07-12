@@ -93,8 +93,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Pipeline GA → RL Training (3 iterasi)")
     parser.add_argument("--quick", "-q", action="store_true",
                         help="Quick test: 1 iterasi, GA 5 gen, RL 100k steps")
-    parser.add_argument("--iterations", "-i", type=int, default=3,
-                        help="Jumlah iterasi (default: 3)")
+    parser.add_argument("--iterations", "-i", type=int, default=2,
+                        help="Jumlah iterasi tuning GA->RL sesudah initial train (default: 2)")
     parser.add_argument("--resume", "-r", action="store_true",
                         help="Resume dari iterasi terakhir (load pipeline_state.json)")
     parser.add_argument("--ga-workers", type=int, default=2,
@@ -103,8 +103,8 @@ def parse_args():
                         help="NUM_ENVS untuk RL training (default: 8)")
     parser.add_argument("--ga-gens", type=int, default=None,
                         help="Generasi GA per iterasi (default: config default)")
-    parser.add_argument("--rl-steps", type=int, default=None,
-                        help="Total timesteps RL per iterasi (default: 300000)")
+    parser.add_argument("--rl-steps", type=int, default=2000000,
+                        help="Total timesteps RL per iterasi tuning (default: 2M)")
     parser.add_argument("--rl-deck-samples", type=int, default=10,
                         help="Jumlah deck GA terbaik yang dicopy ke RL (default: 10)")
     return parser.parse_args()
@@ -125,7 +125,7 @@ def load_state() -> dict:
     if os.path.exists(PIPELINE_STATE):
         with open(PIPELINE_STATE) as f:
             return json.load(f)
-    return {"current_iteration": 0, "phase": "start", "completed_iterations": 0}
+    return {"current_iteration": 0, "phase": "init_train", "completed_iterations": -1}
 
 
 def backup_decks(iteration: int):
@@ -200,7 +200,7 @@ def copy_ga_decks_to_rl(n: int = 10):
 
 # ─── Phase Functions ───
 
-def phase_train_rl(iteration: int, args, total_steps: int):
+def phase_train_rl(iteration: int, args, total_steps: int, deck_dir: str = RL_DECK_DIR):
     """Train RL agent — resume dari checkpoint jika ada."""
     log(f"{'='*60}")
     log(f"PHASE: RL Training — Iteration {iteration}")
@@ -208,7 +208,7 @@ def phase_train_rl(iteration: int, args, total_steps: int):
 
     # Modify train.py hyperparameters via env override
     os.environ["TOTAL_TIMESTEPS"] = str(total_steps)    # ← dibaca train.py v3
-    os.environ["RL_DECK_PATH"] = RL_DECK_DIR
+    os.environ["RL_DECK_PATH"] = deck_dir
 
     # GPU-aware scaling: naikkan NUM_ENVS dan BATCH_SIZE untuk multiple GPU
     if _NUM_GPUS > 1:
@@ -247,8 +247,8 @@ def phase_train_rl(iteration: int, args, total_steps: int):
         os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
         # Run
-        log(f"RL Training: {total_steps} timesteps, resume from model_final.msgpack")
-        log(f"  Deck path: {RL_DECK_DIR} ({len(glob.glob(os.path.join(RL_DECK_DIR, '*.csv')))} decks)")
+        log(f"RL Training: {total_steps} timesteps, resume from model_final.msgpack (if exists)")
+        log(f"  Deck path: {deck_dir} ({len(glob.glob(os.path.join(deck_dir, '*.csv')))} decks)")
 
         rl_train.train()
 
@@ -334,44 +334,43 @@ def phase_run_ga(iteration: int, args):
 def run_pipeline(args):
     log(f"{'='*60}")
     log(f"  PIPELINE GA ↔ RL TRAINING")
-    log(f"  Model existing dari Kaggle → langsung loop GA → RL")
-    log(f"  Iterasi: {args.iterations}")
+    log(f"  Initial Train 5M steps → Loop (GA → Tuning 2M steps)")
+    log(f"  Iterasi Tuning: {args.iterations}")
     log(f"  Quick: {args.quick}")
     log(f"  Resume: {args.resume}")
     log(f"{'='*60}")
 
-    # Hitung steps per RL phase — pipeline menggunakan train.py v3 (convergence-grade)
     if args.quick:
         rl_steps = QUICK_RL_STEPS
-    elif args.rl_steps:
-        rl_steps = args.rl_steps
+        init_steps = QUICK_RL_STEPS
     else:
-        rl_steps = DEFAULT_RL_STEPS  # 1M per iterasi
+        rl_steps = args.rl_steps if args.rl_steps else 2_000_000
+        init_steps = 5_000_000
 
-    # Verifikasi model sudah ada
-    model_path = os.path.join(CHECKPOINT_DIR, "model_final.msgpack")
-    if not os.path.exists(model_path):
-        log(f"ERROR: Model tidak ditemukan di {model_path}")
-        log("Jalankan training di Kaggle dulu, atau letakkan model_final.msgpack di checkpoints/")
-        return
-
-    log(f"Model ditemukan: {model_path}")
-
-    # State management — langsung mulai dari iteration 1, phase="ga"
+    # State management
     state = load_state() if args.resume else {
-        "current_iteration": 1,
-        "phase": "ga",
-        "completed_iterations": 0,
+        "current_iteration": 0,
+        "phase": "init_train",
+        "completed_iterations": -1,
         "start_time": time.time(),
     }
 
     if not args.resume:
         save_state(state)
+        
+    # --- Initial RL Training (Iter 0) ---
+    if state["phase"] == "init_train":
+        log(f"\n>>> Initial RL Training Phase (Iter 0) - {init_steps} steps")
+        phase_train_rl(0, args, init_steps, deck_dir=GENERATED_DECK_DIR)
+        state["phase"] = "ga"
+        state["completed_iterations"] = 0
+        state["current_iteration"] = 1
+        save_state(state)
 
-    # ─── Iterasi 1..N: GA → RL (tanpa iterasi 0) ───
+    # ─── Iterasi 1..N: GA → RL ───
     for iteration in range(state["completed_iterations"] + 1, args.iterations + 1):
         log(f"\n{'#'*70}")
-        log(f"### MAIN ITERATION {iteration}/{args.iterations}")
+        log(f"### TUNING ITERATION {iteration}/{args.iterations}")
         log(f"{'#'*70}")
 
         # --- GA Phase ---
@@ -385,12 +384,12 @@ def run_pipeline(args):
 
         # --- RL Training Phase (resume dari model_final.msgpack) ---
         if state["phase"] == "train_rl":
-            log(f"\n>>> RL Training Phase (Iter {iteration}) — Resume from Kaggle model")
+            log(f"\n>>> RL Tuning Phase (Iter {iteration}) — {rl_steps} steps")
 
             deck_files = glob.glob(os.path.join(RL_DECK_DIR, "*.csv"))
             log(f"Deck folder has {len(deck_files)} decks (GA optimized)")
 
-            phase_train_rl(iteration, args, rl_steps)
+            phase_train_rl(iteration, args, rl_steps, deck_dir=RL_DECK_DIR)
 
             state["completed_iterations"] = iteration
             state["current_iteration"] = iteration

@@ -101,9 +101,11 @@ def fill_sequence(sequence, start_idx, max_len, item_list, is_active=False, play
             sequence[start_idx + i] = parse_card(item_list[i], is_active, player_state)
 
 
-def extract_features(state: State, select_data: SelectData, your_index: int) -> dict:
-    # 1. CARD EMBEDDING SEQUENCE (93, 31)
-    seq_input = np.zeros((93, 31), dtype=np.float32)
+def extract_features(state: State, select_data: SelectData, your_index: int, opp_known_hand: list = None) -> dict:
+    if opp_known_hand is None: opp_known_hand = []
+    
+    # 1. CARD EMBEDDING SEQUENCE (113, 31)
+    seq_input = np.zeros((113, 31), dtype=np.float32)
 
     my_state = state.players[your_index]
     opp_index = 1 - your_index
@@ -127,6 +129,9 @@ def extract_features(state: State, select_data: SelectData, your_index: int) -> 
     # Slot 92: Stadium (1)
     if state.stadium:
         seq_input[92] = parse_card(state.stadium[0])
+
+    # Slot 93-112: Opponent Known Hand (20)
+    fill_sequence(seq_input, 93, 20, opp_known_hand)
 
     # 2. GLOBAL STATE (266)
     glob_input = np.zeros(266, dtype=np.float32)

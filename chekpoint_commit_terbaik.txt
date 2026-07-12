@@ -1,0 +1,2 @@
+Commit ini berhasil menangani bottelneck sampai meberikan peningkatan fps dari 100 sampai 550
+22584932b9c3b432fb5d81d076552da2edfeb871

@@ -79,9 +79,9 @@ class PokemonAgent(nn.Module):
         x = CardEmbedding()(card_ids, tool_ids, pre_evo_ids, scalars) # (B, 93, 60)
 
         # 2. Sequence Processing
-        # x shape: (B, 93, 60) -> Linear Projection (B, 93, 128)
+        # x shape: (B, 113, 60) -> Linear Projection (B, 113, 128)
         x = nn.Dense(self.embed_dim)(x)
-        x = PositionalEncoding(seq_len=93, embed_dim=self.embed_dim)(x)
+        x = PositionalEncoding(seq_len=113, embed_dim=self.embed_dim)(x)
         
         # 3x Transformer Layers
         for _ in range(3):
@@ -93,6 +93,7 @@ class PokemonAgent(nn.Module):
         opp_discard = jnp.mean(x[:, 50:80, :], axis=1)       # (B, 128)
         board_slots = x[:, 80:92, :].reshape(x.shape[0], -1) # (B, 1536) Flatten
         stadium_slot = x[:, 92, :]                           # (B, 128) Direct
+        opp_known_hand = jnp.mean(x[:, 93:113, :], axis=1)   # (B, 128)
 
         # 2b. Global Processing
         # glob_input shape: (B, 266)
@@ -105,7 +106,8 @@ class PokemonAgent(nn.Module):
             my_discard, 
             opp_discard, 
             board_slots, 
-            stadium_slot, 
+            stadium_slot,
+            opp_known_hand,
             glob_x
         ], axis=-1)
 

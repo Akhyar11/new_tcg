@@ -7,7 +7,7 @@ class RolloutBuffer:
     Berbasis NumPy murni untuk kecepatan pre-alokasi dan menghindari overhead list Python.
     Memori dialokasikan di awal (Pre-allocated) dengan dimensi (n_steps, num_envs, ...).
     """
-    def __init__(self, n_steps, num_envs, seq_shape=(93, 31), glob_shape=(266,)):
+    def __init__(self, n_steps, num_envs, seq_shape=(113, 31), glob_shape=(266,)):
         self.n_steps = n_steps
         self.num_envs = num_envs
         self.buffer_size = n_steps * num_envs

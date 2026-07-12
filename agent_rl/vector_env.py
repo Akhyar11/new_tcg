@@ -52,7 +52,7 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
     # Attach to Shared Memories
     shms = {k: SharedMemory(name=v) for k, v in shm_names.items()}
     
-    seq_input_buf = np.ndarray((num_envs, 93, 31), dtype=np.float32, buffer=shms['seq_input'].buf)[worker_id]
+    seq_input_buf = np.ndarray((num_envs, 113, 31), dtype=np.float32, buffer=shms['seq_input'].buf)[worker_id]
     glob_input_buf = np.ndarray((num_envs, 266), dtype=np.float32, buffer=shms['glob_input'].buf)[worker_id]
     logits_buf = np.ndarray((num_envs, 250), dtype=np.float32, buffer=shms['logits'].buf)[worker_id]
     
@@ -101,6 +101,7 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
     old_state = None
     game_step_counter = 0
     MAX_GAME_STEPS = 300
+    opp_known_hand = []
 
     def get_end_reason(obs_data) -> int:
         if obs_data is None or not obs_data.logs:
@@ -191,6 +192,7 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
                     actions_mask[160] = True
 
                     reset_trackers()
+                    opp_known_hand.clear()
                     try:
                         if len(loaded_decks) >= 2:
                             idx0 = random.randint(0, len(loaded_decks) - 1)
@@ -212,7 +214,7 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
                     game_step_counter = 0
 
                     if obs.current and obs.select and obs.current.result == -1:
-                        features = extract_features(obs.current, obs.select, obs.current.yourIndex)
+                        features = extract_features(obs.current, obs.select, obs.current.yourIndex, opp_known_hand)
                         np.copyto(seq_input_buf, features['seq_input'])
                         np.copyto(glob_input_buf, features['glob_input'])
                     else:
@@ -251,6 +253,28 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
                     done = (obs.current.result != -1)
                     active_p = prev_player
                     
+                    # Update opp_known_hand tracking
+                    opp_index = 1 - prev_player # Assume prev_player is our index (yourIndex)
+                    for log in obs.logs:
+                        if log.type in [LogType.MOVE_CARD, LogType.DRAW]:
+                            if getattr(log, 'toArea', None) == 2 and log.playerIndex == opp_index: # AreaType.HAND == 2
+                                if log.cardId is not None and log.serial is not None:
+                                    # Add to known hand if not already there
+                                    if not any(c['serial'] == log.serial for c in opp_known_hand):
+                                        opp_known_hand.append({'id': log.cardId, 'serial': log.serial})
+                            
+                            if getattr(log, 'fromArea', None) == 2 and log.playerIndex == opp_index:
+                                if log.serial is not None:
+                                    opp_known_hand = [c for c in opp_known_hand if c['serial'] != log.serial]
+                                    
+                        elif log.type in [LogType.PLAY, LogType.ATTACH, LogType.EVOLVE, LogType.DEVOLVE]:
+                            if log.playerIndex == opp_index and log.serial is not None:
+                                opp_known_hand = [c for c in opp_known_hand if c['serial'] != log.serial]
+                    
+                    # Truncate to 20
+                    if len(opp_known_hand) > 20:
+                        opp_known_hand = opp_known_hand[-20:]
+                    
                     # Simpan result dan end_reason sebelum auto-reset
                     done_result = obs.current.result
                     done_end_reason = end_reason
@@ -266,6 +290,7 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
                 if done:
                     game_step_counter = 0
                     reset_trackers()
+                    opp_known_hand.clear()
                     battle_finish()
                     try:
                         if len(loaded_decks) >= 2:
@@ -282,7 +307,7 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
                         old_state = obs.current
 
                         if obs.current and obs.select and obs.current.result == -1:
-                            features = extract_features(obs.current, obs.select, obs.current.yourIndex)
+                            features = extract_features(obs.current, obs.select, obs.current.yourIndex, opp_known_hand)
                             np.copyto(seq_input_buf, features['seq_input'])
                             np.copyto(glob_input_buf, features['glob_input'])
                         else:
@@ -296,7 +321,7 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
                         glob_input_buf.fill(0)
                 else:
                     if obs.current and obs.select and obs.current.result == -1:
-                        features = extract_features(obs.current, obs.select, obs.current.yourIndex)
+                        features = extract_features(obs.current, obs.select, obs.current.yourIndex, opp_known_hand)
                         np.copyto(seq_input_buf, features['seq_input'])
                         np.copyto(glob_input_buf, features['glob_input'])
                     else:
@@ -406,7 +431,7 @@ class VectorEnv:
             arr.fill(0)
             return arr
 
-        self.seq_input = create_shm('seq_input', (num_envs, 93, 31), np.float32)
+        self.seq_input = create_shm('seq_input', (num_envs, 113, 31), np.float32)
         self.glob_input = create_shm('glob_input', (num_envs, 266), np.float32)
         self.logits = create_shm('logits', (num_envs, 250), np.float32)
         self.rewards = create_shm('rewards', (num_envs,), np.float32)
