@@ -157,61 +157,70 @@ def profile_cpp_engine():
 
 
 # ═══════════════════════════════════════════
-# 4. Pipe communication
+# 4. IPC communication (Shared Memory)
 # ═══════════════════════════════════════════
-def _pipe_worker(pipe):
-    """Module-level worker untuk pipe benchmark (harus top-level agar bisa di-pickle)."""
+def _shm_worker(pipe, shm_name, num_envs):
     import numpy as np
+    from multiprocessing.shared_memory import SharedMemory
     try:
+        shm = SharedMemory(name=shm_name)
+        buf = np.ndarray((num_envs, 250), dtype=np.float32, buffer=shm.buf)
         while True:
-            cmd, data = pipe.recv()
+            cmd = pipe.recv()
             if cmd == 'step':
-                result = (
-                    np.random.randn(93, 31).astype(np.float32),
-                    np.random.randn(266).astype(np.float32),
-                    float(np.random.randn()),
-                    float(np.random.randn()),
-                    {'a': 1}
-                )
-                pipe.send(result)
+                # Simulate some read/write
+                _ = buf.copy()
+                pipe.send('done')
             elif cmd == 'close':
                 break
     except EOFError:
         pass
-
+    finally:
+        try:
+            shm.close()
+        except:
+            pass
 
 def profile_pipe_communication():
-    """Ukur overhead pipe send/recv untuk data volume training."""
+    """Ukur overhead IPC send/recv dengan Shared Memory."""
     import multiprocessing as mp
+    from multiprocessing.shared_memory import SharedMemory
     import numpy as np
 
     results = {}
     for n in [1, 2, 4, 8]:
         pipes, procs = [], []
         ctx = mp.get_context('spawn')
+        
+        # Create shared memory for this test
+        size = n * 250 * 4 # 250 floats per env
+        shm = SharedMemory(create=True, size=size)
+        
         for i in range(n):
             parent, child = mp.Pipe()
-            p = ctx.Process(target=_pipe_worker, args=(child,))
+            p = ctx.Process(target=_shm_worker, args=(child, shm.name, n))
             p.daemon = True
             p.start()
             child.close()
             pipes.append(parent)
             procs.append(p)
 
-        logits = np.random.randn(250).astype(np.float32)
         timings = []
-        for _ in range(30):
+        for _ in range(50):
             t0 = time.perf_counter()
             for pipe in pipes:
-                pipe.send(('step', logits))
+                pipe.send('step')
             _ = [pipe.recv() for pipe in pipes]
             t1 = time.perf_counter()
             timings.append((t1 - t0) * 1000)
 
         for pipe in pipes:
-            pipe.send(('close', None))
+            pipe.send('close')
         for p in procs:
             p.join()
+            
+        shm.close()
+        shm.unlink()
 
         results[f"{n}_envs_mean_ms"] = np.mean(timings)
 
