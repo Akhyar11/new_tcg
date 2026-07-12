@@ -88,6 +88,13 @@ def auto_config_gpu():
     BATCH_SIZE = int(os.environ.get("RL_BATCH_SIZE", BATCH_SIZE))
 
     num_devices = jax.device_count()
+    # ⚠️ Untuk model kecil (<5M param), multi-GPU via PCIe LEBIH LAMBAT
+    # dari 1 GPU karena pmap overhead (~3ms) > forward pass (~0.5ms)
+    if num_devices > 1:
+        print(f"[*] {num_devices} GPU(s) detected.")
+        print(f"    ⚠️ Untuk model kecil, multi-GPU bisa LEBIH LAMBAT!")
+        print(f"    Gunakan CUDA_VISIBLE_DEVICES=0 untuk force single GPU")
+
     if NUM_ENVS % num_devices != 0:
         adjusted = max((NUM_ENVS // num_devices) * num_devices, num_devices)
         print(f"[!] NUM_ENVS={NUM_ENVS} not divisible by {num_devices} GPUs, "
