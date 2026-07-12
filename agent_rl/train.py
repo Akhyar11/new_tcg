@@ -35,7 +35,6 @@ from agent_rl.vector_env import VectorEnv, ShmVectorEnv
 from agent_rl.buffer import RolloutBuffer
 from agent_rl.ppo_update import ppo_update_step, get_action_and_value
 from flax.jax_utils import replicate, unreplicate
-from flax.core import freeze
 
 # ─── Hyperparameters ───
 NUM_ENVS = int(os.environ.get("RL_NUM_ENVS", "8"))
@@ -291,8 +290,9 @@ def train():
         update_count = 0
 
         # ⭐ Simpan params DAN opt_state sebelum update untuk rollback jika NaN
-        params_before = freeze(params_repl)
-        opt_state_before = freeze(opt_state_repl)
+        # JAX arrays immutable → reference copy sudah cukup (tidak perlu freeze/deepcopy)
+        params_before = params_repl
+        opt_state_before = opt_state_repl
 
         for epoch in range(EPOCHS):
             for batch in buffer.get_batches(BATCH_SIZE):
