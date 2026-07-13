@@ -233,12 +233,14 @@ async def websocket_endpoint(websocket: WebSocket):
                     print(f"Error pada JAX AI Inference: {e}")
                     traceback.print_exc()
                     print("Fallback ke random agent!")
-                    idx = random.randint(0, opt_count-1)
-                    obs = cg.game.battle_select([idx])
+                    target_c = min(max(min_c, 1), opt_count)
+                    choices = random.sample(range(opt_count), target_c) if opt_count > 0 else []
+                    obs = cg.game.battle_select(choices)
             else:
-                idx = random.randint(0, opt_count-1)
-                print(f"Random AI auto-playing idx {idx} out of {opt_count}")
-                obs = cg.game.battle_select([idx])
+                target_c = min(max(min_c, 1), opt_count)
+                choices = random.sample(range(opt_count), target_c) if opt_count > 0 else []
+                print(f"Random AI auto-playing choices {choices}")
+                obs = cg.game.battle_select(choices)
                 
         return obs
 
@@ -339,12 +341,14 @@ async def websocket_endpoint(websocket: WebSocket):
                             import traceback
                             print(f"Error pada JAX AI Inference (Player {curr_player}): {e}")
                             traceback.print_exc()
-                            idx = random.randint(0, opt_count-1)
-                            obs = cg.game.battle_select([idx])
+                            target_c = min(max(min_c, 1), opt_count)
+                            choices = random.sample(range(opt_count), target_c) if opt_count > 0 else []
+                            obs = cg.game.battle_select(choices)
                     else:
-                        idx = random.randint(0, opt_count-1)
-                        print(f"Random AI (Player {curr_player}) auto-playing idx {idx}")
-                        obs = cg.game.battle_select([idx])
+                        target_c = min(max(min_c, 1), opt_count)
+                        choices = random.sample(range(opt_count), target_c) if opt_count > 0 else []
+                        print(f"Random AI (Player {curr_player}) auto-playing choices {choices}")
+                        obs = cg.game.battle_select(choices)
 
                 if obs:
                     frontend_obs = json.loads(cg.game.visualize_data())[-1]

@@ -40,13 +40,7 @@ def parse_card(card, is_active=False, player_state: PlayerState = None) -> np.nd
         for e in energies:
             attached_counts[int(e)] += 1
 
-        features[3] = len(energies) / 10.0
-        features[4] = attached_counts[1] / 10.0 # Grass
-        features[5] = attached_counts[2] / 10.0 # Fire
-        features[6] = attached_counts[3] / 10.0 # Water
-        features[7] = attached_counts[4] / 10.0 # Lightning
-        features[8] = sum([attached_counts[k] for k in [5,6,7,8,9,10,11,0]]) / 10.0
-
+        # 1. Hitung kebutuhan energi (cost) maksimal dari serangan Pokemon
         total_cost = cost_g = cost_r = cost_w = cost_l = cost_other = 0
         if card_data and card_data.attacks:
             for atk_id in card_data.attacks:
@@ -64,6 +58,15 @@ def parse_card(card, is_active=False, player_state: PlayerState = None) -> np.nd
                     if len(atk.energies) > total_cost:
                         total_cost = len(atk.energies)
                         cost_g, cost_r, cost_w, cost_l, cost_other = atk_g, atk_r, atk_w, atk_l, atk_other
+
+        # 2. Fitur energi terpasang dibagi dengan KEBUTUHAN (progress ratio)
+        # Menggunakan max(cost, 1.0) untuk menghindari pembagian dengan 0
+        features[3] = len(energies) / max(total_cost, 1.0)
+        features[4] = attached_counts[1] / max(cost_g, 1.0) # Grass
+        features[5] = attached_counts[2] / max(cost_r, 1.0) # Fire
+        features[6] = attached_counts[3] / max(cost_w, 1.0) # Water
+        features[7] = attached_counts[4] / max(cost_l, 1.0) # Lightning
+        features[8] = sum([attached_counts[k] for k in [5,6,7,8,9,10,11,0]]) / max(cost_other, 1.0)
 
         features[9] = total_cost / 10.0
         features[10] = cost_g / 10.0
