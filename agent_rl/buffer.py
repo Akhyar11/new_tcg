@@ -21,8 +21,9 @@ class RolloutBuffer:
         self.rewards = np.zeros((n_steps, num_envs), dtype=np.float32)
         self.values = np.zeros((n_steps, num_envs), dtype=np.float32)
         self.dones = np.zeros((n_steps, num_envs), dtype=np.float32)
+        self.turn_changed = np.zeros((n_steps, num_envs), dtype=np.bool_)
 
-    def add(self, seq_in, glob_in, actions_mask, log_prob, reward, value, done):
+    def add(self, seq_in, glob_in, actions_mask, log_prob, reward, value, done, turn_changed):
         """
         Menyimpan data hasil dari satu step ke dalam buffer.
         Semua input berdimensi (num_envs, ...).
@@ -37,6 +38,7 @@ class RolloutBuffer:
         self.rewards[self.step] = np.array(reward, copy=False)
         self.values[self.step] = np.array(value, copy=False)
         self.dones[self.step] = np.array(done, dtype=np.float32, copy=False)
+        self.turn_changed[self.step] = np.array(turn_changed, dtype=np.bool_, copy=False)
 
         self.step += 1
 
@@ -51,14 +53,16 @@ class RolloutBuffer:
         for t in reversed(range(self.n_steps)):
             if t == self.n_steps - 1:
                 next_non_terminal = 1.0 - last_dones
-                next_values = last_values
+                actual_next_values = np.where(self.turn_changed[t], -last_values, last_values)
             else:
                 next_non_terminal = 1.0 - self.dones[t + 1]
-                next_values = self.values[t + 1]
+                actual_next_values = np.where(self.turn_changed[t], -self.values[t + 1], self.values[t + 1])
 
-            # GAE Standard
-            delta = self.rewards[t] + gamma * next_values * next_non_terminal - self.values[t]
-            last_gae_lam = delta + gamma * gae_lambda * next_non_terminal * last_gae_lam
+            # GAE Standard with Zero-Sum Correction
+            delta = self.rewards[t] + gamma * actual_next_values * next_non_terminal - self.values[t]
+            
+            actual_last_gae_lam = np.where(self.turn_changed[t], -last_gae_lam, last_gae_lam)
+            last_gae_lam = delta + gamma * gae_lambda * next_non_terminal * actual_last_gae_lam
             self.advantages[t] = last_gae_lam
 
         self.returns = self.advantages + self.values

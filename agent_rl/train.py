@@ -271,11 +271,13 @@ def train():
 
             mask_count = np.maximum(1.0, np.sum(actions_mask_np, axis=-1))
             multi_log_probs = np.sum(log_probs_all_np * actions_mask_np, axis=-1) / mask_count
+            
+            turn_changed_np = np.stack([info["turn_changed"] for info in infos])
 
             # Simpan NORMALIZED rewards ke buffer
             buffer.add(
                 next_seq, next_glob, actions_mask_np, multi_log_probs,
-                normalized_rewards, values_np, dones.astype(np.float32)
+                normalized_rewards, values_np, dones.astype(np.float32), turn_changed_np
             )
 
             next_seq = next_obs["seq_input"]

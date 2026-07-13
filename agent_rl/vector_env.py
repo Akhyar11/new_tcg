@@ -252,6 +252,8 @@ def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_env
                     old_state = obs.current
                     done = (obs.current.result != -1)
                     active_p = prev_player
+                    next_p = obs.current.yourIndex if obs.current else prev_player
+                    turn_changed_buf[worker_id] = (active_p != next_p) and not done
                     
                     # Update opp_known_hand tracking
                     opp_index = 1 - prev_player # Assume prev_player is our index (yourIndex)
@@ -286,6 +288,7 @@ def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_env
                     
                     done_result = -1
                     done_end_reason = 0
+                    turn_changed_buf[worker_id] = False
 
                 if done:
                     game_step_counter = 0
@@ -359,6 +362,8 @@ def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_env
                     old_state = None
                     seq_input_buf.fill(0)
                     glob_input_buf.fill(0)
+                    
+                turn_changed_buf[worker_id] = False
 
                 remote.send('done')
 
@@ -380,6 +385,7 @@ def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_env
         actions_mask_buf.fill(False)
         glob_mask_buf.fill(0)
         active_player_buf[worker_id] = 0
+        turn_changed_buf[worker_id] = False
         result_buf[worker_id] = -1
         end_reason_buf[worker_id] = 0
         try:
@@ -483,6 +489,7 @@ class VectorEnv:
                 "actions_mask": self.actions_mask[i].copy(),
                 "glob_mask": self.glob_mask[i].copy(),
                 "active_player": self.active_player[i],
+                "turn_changed": self.turn_changed[i],
                 "result": self.result[i],
                 "end_reason": self.end_reason[i]
             })
