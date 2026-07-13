@@ -112,20 +112,28 @@ class GALoop:
         print(f"[GA] Population ready in {elapsed:.1f}s")
         self.generation = 0
 
-    def init_population_from_decks(self, deck_dir: str, size: int = None):
+    def init_population_from_decks(self, deck_dir, size: int = None):
         """
         Seed populasi awal dari folder deck yang sudah ada (generated decks).
         Jika jumlah deck di folder < size, isi sisanya dengan deck random.
 
         Args:
-            deck_dir: Path ke folder berisi file .csv deck (satu ID per baris).
+            deck_dir: Path ke folder berisi file .csv deck (satu ID per baris), atau list of paths.
             size: Target populasi (default: config.POPULATION_SIZE).
         """
         if size is None:
             size = config.POPULATION_SIZE
         self.population = []
 
-        loaded = DeckGenome.from_csv_dir(deck_dir, self.db, max_count=size)
+        loaded = []
+        if isinstance(deck_dir, str):
+            deck_dir = [deck_dir]
+            
+        for d_dir in deck_dir:
+            if len(loaded) >= size:
+                break
+            loaded.extend(DeckGenome.from_csv_dir(d_dir, self.db, max_count=size - len(loaded)))
+
         self.population.extend(loaded)
         print(f"[GA] Loaded {len(loaded)} decks from '{deck_dir}'")
 
