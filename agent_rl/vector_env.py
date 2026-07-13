@@ -36,7 +36,7 @@ def softmax(x):
     return exp_x / (exp_x.sum() + 1e-10)
 
 
-def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
+def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_envs, shm_names):
     """
     Worker independen di sub-process menggunakan Shared Memory.
     Menangani eksekusi aksi, sampling, dan reward calculation.
@@ -67,35 +67,40 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
     end_reason_buf = np.ndarray((num_envs,), dtype=np.int32, buffer=shms['end_reason'].buf)
 
     # Pre-load decks
-    deck_files = []
-    deck_paths_checked = []
+    def get_loaded_decks(target_path):
+        deck_files = []
+        deck_paths_checked = []
 
-    possible_paths = [
-        deck_path,
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "deck_generated"),
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "agent_rl", "deck_generated"),
-    ]
-    for p in possible_paths:
-        if p not in deck_paths_checked:
-            deck_paths_checked.append(p)
-            if os.path.isdir(p):
-                files = sorted(glob.glob(os.path.join(p, "*.csv")))
-                deck_files.extend(files)
-            elif os.path.isfile(p):
-                deck_files.append(p)
+        possible_paths = [
+            target_path,
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "deck_generated"),
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "agent_rl", "deck_generated"),
+        ]
+        for p in possible_paths:
+            if p not in deck_paths_checked:
+                deck_paths_checked.append(p)
+                if os.path.isdir(p):
+                    files = sorted(glob.glob(os.path.join(p, "*.csv")))
+                    deck_files.extend(files)
+                elif os.path.isfile(p):
+                    deck_files.append(p)
 
-    deck_files = list(dict.fromkeys(deck_files))
-    loaded_decks = []
-    for f in deck_files:
-        d = load_deck(f)
-        if d is not None:
-            loaded_decks.append(d)
+        deck_files = list(dict.fromkeys(deck_files))
+        loaded = []
+        for f in deck_files:
+            d = load_deck(f)
+            if d is not None:
+                loaded.append(d)
 
-    if len(loaded_decks) < 2:
-        print(f"[Worker {worker_id}] WARNING: hanya {len(loaded_decks)} deck valid. Menggunakan fallback.")
-        loaded_decks = [[1]*56 + [210]*4]
+        if len(loaded) < 1:
+            print(f"[Worker {worker_id}] WARNING: tidak ada deck valid di {target_path}. Menggunakan fallback.")
+            loaded = [[1]*56 + [210]*4]
+        return loaded
 
-    print(f"[Worker {worker_id}] Loaded {len(loaded_decks)} decks from {len(deck_files)} files")
+    loaded_decks_p0 = get_loaded_decks(p0_deck_path)
+    loaded_decks_p1 = get_loaded_decks(p1_deck_path)
+
+    print(f"[Worker {worker_id}] Loaded {len(loaded_decks_p0)} decks for P0, {len(loaded_decks_p1)} decks for P1")
 
     obs = None
     old_state = None
@@ -194,14 +199,9 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
                     reset_trackers()
                     opp_known_hand.clear()
                     try:
-                        if len(loaded_decks) >= 2:
-                            idx0 = random.randint(0, len(loaded_decks) - 1)
-                            idx1 = random.randint(0, len(loaded_decks) - 1)
-                            while idx1 == idx0 and len(loaded_decks) > 1:
-                                idx1 = random.randint(0, len(loaded_decks) - 1)
-                            deck_list = [loaded_decks[idx0], loaded_decks[idx1]]
-                        else:
-                            deck_list = [loaded_decks[0], loaded_decks[0]]
+                        idx0 = random.randint(0, len(loaded_decks_p0) - 1)
+                        idx1 = random.randint(0, len(loaded_decks_p1) - 1)
+                        deck_list = [loaded_decks_p0[idx0], loaded_decks_p1[idx1]]
 
                         obs_dict, _ = battle_start(deck_list[0], deck_list[1])
                         obs = to_dataclass(obs_dict, Observation)
@@ -293,14 +293,9 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
                     opp_known_hand.clear()
                     battle_finish()
                     try:
-                        if len(loaded_decks) >= 2:
-                            idx0 = random.randint(0, len(loaded_decks) - 1)
-                            idx1 = random.randint(0, len(loaded_decks) - 1)
-                            while idx1 == idx0 and len(loaded_decks) > 1:
-                                idx1 = random.randint(0, len(loaded_decks) - 1)
-                            deck_list = [loaded_decks[idx0], loaded_decks[idx1]]
-                        else:
-                            deck_list = [loaded_decks[0], loaded_decks[0]]
+                        idx0 = random.randint(0, len(loaded_decks_p0) - 1)
+                        idx1 = random.randint(0, len(loaded_decks_p1) - 1)
+                        deck_list = [loaded_decks_p0[idx0], loaded_decks_p1[idx1]]
 
                         obs_dict, _ = battle_start(deck_list[0], deck_list[1])
                         obs = to_dataclass(obs_dict, Observation)
@@ -343,14 +338,9 @@ def worker(remote, parent_remote, worker_id, deck_path, num_envs, shm_names):
                 reset_trackers()
                 battle_finish()
                 try:
-                    if len(loaded_decks) >= 2:
-                        idx0 = random.randint(0, len(loaded_decks) - 1)
-                        idx1 = random.randint(0, len(loaded_decks) - 1)
-                        while idx1 == idx0 and len(loaded_decks) > 1:
-                            idx1 = random.randint(0, len(loaded_decks) - 1)
-                        deck_list = [loaded_decks[idx0], loaded_decks[idx1]]
-                    else:
-                        deck_list = [loaded_decks[0], loaded_decks[0]]
+                    idx0 = random.randint(0, len(loaded_decks_p0) - 1)
+                    idx1 = random.randint(0, len(loaded_decks_p1) - 1)
+                    deck_list = [loaded_decks_p0[idx0], loaded_decks_p1[idx1]]
 
                     obs_dict, _ = battle_start(deck_list[0], deck_list[1])
                     obs = to_dataclass(obs_dict, Observation)
@@ -407,17 +397,22 @@ class VectorEnv:
     P0 dan P1 selalu mendapat deck BERBEDA.
     Dilengkapi Shared Memory untuk eliminasi overhead Pipe.
     """
-    def __init__(self, num_envs, deck_path="agent_rl/deck_generated"):
+    def __init__(self, num_envs, p0_deck_path="agent_rl/deck_generated", p1_deck_path=None):
         self.num_envs = num_envs
-        if not os.path.exists(deck_path):
-            alt = os.path.join(os.path.dirname(os.path.abspath(__file__)), "deck_generated")
-            if os.path.exists(alt):
-                deck_path = alt
-            else:
-                alt2 = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                                    "agent_rl", "deck_generated")
-                if os.path.exists(alt2):
-                    deck_path = alt2
+        if p1_deck_path is None:
+            p1_deck_path = p0_deck_path
+        
+        # Validasi path (bisa di-skip jika p0/p1 valid)
+        def validate_path(d_path):
+            if not os.path.exists(d_path):
+                alt = os.path.join(os.path.dirname(os.path.abspath(__file__)), "deck_generated")
+                if os.path.exists(alt): return alt
+                alt2 = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "agent_rl", "deck_generated")
+                if os.path.exists(alt2): return alt2
+            return d_path
+            
+        p0_deck_path = validate_path(p0_deck_path)
+        p1_deck_path = validate_path(p1_deck_path)
 
         self.shms = []
         self.shm_names = {}
@@ -448,7 +443,7 @@ class VectorEnv:
 
         ctx = mp.get_context('spawn')
         for i, (work_remote, remote) in enumerate(zip(self.work_remotes, self.remotes)):
-            p = ctx.Process(target=worker, args=(work_remote, remote, i, deck_path, num_envs, self.shm_names))
+            p = ctx.Process(target=worker, args=(work_remote, remote, i, p0_deck_path, p1_deck_path, num_envs, self.shm_names))
             p.daemon = True
             p.start()
             self.processes.append(p)

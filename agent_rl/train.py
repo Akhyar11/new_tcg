@@ -68,6 +68,8 @@ DECK_PATH = os.environ.get(
     "RL_DECK_PATH",
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "deck_generated")
 )
+P0_DECK_PATH = os.environ.get("P0_DECK_PATH", DECK_PATH)
+P1_DECK_PATH = os.environ.get("P1_DECK_PATH", DECK_PATH)
 
 # Memory monitoring — cetak setiap N update
 MEM_LOG_INTERVAL = 100
@@ -114,7 +116,8 @@ def train():
     print(f"Num envs: {NUM_ENVS}, Batch size: {BATCH_SIZE}")
     print(f"Gamma: {GAMMA}, GAE lambda: {GAE_LAMBDA}")
     print(f"Initial clip: {CLIP_RATIO}, Initial entropy: {ENTROPY_COEF}")
-    print(f"Deck path: {DECK_PATH}")
+    print(f"P0 Deck path: {P0_DECK_PATH}")
+    print(f"P1 Deck path: {P1_DECK_PATH}")
     print()
 
     num_devices = auto_config_gpu()
@@ -125,8 +128,10 @@ def train():
     rng = jax.random.PRNGKey(42)
 
     # 1. Init parallel environments
-    print(f"Starting {NUM_ENVS} parallel envs from '{DECK_PATH}'...")
-    env = VectorEnv(num_envs=NUM_ENVS, deck_path=DECK_PATH)
+    print(f"Starting {NUM_ENVS} parallel envs...")
+    print(f"  P0 Deck Path: {P0_DECK_PATH}")
+    print(f"  P1 Deck Path: {P1_DECK_PATH}")
+    env = VectorEnv(num_envs=NUM_ENVS, p0_deck_path=P0_DECK_PATH, p1_deck_path=P1_DECK_PATH)
 
     # 2. Init model & optimizer
     model = PokemonAgent(num_actions=250)
