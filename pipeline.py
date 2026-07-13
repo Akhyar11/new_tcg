@@ -304,13 +304,15 @@ def phase_run_ga(iteration: int, args):
     ga = GALoop(db, n_workers=args.ga_workers, use_gpu=False)
     log(f"GA Workers menggunakan CPU (GPU reserved untuk RL training)")
 
-    # Seed populasi dari generated decks + random fill
-    if os.path.isdir(GENERATED_DECK_DIR):
-        log(f"Seeding GA population from {GENERATED_DECK_DIR}...")
-        ga.init_population_from_decks(GENERATED_DECK_DIR, ga_config.POPULATION_SIZE)
-    else:
-        log(f"Generated deck folder not found at {GENERATED_DECK_DIR}, using random population.")
-        ga.init_population()
+    # Seed populasi:
+    # Iterasi 1: dari deck awal (GENERATED_DECK_DIR)
+    # Iterasi 2+: dari deck terbaik iterasi sebelumnya (RL_DECK_DIR) + deck awal
+    seed_dirs = [GENERATED_DECK_DIR]
+    if iteration > 1 and os.path.exists(RL_DECK_DIR) and len(os.listdir(RL_DECK_DIR)) > 0:
+        seed_dirs.insert(0, RL_DECK_DIR)  # Prioritaskan RL_DECK_DIR terlebih dahulu
+
+    log(f"Seeding GA population from {seed_dirs}...")
+    ga.init_population_from_decks(seed_dirs, ga_config.POPULATION_SIZE)
     ga.run()
 
     # Log hasil GA
