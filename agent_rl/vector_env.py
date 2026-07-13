@@ -63,6 +63,7 @@ def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_env
     glob_mask_buf = np.ndarray((num_envs, 250), dtype=np.float32, buffer=shms['glob_mask'].buf)[worker_id]
     
     active_player_buf = np.ndarray((num_envs,), dtype=np.int32, buffer=shms['active_player'].buf)
+    turn_changed_buf = np.ndarray((num_envs,), dtype=np.bool_, buffer=shms['turn_changed'].buf)
     result_buf = np.ndarray((num_envs,), dtype=np.int32, buffer=shms['result'].buf)
     end_reason_buf = np.ndarray((num_envs,), dtype=np.int32, buffer=shms['end_reason'].buf)
 
@@ -121,6 +122,62 @@ def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_env
             cmd = remote.recv()
 
             if cmd == 'step':
+                if not obs or not obs.current:
+                    # Lingkungan dalam kondisi crash/broken dari iterasi sebelumnya. Langsung pancing auto-reset.
+                    rewards_buf[worker_id] = -2.0
+                    dones_buf[worker_id] = True
+                    actions_mask_buf.fill(False)
+                    glob_mask_buf.fill(0)
+                    active_player_buf[worker_id] = 0
+                    result_buf[worker_id] = -1
+                    end_reason_buf[worker_id] = 0
+                    turn_changed_buf[worker_id] = False
+                    
+                    # Manual auto-reset (simulating if done: loop)
+                    game_step_counter = 0
+                    reset_trackers()
+                    opp_known_hand.clear()
+                    battle_finish()
+                    
+                    success = False
+                    for _ in range(10):
+                        try:
+                            idx0 = random.randint(0, len(loaded_decks_p0) - 1)
+                            idx1 = random.randint(0, len(loaded_decks_p1) - 1)
+                            deck_list = [loaded_decks_p0[idx0], loaded_decks_p1[idx1]]
+
+                            obs_dict, _ = battle_start(deck_list[0], deck_list[1])
+                            obs = to_dataclass(obs_dict, Observation)
+                            old_state = obs.current
+
+                            if obs.current and obs.select and obs.current.result == -1:
+                                features = extract_features(obs.current, obs.select, obs.current.yourIndex, opp_known_hand)
+                                np.copyto(seq_input_buf, features['seq_input'])
+                                np.copyto(glob_input_buf, features['glob_input'])
+                                success = True
+                                break
+                        except Exception as e:
+                            battle_finish()
+                            
+                    if not success:
+                        deck_list = [[1]*56 + [210]*4, [1]*56 + [210]*4]
+                        try:
+                            obs_dict, _ = battle_start(deck_list[0], deck_list[1])
+                            obs = to_dataclass(obs_dict, Observation)
+                            old_state = obs.current
+                            if obs.current and obs.select and obs.current.result == -1:
+                                features = extract_features(obs.current, obs.select, obs.current.yourIndex, opp_known_hand)
+                                np.copyto(seq_input_buf, features['seq_input'])
+                                np.copyto(glob_input_buf, features['glob_input'])
+                        except:
+                            obs = Observation(current=None, select=None, logs=[])
+                            old_state = None
+                            seq_input_buf.fill(0)
+                            glob_input_buf.fill(0)
+
+                    remote.send('done')
+                    continue
+
                 logits = logits_buf.copy()
 
                 mock_select_dict = {"options": []}
@@ -295,28 +352,45 @@ def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_env
                     reset_trackers()
                     opp_known_hand.clear()
                     battle_finish()
-                    try:
-                        idx0 = random.randint(0, len(loaded_decks_p0) - 1)
-                        idx1 = random.randint(0, len(loaded_decks_p1) - 1)
-                        deck_list = [loaded_decks_p0[idx0], loaded_decks_p1[idx1]]
+                    success = False
+                    for _ in range(10):
+                        try:
+                            idx0 = random.randint(0, len(loaded_decks_p0) - 1)
+                            idx1 = random.randint(0, len(loaded_decks_p1) - 1)
+                            deck_list = [loaded_decks_p0[idx0], loaded_decks_p1[idx1]]
 
-                        obs_dict, _ = battle_start(deck_list[0], deck_list[1])
-                        obs = to_dataclass(obs_dict, Observation)
-                        old_state = obs.current
+                            obs_dict, _ = battle_start(deck_list[0], deck_list[1])
+                            obs = to_dataclass(obs_dict, Observation)
+                            old_state = obs.current
 
-                        if obs.current and obs.select and obs.current.result == -1:
-                            features = extract_features(obs.current, obs.select, obs.current.yourIndex, opp_known_hand)
-                            np.copyto(seq_input_buf, features['seq_input'])
-                            np.copyto(glob_input_buf, features['glob_input'])
-                        else:
+                            if obs.current and obs.select and obs.current.result == -1:
+                                features = extract_features(obs.current, obs.select, obs.current.yourIndex, opp_known_hand)
+                                np.copyto(seq_input_buf, features['seq_input'])
+                                np.copyto(glob_input_buf, features['glob_input'])
+                                success = True
+                                break
+                        except Exception as e:
+                            battle_finish()
+                            
+                    if not success:
+                        print(f"[Worker {worker_id}] Auto-reset failed 10 times, using fallback deck.")
+                        deck_list = [[1]*56 + [210]*4, [1]*56 + [210]*4]
+                        try:
+                            obs_dict, _ = battle_start(deck_list[0], deck_list[1])
+                            obs = to_dataclass(obs_dict, Observation)
+                            old_state = obs.current
+                            if obs.current and obs.select and obs.current.result == -1:
+                                features = extract_features(obs.current, obs.select, obs.current.yourIndex, opp_known_hand)
+                                np.copyto(seq_input_buf, features['seq_input'])
+                                np.copyto(glob_input_buf, features['glob_input'])
+                            else:
+                                raise ValueError("Fallback deck failed")
+                        except Exception as e:
+                            print(f"[Worker {worker_id}] FATAL Auto-reset error: {e}")
+                            obs = Observation(current=None, select=None, logs=[])
+                            old_state = None
                             seq_input_buf.fill(0)
                             glob_input_buf.fill(0)
-                    except Exception as e:
-                        print(f"[Worker {worker_id}] Auto-reset error: {e}")
-                        obs = Observation(current=None, select=None, logs=[])
-                        old_state = None
-                        seq_input_buf.fill(0)
-                        glob_input_buf.fill(0)
                 else:
                     if obs.current and obs.select and obs.current.result == -1:
                         features = extract_features(obs.current, obs.select, obs.current.yourIndex, opp_known_hand)
@@ -340,28 +414,45 @@ def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_env
                 game_step_counter = 0
                 reset_trackers()
                 battle_finish()
-                try:
-                    idx0 = random.randint(0, len(loaded_decks_p0) - 1)
-                    idx1 = random.randint(0, len(loaded_decks_p1) - 1)
-                    deck_list = [loaded_decks_p0[idx0], loaded_decks_p1[idx1]]
+                success = False
+                for _ in range(10):
+                    try:
+                        idx0 = random.randint(0, len(loaded_decks_p0) - 1)
+                        idx1 = random.randint(0, len(loaded_decks_p1) - 1)
+                        deck_list = [loaded_decks_p0[idx0], loaded_decks_p1[idx1]]
 
-                    obs_dict, _ = battle_start(deck_list[0], deck_list[1])
-                    obs = to_dataclass(obs_dict, Observation)
-                    old_state = obs.current
+                        obs_dict, _ = battle_start(deck_list[0], deck_list[1])
+                        obs = to_dataclass(obs_dict, Observation)
+                        old_state = obs.current
 
-                    if obs.current and obs.select and obs.current.result == -1:
-                        features = extract_features(obs.current, obs.select, obs.current.yourIndex)
-                        np.copyto(seq_input_buf, features['seq_input'])
-                        np.copyto(glob_input_buf, features['glob_input'])
-                    else:
+                        if obs.current and obs.select and obs.current.result == -1:
+                            features = extract_features(obs.current, obs.select, obs.current.yourIndex, opp_known_hand)
+                            np.copyto(seq_input_buf, features['seq_input'])
+                            np.copyto(glob_input_buf, features['glob_input'])
+                            success = True
+                            break
+                    except Exception as e:
+                        battle_finish()
+                        
+                if not success:
+                    print(f"[Worker {worker_id}] Reset failed 10 times, using fallback deck.")
+                    deck_list = [[1]*56 + [210]*4, [1]*56 + [210]*4]
+                    try:
+                        obs_dict, _ = battle_start(deck_list[0], deck_list[1])
+                        obs = to_dataclass(obs_dict, Observation)
+                        old_state = obs.current
+                        if obs.current and obs.select and obs.current.result == -1:
+                            features = extract_features(obs.current, obs.select, obs.current.yourIndex, opp_known_hand)
+                            np.copyto(seq_input_buf, features['seq_input'])
+                            np.copyto(glob_input_buf, features['glob_input'])
+                        else:
+                            raise ValueError("Fallback deck failed")
+                    except Exception as e:
+                        print(f"[Worker {worker_id}] FATAL Reset error: {e}")
+                        obs = Observation(current=None, select=None, logs=[])
+                        old_state = None
                         seq_input_buf.fill(0)
                         glob_input_buf.fill(0)
-                except Exception as e:
-                    print(f"[Worker {worker_id}] Reset error: {e}")
-                    obs = Observation(current=None, select=None, logs=[])
-                    old_state = None
-                    seq_input_buf.fill(0)
-                    glob_input_buf.fill(0)
                     
                 turn_changed_buf[worker_id] = False
 
@@ -441,6 +532,7 @@ class VectorEnv:
         self.actions_mask = create_shm('actions_mask', (num_envs, 250), np.bool_)
         self.glob_mask = create_shm('glob_mask', (num_envs, 250), np.float32)
         self.active_player = create_shm('active_player', (num_envs,), np.int32)
+        self.turn_changed = create_shm('turn_changed', (num_envs,), np.bool_)
         self.result = create_shm('result', (num_envs,), np.int32)
         self.end_reason = create_shm('end_reason', (num_envs,), np.int32)
 
