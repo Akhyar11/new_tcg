@@ -393,8 +393,8 @@ def train():
             print(f"  End ─ {reason_str}")
             
             # P1 Frozen Weight Update Logic
-            if rolling_win_p0 >= 60.0 and len(recent_wins_p0) == 1000:
-                print(f"  🔥 Rolling Winrate 1000 Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dengan bobot P0 terbaru dan reset history.")
+            if rolling_win_p0 >= 60.0 and len(recent_wins_p0) == recent_wins_p0.maxlen:
+                print(f"  🔥 Rolling Winrate {recent_wins_p0.maxlen} Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dengan bobot P0 terbaru dan reset history.")
                 params_repl_p1 = params_repl_p0
                 recent_wins_p0.clear()
 
