@@ -43,17 +43,22 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio, entropy_
         log_ratio = jnp.clip(log_probs - batch['old_log_probs'], -10.0, 10.0)
         ratio = jnp.exp(log_ratio)
 
-        surr1 = ratio * batch['advantages']
-        surr2 = jnp.clip(ratio, 1.0 - clip_ratio, 1.0 + clip_ratio) * batch['advantages']
-        actor_loss = -jnp.minimum(surr1, surr2).mean()
+        # Active player mask (0 = P0, 1 = P1). Kita hanya train P0.
+        active_mask = (batch['active_players'] == 0).astype(jnp.float32)
+        valid_count = jnp.maximum(1.0, active_mask.sum())
+
+        surr1 = ratio * batch['advantages'] * active_mask
+        surr2 = jnp.clip(ratio, 1.0 - clip_ratio, 1.0 + clip_ratio) * batch['advantages'] * active_mask
+        actor_loss = -jnp.minimum(surr1, surr2).sum() / valid_count
 
         # 5. PPO Critic Loss (Mean Squared Error dari TD-Returns)
-        value_loss = 0.5 * jnp.square(values - batch['returns']).mean()
+        value_loss = 0.5 * (jnp.square(values - batch['returns']) * active_mask).sum() / valid_count
 
         # 6. Entropy Bonus (Untuk mendorong eksplorasi)
         probs = jax.nn.softmax(masked_logits)
         # Sum(P * logP) hanya untuk aksi yang legal
-        entropy = -jnp.sum(probs * log_probs_all * action_mask, axis=-1).mean()
+        entropy = -jnp.sum(probs * log_probs_all * action_mask, axis=-1)
+        entropy = (entropy * active_mask).sum() / valid_count
 
         # 7. Total Loss Kombinasi
         total_loss = actor_loss + (0.5 * value_loss) - (entropy_coef * entropy)

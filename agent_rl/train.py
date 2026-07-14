@@ -160,8 +160,12 @@ def train():
     best_reward = -999.0  # Track best average return for separate save
 
     # Replicate to all GPUs
-    params_repl = replicate(params)
+    params_repl_p0 = replicate(params)
+    params_repl_p1 = replicate(params)
     opt_state_repl = replicate(opt_state)
+
+    # State active_players tracker
+    current_active_players = np.zeros(NUM_ENVS, dtype=np.int32)
 
     # 3. Init buffer
     buffer = RolloutBuffer(n_steps=N_STEPS, num_envs=NUM_ENVS)
@@ -218,12 +222,20 @@ def train():
                 (num_devices, NUM_ENVS // num_devices, *next_glob.shape[1:])
             )
 
-            _, _, values_sharded, logits_sharded = get_action_and_value(
-                params_repl, model.apply, next_seq_sharded, next_glob_sharded, step_rngs
+            _, _, values_sharded_p0, logits_sharded_p0 = get_action_and_value(
+                params_repl_p0, model.apply, next_seq_sharded, next_glob_sharded, step_rngs
+            )
+            _, _, _, logits_sharded_p1 = get_action_and_value(
+                params_repl_p1, model.apply, next_seq_sharded, next_glob_sharded, step_rngs
             )
 
-            logits_np = np.array(logits_sharded).reshape((NUM_ENVS, -1))
-            values_np = np.array(values_sharded).reshape((NUM_ENVS,))
+            logits_np_p0 = np.array(logits_sharded_p0).reshape((NUM_ENVS, -1))
+            logits_np_p1 = np.array(logits_sharded_p1).reshape((NUM_ENVS, -1))
+            values_np_p0 = np.array(values_sharded_p0).reshape((NUM_ENVS,))
+
+            # Gabungkan logits & value sesuai active player
+            logits_np = np.where(current_active_players[:, None] == 0, logits_np_p0, logits_np_p1)
+            values_np = np.where(current_active_players == 0, values_np_p0, 0.0)
 
             next_obs, rewards, dones, infos = env.step(logits_np)
 
@@ -277,8 +289,12 @@ def train():
             # Simpan NORMALIZED rewards ke buffer
             buffer.add(
                 next_seq, next_glob, actions_mask_np, multi_log_probs,
-                normalized_rewards, values_np, dones.astype(np.float32), turn_changed_np
+                normalized_rewards, values_np, dones.astype(np.float32), turn_changed_np,
+                current_active_players
             )
+            
+            # Update active_players untuk step berikutnya
+            current_active_players = np.stack([info["active_player"] for info in infos])
 
             next_seq = next_obs["seq_input"]
             next_glob = next_obs["glob_input"]
@@ -294,7 +310,7 @@ def train():
         step_rngs = jax.random.split(rng, num_devices)
 
         _, _, next_values_sharded, _ = get_action_and_value(
-            params_repl, model.apply, next_seq_sharded, next_glob_sharded, step_rngs
+            params_repl_p0, model.apply, next_seq_sharded, next_glob_sharded, step_rngs
         )
         next_values = np.array(next_values_sharded).reshape((NUM_ENVS,))
         buffer.compute_returns_and_advantages(next_values, next_done, GAMMA, GAE_LAMBDA)
@@ -305,7 +321,7 @@ def train():
 
         # ⭐ Simpan params DAN opt_state sebelum update untuk rollback jika NaN
         # JAX arrays immutable → reference copy sudah cukup (tidak perlu freeze/deepcopy)
-        params_before = params_repl
+        params_before = params_repl_p0
         opt_state_before = opt_state_repl
 
         for epoch in range(EPOCHS):
@@ -315,8 +331,8 @@ def train():
                     for k, v in batch.items()
                 }
 
-                params_repl, opt_state_repl, loss, _ = ppo_update_step(
-                    params_repl, opt_state_repl, batch_sharded, model.apply, tx,
+                params_repl_p0, opt_state_repl, loss, _ = ppo_update_step(
+                    params_repl_p0, opt_state_repl, batch_sharded, model.apply, tx,
                     current_clip_ratio, current_entropy_coef
                 )
                 mean_loss += float(loss[0])
@@ -327,7 +343,7 @@ def train():
         # ⭐ NaN guard: rollback params DAN opt_state jika loss NaN/Inf
         if not np.isfinite(mean_loss):
             print(f"  ⚠️ WARNING: Loss NaN/Inf ({mean_loss})! Rollback ke update sebelumnya.")
-            params_repl = params_before
+            params_repl_p0 = params_before
             opt_state_repl = opt_state_before
             mean_loss = 0.0
 
@@ -366,15 +382,20 @@ def train():
                   f"Entropy: {current_entropy_coef:.3f} | "
                   f"Norm: {norm_scale:.2f}")
             print(f"  End ─ {reason_str}")
+            
+            # P1 Frozen Weight Update Logic
+            if win_p0 >= 60.0 and games_played >= 10:
+                print(f"  🔥 Winrate P0 mencapai {win_p0:.1f}%! Update bobot P1 dengan bobot P0 terbaru.")
+                params_repl_p1 = params_repl_p0
 
         # ── Phase 5: Checkpointing ──
         if update % 50 == 0:
-            save_checkpoint(unreplicate(params_repl), f"model_update_{update}.msgpack")
+            save_checkpoint(unreplicate(params_repl_p0), f"model_update_{update}.msgpack")
 
         # Save best model (by average return)
         if ep_returns and avg_ret > best_reward:
             best_reward = avg_ret
-            save_checkpoint(unreplicate(params_repl), "model_best.msgpack")
+            save_checkpoint(unreplicate(params_repl_p0), "model_best.msgpack")
             print(f"  ⭐ New best model saved! Avg return: {best_reward:+.2f}")
 
         # ⭐ Memory monitoring — deteksi leak
@@ -396,7 +417,7 @@ def train():
     # Final save
     print("Training complete. Closing env.")
     env.close()
-    save_checkpoint(unreplicate(params_repl), "model_final.msgpack")
+    save_checkpoint(unreplicate(params_repl_p0), "model_final.msgpack")
     print(f"Best model saved with avg return: {best_reward:+.2f}")
 
 

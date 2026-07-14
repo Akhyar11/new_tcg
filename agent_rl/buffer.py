@@ -22,8 +22,9 @@ class RolloutBuffer:
         self.values = np.zeros((n_steps, num_envs), dtype=np.float32)
         self.dones = np.zeros((n_steps, num_envs), dtype=np.float32)
         self.turn_changed = np.zeros((n_steps, num_envs), dtype=np.bool_)
+        self.active_players = np.zeros((n_steps, num_envs), dtype=np.int32)
 
-    def add(self, seq_in, glob_in, actions_mask, log_prob, reward, value, done, turn_changed):
+    def add(self, seq_in, glob_in, actions_mask, log_prob, reward, value, done, turn_changed, active_player):
         """
         Menyimpan data hasil dari satu step ke dalam buffer.
         Semua input berdimensi (num_envs, ...).
@@ -39,6 +40,7 @@ class RolloutBuffer:
         self.values[self.step] = np.array(value, copy=False)
         self.dones[self.step] = np.array(done, dtype=np.float32, copy=False)
         self.turn_changed[self.step] = np.array(turn_changed, dtype=np.bool_, copy=False)
+        self.active_players[self.step] = np.array(active_player, dtype=np.int32, copy=False)
 
         self.step += 1
 
@@ -83,6 +85,7 @@ class RolloutBuffer:
         b_advantages = self.advantages.reshape((self.buffer_size,))
         b_returns = self.returns.reshape((self.buffer_size,))
         b_values = self.values.reshape((self.buffer_size,))
+        b_active_players = self.active_players.reshape((self.buffer_size,))
 
         # Normalisasi Advantages di tingkat batch raksasa (membantu stabilitas JAX)
         b_advantages = (b_advantages - b_advantages.mean()) / (b_advantages.std() + 1e-8)
@@ -102,7 +105,8 @@ class RolloutBuffer:
                 "old_log_probs": b_log_probs[batch_indices],
                 "advantages": b_advantages[batch_indices],
                 "returns": b_returns[batch_indices],
-                "values": b_values[batch_indices]
+                "values": b_values[batch_indices],
+                "active_players": b_active_players[batch_indices]
             }
             start_idx = end_idx
 
