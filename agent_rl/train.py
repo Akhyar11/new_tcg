@@ -52,9 +52,9 @@ if FINETUNE_MODE:
     EPOCHS = 2                         # Fewer epochs — avoid overfit
     print(f"[FineTune] MODE AKTIF — LR={LEARNING_RATE}, Entropy={ENTROPY_COEF}, Epochs={EPOCHS}, Steps={TOTAL_TIMESTEPS}")
 else:
-    # 8M timesteps ≈ 7.5 jam di 300 FPS (Kaggle-safe)
+    # 10M timesteps
     # Override: TOTAL_TIMESTEPS=10000000 python train.py
-    TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "8000000"))
+    TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "10000000"))
     LEARNING_RATE = 3e-4
     ENTROPY_COEF = 0.05                # Starting entropy (akan di-anneal)
     EPOCHS = 4
@@ -192,7 +192,7 @@ def train():
     episodic_returns = np.zeros(NUM_ENVS, dtype=np.float32)
     
     # Riwayat kemenangan P0 untuk update P1
-    recent_wins_p0 = deque(maxlen=1000)
+    recent_wins_p0 = deque(maxlen=100)
 
     print("\n=== MAIN TRAINING LOOP ===")
     for update in range(1, num_updates + 1):
