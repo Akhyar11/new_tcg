@@ -84,7 +84,7 @@ DECK_BACKUP_DIR = os.path.join(ROOT, "pipeline_deck_backups")
 NEW_DECK_DIR = os.path.join(ROOT, "new_deck")
 
 # RL defaults — cocok untuk convergence-grade training
-DEFAULT_RL_STEPS = 10_000_000     # Per iterasi (3 iterasi = 30M)
+DEFAULT_RL_STEPS = 15_000_000     # Per iterasi (3 iterasi = 45M)
 QUICK_RL_STEPS = 100_000
 
 REASON_LABELS = {1: "Prize✓", 2: "DeckOut✗", 3: "NoActive✓", 4: "Effect✓"}
@@ -104,10 +104,10 @@ def parse_args():
                         help="NUM_ENVS untuk RL training (default: 8)")
     parser.add_argument("--ga-gens", type=int, default=None,
                         help="Generasi GA per iterasi (default: config default)")
-    parser.add_argument("--rl-steps", type=int, default=10000000,
-                        help="Total timesteps RL per iterasi tuning (default: 10M)")
-    parser.add_argument("--init-steps", type=int, default=10000000,
-                        help="Total timesteps RL untuk Initial Train (default: 10M)")
+    parser.add_argument("--rl-steps", type=int, default=15000000,
+                        help="Total timesteps RL per iterasi tuning (default: 15M)")
+    parser.add_argument("--init-steps", type=int, default=15000000,
+                        help="Total timesteps RL untuk Initial Train (default: 15M)")
     parser.add_argument("--rl-deck-samples", type=int, default=10,
                         help="Jumlah deck GA terbaik yang dicopy ke RL (default: 10)")
     return parser.parse_args()

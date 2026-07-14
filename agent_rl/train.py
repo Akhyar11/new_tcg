@@ -52,9 +52,9 @@ if FINETUNE_MODE:
     EPOCHS = 2                         # Fewer epochs — avoid overfit
     print(f"[FineTune] MODE AKTIF — LR={LEARNING_RATE}, Entropy={ENTROPY_COEF}, Epochs={EPOCHS}, Steps={TOTAL_TIMESTEPS}")
 else:
-    # 10M timesteps
-    # Override: TOTAL_TIMESTEPS=10000000 python train.py
-    TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "10000000"))
+    # 15M timesteps
+    # Override: TOTAL_TIMESTEPS=15000000 python train.py
+    TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "15000000"))
     LEARNING_RATE = 3e-4
     ENTROPY_COEF = 0.05                # Starting entropy (akan di-anneal)
     EPOCHS = 4
@@ -381,7 +381,7 @@ def train():
                   f"Step: {global_step:,} | FPS: {fps} | "
                   f"Games: {games_played} | Steps/Game: {avg_steps:.0f} | "
                   f"Return: {avg_ret:+.2f} | "
-                  f"Win P0 (Batch): {win_p0:.1f}% | Win P0 (1K Roll): {rolling_win_p0:.1f}% | "
+                  f"Win P0 (Batch): {win_p0:.1f}% | Win P0 ({recent_wins_p0.maxlen} Roll): {rolling_win_p0:.1f}% | "
                   f"Loss: {mean_loss:.4f} | "
                   f"Clip: {current_clip_ratio:.3f} | "
                   f"Entropy: {current_entropy_coef:.3f} | "
