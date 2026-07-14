@@ -381,7 +381,7 @@ def train():
                   f"Step: {global_step:,} | FPS: {fps} | "
                   f"Games: {games_played} | Steps/Game: {avg_steps:.0f} | "
                   f"Return: {avg_ret:+.2f} | "
-                  f"Win P0 (Batch): {win_p0:.1f}% | Win P0 ({recent_wins_p0.maxlen} Roll): {rolling_win_p0:.1f}% | "
+                  f"Win P0 (Batch): {win_p0:.1f}% | Win P0 ({len(recent_wins_p0)}/{recent_wins_p0.maxlen} Roll): {rolling_win_p0:.1f}% | "
                   f"Loss: {mean_loss:.4f} | "
                   f"Clip: {current_clip_ratio:.3f} | "
                   f"Entropy: {current_entropy_coef:.3f} | "
