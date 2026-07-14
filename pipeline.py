@@ -106,6 +106,8 @@ def parse_args():
                         help="Generasi GA per iterasi (default: config default)")
     parser.add_argument("--rl-steps", type=int, default=2000000,
                         help="Total timesteps RL per iterasi tuning (default: 2M)")
+    parser.add_argument("--init-steps", type=int, default=5000000,
+                        help="Total timesteps RL untuk Initial Train (default: 5M)")
     parser.add_argument("--rl-deck-samples", type=int, default=10,
                         help="Jumlah deck GA terbaik yang dicopy ke RL (default: 10)")
     return parser.parse_args()
@@ -347,8 +349,8 @@ def run_pipeline(args):
         rl_steps = QUICK_RL_STEPS
         init_steps = QUICK_RL_STEPS
     else:
-        rl_steps = args.rl_steps if args.rl_steps else 2_000_000
-        init_steps = 5_000_000
+        rl_steps = args.rl_steps
+        init_steps = args.init_steps
 
     # State management
     state = load_state() if args.resume else {
