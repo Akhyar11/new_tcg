@@ -81,6 +81,7 @@ GA_DECK_DIR = os.path.join(ROOT, "deck_ga", "best_decks")
 GENERATED_DECK_DIR = os.path.join(ROOT, "agent_rl", "deck_generated")
 PIPELINE_STATE = os.path.join(ROOT, "pipeline_state.json")
 DECK_BACKUP_DIR = os.path.join(ROOT, "pipeline_deck_backups")
+NEW_DECK_DIR = os.path.join(ROOT, "new_deck")
 
 # RL defaults — cocok untuk convergence-grade training
 DEFAULT_RL_STEPS = 1_000_000     # Per iterasi (3 iterasi = 3M)
@@ -151,19 +152,12 @@ def restore_deck_backup(iteration: int):
 
 def prepare_tuning_decks(n: int = 10):
     """
-    Copy N deck terbaik dari GA output dan gabungkan dengan deck random dari GENERATED_DECK_DIR
+    Copy deck dari NEW_DECK_DIR dan gabungkan dengan deck random dari GENERATED_DECK_DIR
     ke RL deck folder untuk digunakan sebagai pool P1.
     """
-    ga_files = sorted(glob.glob(os.path.join(GA_DECK_DIR, "*.csv")))
+    new_decks = sorted(glob.glob(os.path.join(NEW_DECK_DIR, "*.csv")))
     
-    # Filter: buang file metadata (history.csv)
-    ga_files = [f for f in ga_files if "history" not in os.path.basename(f).lower()]
-
-    # Prioritaskan deck terbaru
-    ga_files.sort(key=lambda f: os.path.getmtime(f), reverse=True)
-
-    selected = ga_files[:n]
-    log(f"Preparing P1 deck pool (GA + Random) in RL deck folder:")
+    log(f"Preparing P1 deck pool (New Decks + Random) in RL deck folder:")
 
     # Bersihin RL deck folder
     if not os.path.exists(RL_DECK_DIR):
@@ -172,12 +166,12 @@ def prepare_tuning_decks(n: int = 10):
         for f in glob.glob(os.path.join(RL_DECK_DIR, "*.csv")):
             os.remove(f)
 
-    # Copy GA decks
-    for i, src in enumerate(selected):
-        dst = os.path.join(RL_DECK_DIR, f"ga_deck_{i:03d}.csv")
+    # Copy New decks
+    for i, src in enumerate(new_decks):
+        dst = os.path.join(RL_DECK_DIR, f"new_deck_{i:03d}.csv")
         shutil.copy2(src, dst)
         name = os.path.basename(src)
-        log(f"  {i}: GA Deck {name} → ga_deck_{i:03d}.csv")
+        log(f"  {i}: New Deck {name} → new_deck_{i:03d}.csv")
 
     # Copy Random decks dari GENERATED_DECK_DIR
     rand_files = sorted(glob.glob(os.path.join(GENERATED_DECK_DIR, "*.csv")))
@@ -185,21 +179,21 @@ def prepare_tuning_decks(n: int = 10):
         dst = os.path.join(RL_DECK_DIR, f"rand_deck_{i:03d}.csv")
         shutil.copy2(src, dst)
 
-    log(f"  P1 Pool: {len(selected)} GA decks + {len(rand_files)} random decks.")
+    log(f"  P1 Pool: {len(new_decks)} New decks + {len(rand_files)} random decks.")
     
     # Isi sisa dengan deck random generatif (bukan full random file) jika kurang dari 8
-    if len(selected) + len(rand_files) < 8:
+    if len(new_decks) + len(rand_files) < 8:
         from deck_ga.genome import DeckGenome
         from deck_ga.card_db import CardDB
         db = CardDB(os.path.join(ROOT, "agent_rl", "EN_Card_Data.csv"))
-        fill_count = 8 - (len(selected) + len(rand_files))
+        fill_count = 8 - (len(new_decks) + len(rand_files))
         for i in range(fill_count):
             d = DeckGenome(db=db)
             dst = os.path.join(RL_DECK_DIR, f"random_fill_{i:03d}.csv")
             d.to_csv(dst)
         log(f"  + {fill_count} random fill decks (minimum 8 decks)")
 
-    return len(selected)
+    return len(new_decks)
 
 
 # ─── Phase Functions ───
@@ -371,54 +365,44 @@ def run_pipeline(args):
     if state["phase"] == "init_train":
         log(f"\n>>> Initial RL Training Phase (Iter 0) - {init_steps} steps")
         
-        # Check if GA decks already exist
-        ga_files = [f for f in glob.glob(os.path.join(GA_DECK_DIR, "*.csv")) if "history" not in os.path.basename(f).lower()]
-        
-        if len(ga_files) > 0:
-            log("GA decks found! Menggunakan P0=GA, P1=GA+Random (seperti iterasi biasa)")
-            prepare_tuning_decks(args.rl_deck_samples)
-            phase_train_rl(0, args, init_steps, p0_deck_dir=GA_DECK_DIR, p1_deck_dir=RL_DECK_DIR)
-        else:
-            log("GA decks belum ada. Menggunakan random generated decks untuk P0 dan P1")
-            phase_train_rl(0, args, init_steps, p0_deck_dir=GENERATED_DECK_DIR, p1_deck_dir=GENERATED_DECK_DIR)
+        log("Memasukkan New Decks + Random Generated Decks untuk P1 pool.")
+        prepare_tuning_decks()
+        phase_train_rl(0, args, init_steps, p0_deck_dir=NEW_DECK_DIR, p1_deck_dir=RL_DECK_DIR)
             
-        state["phase"] = "ga"
+        state["phase"] = "train_rl"
         state["completed_iterations"] = 0
         state["current_iteration"] = 1
         save_state(state)
 
-    # ─── Iterasi 1..N: GA → RL ───
+    # ─── Iterasi 1..N: RL Tuning (No GA) ───
     for iteration in range(state["completed_iterations"] + 1, args.iterations + 1):
         log(f"\n{'#'*70}")
         log(f"### TUNING ITERATION {iteration}/{args.iterations}")
         log(f"{'#'*70}")
 
-        # --- GA Phase ---
         if state["phase"] == "ga":
-            log(f"\n>>> GA Phase (Iter {iteration})")
-            backup_decks(iteration)
-            phase_run_ga(iteration, args)
-            prepare_tuning_decks(args.rl_deck_samples)
+            # GA is disabled, skip to train_rl
             state["phase"] = "train_rl"
-            save_state(state)
 
         # --- RL Training Phase (resume dari model_final.msgpack) ---
         if state["phase"] == "train_rl":
             log(f"\n>>> RL Tuning Phase (Iter {iteration}) — {rl_steps} steps")
 
+            # Reprepare if new decks were added
+            prepare_tuning_decks()
+            
             deck_files = glob.glob(os.path.join(RL_DECK_DIR, "*.csv"))
-            log(f"P1 Deck folder has {len(deck_files)} decks (GA + Random)")
+            log(f"P1 Deck folder has {len(deck_files)} decks (New + Random)")
 
-            phase_train_rl(iteration, args, rl_steps, p0_deck_dir=GA_DECK_DIR, p1_deck_dir=RL_DECK_DIR)
+            phase_train_rl(iteration, args, rl_steps, p0_deck_dir=NEW_DECK_DIR, p1_deck_dir=RL_DECK_DIR)
 
             state["completed_iterations"] = iteration
             state["current_iteration"] = iteration
-            state["phase"] = "ga"
+            state["phase"] = "train_rl"
             save_state(state)
 
             log(f"Iteration {iteration} selesai!")
             log(f"  RL Model: model_iter_{iteration}.msgpack")
-            log(f"  GA Decks: {GA_DECK_DIR}/")
 
     # ─── Final ───
     elapsed = time.time() - state.get("start_time", time.time())
