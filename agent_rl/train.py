@@ -65,12 +65,8 @@ CLIP_RATIO = 0.2       # Starting clip ratio (akan di-anneal)
 # VF_COEF = 0.5        # Di ppo_update.py sudah hardcoded 0.5
 
 SAVE_DIR = "checkpoints"
-DECK_PATH = os.environ.get(
-    "RL_DECK_PATH",
-    os.path.join(os.path.dirname(os.path.abspath(__file__)), "deck_generated")
-)
-P0_DECK_PATH = os.environ.get("P0_DECK_PATH", DECK_PATH)
-P1_DECK_PATH = os.environ.get("P1_DECK_PATH", DECK_PATH)
+NEW_DECK_PATH = os.environ.get("NEW_DECK_PATH", "new_deck")
+GEN_DECK_PATH = os.environ.get("GEN_DECK_PATH", "agent_rl/deck_generated")
 
 # Memory monitoring — cetak setiap N update
 MEM_LOG_INTERVAL = 100
@@ -117,8 +113,8 @@ def train():
     print(f"Num envs: {NUM_ENVS}, Batch size: {BATCH_SIZE}")
     print(f"Gamma: {GAMMA}, GAE lambda: {GAE_LAMBDA}")
     print(f"Initial clip: {CLIP_RATIO}, Initial entropy: {ENTROPY_COEF}")
-    print(f"P0 Deck path: {P0_DECK_PATH}")
-    print(f"P1 Deck path: {P1_DECK_PATH}")
+    print(f"New Deck path (70%): {NEW_DECK_PATH}")
+    print(f"Gen Deck path (30%): {GEN_DECK_PATH}")
     print()
 
     num_devices = auto_config_gpu()
@@ -130,9 +126,9 @@ def train():
 
     # 1. Init parallel environments
     print(f"Starting {NUM_ENVS} parallel envs...")
-    print(f"  P0 Deck Path: {P0_DECK_PATH}")
-    print(f"  P1 Deck Path: {P1_DECK_PATH}")
-    env = VectorEnv(num_envs=NUM_ENVS, p0_deck_path=P0_DECK_PATH, p1_deck_path=P1_DECK_PATH)
+    print(f"  New Deck Path: {NEW_DECK_PATH}")
+    print(f"  Gen Deck Path: {GEN_DECK_PATH}")
+    env = VectorEnv(num_envs=NUM_ENVS, new_deck_path=NEW_DECK_PATH, gen_deck_path=GEN_DECK_PATH)
 
     # 2. Init model & optimizer
     model = PokemonAgent(num_actions=250)

@@ -36,7 +36,7 @@ def softmax(x):
     return exp_x / (exp_x.sum() + 1e-10)
 
 
-def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_envs, shm_names):
+def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_envs, shm_names):
     """
     Worker independen di sub-process menggunakan Shared Memory.
     Menangani eksekusi aksi, sampling, dan reward calculation.
@@ -98,10 +98,21 @@ def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_env
             loaded = [[1]*56 + [210]*4]
         return loaded
 
-    loaded_decks_p0 = get_loaded_decks(p0_deck_path)
-    loaded_decks_p1 = get_loaded_decks(p1_deck_path)
+    loaded_new_decks = get_loaded_decks(new_deck_path)
+    loaded_gen_decks = get_loaded_decks(gen_deck_path)
 
-    print(f"[Worker {worker_id}] Loaded {len(loaded_decks_p0)} decks for P0, {len(loaded_decks_p1)} decks for P1")
+    print(f"[Worker {worker_id}] Loaded {len(loaded_new_decks)} New Decks (70%) and {len(loaded_gen_decks)} Gen Decks (30%)")
+
+    def sample_deck():
+        """Pilih deck dengan peluang 70% New Deck, 30% Generated Deck"""
+        if random.random() < 0.70 and len(loaded_new_decks) > 0:
+            return random.choice(loaded_new_decks)
+        elif len(loaded_gen_decks) > 0:
+            return random.choice(loaded_gen_decks)
+        elif len(loaded_new_decks) > 0:
+            return random.choice(loaded_new_decks)
+        else:
+            return [1]*56 + [210]*4
 
     obs = None
     old_state = None
@@ -142,9 +153,7 @@ def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_env
                     success = False
                     for _ in range(10):
                         try:
-                            idx0 = random.randint(0, len(loaded_decks_p0) - 1)
-                            idx1 = random.randint(0, len(loaded_decks_p1) - 1)
-                            deck_list = [loaded_decks_p0[idx0], loaded_decks_p1[idx1]]
+                            deck_list = [sample_deck(), sample_deck()]
 
                             obs_dict, _ = battle_start(deck_list[0], deck_list[1])
                             obs = to_dataclass(obs_dict, Observation)
@@ -256,9 +265,7 @@ def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_env
                     reset_trackers()
                     opp_known_hand.clear()
                     try:
-                        idx0 = random.randint(0, len(loaded_decks_p0) - 1)
-                        idx1 = random.randint(0, len(loaded_decks_p1) - 1)
-                        deck_list = [loaded_decks_p0[idx0], loaded_decks_p1[idx1]]
+                        deck_list = [sample_deck(), sample_deck()]
 
                         obs_dict, _ = battle_start(deck_list[0], deck_list[1])
                         obs = to_dataclass(obs_dict, Observation)
@@ -355,9 +362,7 @@ def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_env
                     success = False
                     for _ in range(10):
                         try:
-                            idx0 = random.randint(0, len(loaded_decks_p0) - 1)
-                            idx1 = random.randint(0, len(loaded_decks_p1) - 1)
-                            deck_list = [loaded_decks_p0[idx0], loaded_decks_p1[idx1]]
+                            deck_list = [sample_deck(), sample_deck()]
 
                             obs_dict, _ = battle_start(deck_list[0], deck_list[1])
                             obs = to_dataclass(obs_dict, Observation)
@@ -417,9 +422,7 @@ def worker(remote, parent_remote, worker_id, p0_deck_path, p1_deck_path, num_env
                 success = False
                 for _ in range(10):
                     try:
-                        idx0 = random.randint(0, len(loaded_decks_p0) - 1)
-                        idx1 = random.randint(0, len(loaded_decks_p1) - 1)
-                        deck_list = [loaded_decks_p0[idx0], loaded_decks_p1[idx1]]
+                        deck_list = [sample_deck(), sample_deck()]
 
                         obs_dict, _ = battle_start(deck_list[0], deck_list[1])
                         obs = to_dataclass(obs_dict, Observation)
@@ -494,12 +497,10 @@ class VectorEnv:
     P0 dan P1 selalu mendapat deck BERBEDA.
     Dilengkapi Shared Memory untuk eliminasi overhead Pipe.
     """
-    def __init__(self, num_envs, p0_deck_path="agent_rl/deck_generated", p1_deck_path=None):
+    def __init__(self, num_envs, new_deck_path="new_deck", gen_deck_path="agent_rl/deck_generated"):
         self.num_envs = num_envs
-        if p1_deck_path is None:
-            p1_deck_path = p0_deck_path
         
-        # Validasi path (bisa di-skip jika p0/p1 valid)
+        # Validasi path
         def validate_path(d_path):
             if not os.path.exists(d_path):
                 alt = os.path.join(os.path.dirname(os.path.abspath(__file__)), "deck_generated")
@@ -508,8 +509,8 @@ class VectorEnv:
                 if os.path.exists(alt2): return alt2
             return d_path
             
-        p0_deck_path = validate_path(p0_deck_path)
-        p1_deck_path = validate_path(p1_deck_path)
+        new_deck_path = validate_path(new_deck_path)
+        gen_deck_path = validate_path(gen_deck_path)
 
         self.shms = []
         self.shm_names = {}
@@ -541,7 +542,7 @@ class VectorEnv:
 
         ctx = mp.get_context('spawn')
         for i, (work_remote, remote) in enumerate(zip(self.work_remotes, self.remotes)):
-            p = ctx.Process(target=worker, args=(work_remote, remote, i, p0_deck_path, p1_deck_path, num_envs, self.shm_names))
+            p = ctx.Process(target=worker, args=(work_remote, remote, i, new_deck_path, gen_deck_path, num_envs, self.shm_names))
             p.daemon = True
             p.start()
             self.processes.append(p)

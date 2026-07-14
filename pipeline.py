@@ -152,55 +152,12 @@ def restore_deck_backup(iteration: int):
         log(f"Deck restored from {backup_path}")
 
 
-def prepare_tuning_decks(n: int = 10):
-    """
-    Copy deck dari NEW_DECK_DIR dan gabungkan dengan deck random dari GENERATED_DECK_DIR
-    ke RL deck folder untuk digunakan sebagai pool P1.
-    """
-    new_decks = sorted(glob.glob(os.path.join(NEW_DECK_DIR, "*.csv")))
-    
-    log(f"Preparing P1 deck pool (New Decks + Random) in RL deck folder:")
-
-    # Bersihin RL deck folder
-    if not os.path.exists(RL_DECK_DIR):
-        os.makedirs(RL_DECK_DIR)
-    else:
-        for f in glob.glob(os.path.join(RL_DECK_DIR, "*.csv")):
-            os.remove(f)
-
-    # Copy New decks
-    for i, src in enumerate(new_decks):
-        dst = os.path.join(RL_DECK_DIR, f"new_deck_{i:03d}.csv")
-        shutil.copy2(src, dst)
-        name = os.path.basename(src)
-        log(f"  {i}: New Deck {name} → new_deck_{i:03d}.csv")
-
-    # Copy Random decks dari GENERATED_DECK_DIR
-    rand_files = sorted(glob.glob(os.path.join(GENERATED_DECK_DIR, "*.csv")))
-    for i, src in enumerate(rand_files):
-        dst = os.path.join(RL_DECK_DIR, f"rand_deck_{i:03d}.csv")
-        shutil.copy2(src, dst)
-
-    log(f"  P1 Pool: {len(new_decks)} New decks + {len(rand_files)} random decks.")
-    
-    # Isi sisa dengan deck random generatif (bukan full random file) jika kurang dari 8
-    if len(new_decks) + len(rand_files) < 8:
-        from deck_ga.genome import DeckGenome
-        from deck_ga.card_db import CardDB
-        db = CardDB(os.path.join(ROOT, "agent_rl", "EN_Card_Data.csv"))
-        fill_count = 8 - (len(new_decks) + len(rand_files))
-        for i in range(fill_count):
-            d = DeckGenome(db=db)
-            dst = os.path.join(RL_DECK_DIR, f"random_fill_{i:03d}.csv")
-            d.to_csv(dst)
-        log(f"  + {fill_count} random fill decks (minimum 8 decks)")
-
-    return len(new_decks)
+# prepare_tuning_decks removed because vector_env now handles the 70/30 selection dynamically.
 
 
 # ─── Phase Functions ───
 
-def phase_train_rl(iteration: int, args, total_steps: int, p0_deck_dir: str, p1_deck_dir: str):
+def phase_train_rl(iteration: int, args, total_steps: int, new_deck_dir: str, gen_deck_dir: str):
     """Train RL agent — resume dari checkpoint jika ada."""
     log(f"{'='*60}")
     log(f"PHASE: RL Training — Iteration {iteration}")
@@ -208,9 +165,8 @@ def phase_train_rl(iteration: int, args, total_steps: int, p0_deck_dir: str, p1_
 
     # Modify train.py hyperparameters via env override
     os.environ["TOTAL_TIMESTEPS"] = str(total_steps)    # ← dibaca train.py v3
-    os.environ["P0_DECK_PATH"] = p0_deck_dir
-    os.environ["P1_DECK_PATH"] = p1_deck_dir
-    os.environ["RL_DECK_PATH"] = p1_deck_dir # backward compatibility
+    os.environ["NEW_DECK_PATH"] = new_deck_dir
+    os.environ["GEN_DECK_PATH"] = gen_deck_dir
 
     # GPU-aware scaling: naikkan NUM_ENVS dan BATCH_SIZE untuk multiple GPU
     if _NUM_GPUS > 1:
@@ -250,8 +206,8 @@ def phase_train_rl(iteration: int, args, total_steps: int, p0_deck_dir: str, p1_
 
         # Run
         log(f"RL Training: {total_steps} timesteps, resume from model_final.msgpack (if exists)")
-        log(f"  P0 Deck path (GA full): {p0_deck_dir} ({len(glob.glob(os.path.join(p0_deck_dir, '*.csv')))} decks)")
-        log(f"  P1 Deck path (GA + Random): {p1_deck_dir} ({len(glob.glob(os.path.join(p1_deck_dir, '*.csv')))} decks)")
+        log(f"  New Deck path (70%): {new_deck_dir} ({len(glob.glob(os.path.join(new_deck_dir, '*.csv')))} decks)")
+        log(f"  Gen Deck path (30%): {gen_deck_dir} ({len(glob.glob(os.path.join(gen_deck_dir, '*.csv')))} decks)")
 
         rl_train.train()
 
@@ -367,9 +323,8 @@ def run_pipeline(args):
     if state["phase"] == "init_train":
         log(f"\n>>> Initial RL Training Phase (Iter 0) - {init_steps} steps")
         
-        log("Memasukkan New Decks + Random Generated Decks untuk P1 pool.")
-        prepare_tuning_decks()
-        phase_train_rl(0, args, init_steps, p0_deck_dir=NEW_DECK_DIR, p1_deck_dir=RL_DECK_DIR)
+        log("Memasukkan New Decks (70%) + Random Generated Decks (30%) untuk P0 & P1 pool (Dynamic Python Choice).")
+        phase_train_rl(0, args, init_steps, new_deck_dir=NEW_DECK_DIR, gen_deck_dir=GENERATED_DECK_DIR)
             
         state["phase"] = "train_rl"
         state["completed_iterations"] = 0
@@ -390,13 +345,8 @@ def run_pipeline(args):
         if state["phase"] == "train_rl":
             log(f"\n>>> RL Tuning Phase (Iter {iteration}) — {rl_steps} steps")
 
-            # Reprepare if new decks were added
-            prepare_tuning_decks()
-            
-            deck_files = glob.glob(os.path.join(RL_DECK_DIR, "*.csv"))
-            log(f"P1 Deck folder has {len(deck_files)} decks (New + Random)")
-
-            phase_train_rl(iteration, args, rl_steps, p0_deck_dir=NEW_DECK_DIR, p1_deck_dir=RL_DECK_DIR)
+            log(f"Dynamic Python 70/30 Deck Selection Activated (from {NEW_DECK_DIR} and {GENERATED_DECK_DIR})")
+            phase_train_rl(iteration, args, rl_steps, new_deck_dir=NEW_DECK_DIR, gen_deck_dir=GENERATED_DECK_DIR)
 
             state["completed_iterations"] = iteration
             state["current_iteration"] = iteration
