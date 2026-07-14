@@ -186,7 +186,7 @@ def run_single_game(model_apply, params_p0, params_p1, deck0, deck1, cards_db,
         "entropies": [],
     }
 
-    old_prizes = [6, 6]  # Track prize counts
+    old_prizes = [0, 0]  # Track prize counts
 
     while obs.current is not None and obs.current.result == -1:
         stats["steps"] += 1
@@ -209,7 +209,7 @@ def run_single_game(model_apply, params_p0, params_p1, deck0, deck1, cards_db,
                 elif log.type == LogType.PLAY:
                     # Cek tipe kartu dari DB
                     if log.cardId and log.cardId in cards_db:
-                        ct = cards_db[log.cardId].get("Card Type", "")
+                        ct = cards_db[log.cardId].get("Stage (Pokémon)/Type (Energy and Trainer)", "")
                         if ct == "Supporter":  # SUPPORTER
                             stats[pk + "supporters"] = stats.get(pk + "supporters", 0) + 1
                         elif ct == "Item":  # ITEM
@@ -223,8 +223,10 @@ def run_single_game(model_apply, params_p0, params_p1, deck0, deck1, cards_db,
         # Track prizes
         for pi in range(2):
             cur_prizes = len(obs.current.players[pi].prize)
-            taken = old_prizes[pi] - cur_prizes
-            if taken > 0:
+            if old_prizes[pi] == 0 and cur_prizes > 0:
+                old_prizes[pi] = cur_prizes
+            elif cur_prizes < old_prizes[pi] and old_prizes[pi] > 0:
+                taken = old_prizes[pi] - cur_prizes
                 stats[f"p{pi}_prizes_taken"] += taken
                 stats[f"p{pi}_kos"] += 1
                 old_prizes[pi] = cur_prizes

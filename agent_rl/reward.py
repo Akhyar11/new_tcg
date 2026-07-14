@@ -217,72 +217,71 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
     r_event = 0.0
 
     if events:
-        # Bench building — reward konsisten (decay slow)
+        # Bench building — minor breadcrumb
         if events.get('bench_built', 0) > 0:
             n = _increment_counter('bench')
-            decay = 0.85 ** n  # 1st: 0.10, 2nd: 0.085, 3rd: 0.072, ...
-            r_event += 0.10 * events['bench_built'] * decay
+            decay = 0.50 ** n
+            r_event += 0.02 * events['bench_built'] * decay
 
-        # Energy attach
+        # Energy attach — minor breadcrumb
         if events.get('energy_attached', 0) > 0:
             n = _increment_counter('energy')
-            decay = 0.80 ** n
-            r_energy = 0.15 * events['energy_attached'] * decay
+            decay = 0.50 ** n
+            r_energy = 0.03 * events['energy_attached'] * decay
             r_event += r_energy
 
         # Evolution (active)
         if events.get('evolved'):
             n = _increment_counter('evolve')
-            decay = 0.70 ** n
-            r_event += 0.30 * decay
+            decay = 0.50 ** n
+            r_event += 0.05 * decay
 
         # Evolution (bench)
         if events.get('bench_evolved'):
             n = _increment_counter('bench_evolve')
-            decay = 0.70 ** n
-            r_event += 0.20 * decay
+            decay = 0.50 ** n
+            r_event += 0.03 * decay
 
         # Supporter
         if events.get('supporter_played'):
             n = _increment_counter('supporter')
-            decay = 0.80 ** n
-            r_event += 0.06 * decay
+            decay = 0.50 ** n
+            r_event += 0.02 * decay
 
         # Item
         if events.get('item_played'):
             n = _increment_counter('item')
-            decay = 0.80 ** n
-            r_event += 0.04 * decay
+            decay = 0.50 ** n
+            r_event += 0.02 * decay
 
-        # Net damage — cap 0.40 per step
+        # Net damage — Primary source of intermediate reward
         if events.get('net_damage', 0) > 0:
-            r_damage = min(events['net_damage'] / 300.0, 0.40)
+            # 10 damage = +0.04. 100 damage = +0.40. Cap at +1.0 per step
+            r_damage = min((events['net_damage'] / 100.0) * 0.40, 1.0)
             r_event += r_damage
 
-        # Damage received — cap -0.20 per step
+        # Damage received
         if events.get('damage_received', 0) > 0:
-            r_penalty = min(events['damage_received'] / 400.0, 0.20)
+            # 10 damage = -0.02. 100 damage = -0.20
+            r_penalty = min((events['damage_received'] / 100.0) * 0.20, 1.0)
             r_event -= r_penalty
 
-        # Prize taken — reward terbesar, eskalasi per prize
+        # Prize taken — Large intermediate milestone
         if events.get('prize_taken', 0) > 0:
             n_prizes = events['prize_taken']
-            # Single prize: +0.80, Double prize (ex): +1.20
-            # 2 prizes = might be ex or ability
             if n_prizes >= 2:
                 r_event += 1.20
             else:
                 r_event += 0.80
 
-        # KO without prize (rare — ability KO, etc)
+        # KO without prize
         if events.get('ko') and not events.get('prize_taken'):
             r_event += 0.30
 
     # Cap intermediate per step
-    r_event = np.clip(r_event, -1.0, 1.5)
+    r_event = np.clip(r_event, -1.5, 2.5)
 
     # ── 3. Terminal reward ──
-    # Dominan tapi tidak terlalu besar — intermediate ratio ≈ 1:1
     r_terminal = 0.0
     if new_state.result != -1:
         won = (new_state.result == player_index)
@@ -292,18 +291,17 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
         if draw:
             r_terminal = 0.0
         elif end_reason == 1:
-            # Prize win/loss — signal terkuat
-            r_terminal = 1.50 if won else -1.50
+            # Prize win/loss
+            r_terminal = 2.0 if won else -2.0
         elif end_reason == 2:
             # Deck-out — 0 untuk KEDUA sisi (symmetric)
-            # Pemenang tidak disuruh stalling, pecundang tidak dihukum
             r_terminal = 0.0
         elif end_reason in (3, 4):
-            # NoActive / Effect — reward kecil
-            r_terminal = 0.30 if won else -0.30
+            # NoActive / Effect
+            r_terminal = 0.50 if won else -0.50
         else:
             # Fallback
-            r_terminal = 0.50 if won else -0.50
+            r_terminal = 1.0 if won else -1.0
 
     total = r_step + r_event + r_terminal
     return float(np.clip(total, -5.0, 5.0))

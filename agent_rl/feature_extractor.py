@@ -42,6 +42,9 @@ def parse_card(card, is_active=False, player_state: PlayerState = None) -> np.nd
 
         # 1. Hitung kebutuhan energi (cost) maksimal dari serangan Pokemon
         total_cost = cost_g = cost_r = cost_w = cost_l = cost_other = 0
+        max_dmg = 0
+        total_dmg = 0
+        attack_count = 0
         if card_data and card_data.attacks:
             for atk_id in card_data.attacks:
                 atk = ATTACK_DB.get(atk_id)
@@ -58,6 +61,12 @@ def parse_card(card, is_active=False, player_state: PlayerState = None) -> np.nd
                     if len(atk.energies) > total_cost:
                         total_cost = len(atk.energies)
                         cost_g, cost_r, cost_w, cost_l, cost_other = atk_g, atk_r, atk_w, atk_l, atk_other
+
+                    dmg = getattr(atk, 'damage', 0)
+                    if dmg > max_dmg:
+                        max_dmg = dmg
+                    total_dmg += dmg
+                    attack_count += 1
 
         # 2. Fitur energi terpasang dibagi dengan KEBUTUHAN (progress ratio)
         # Menggunakan max(cost, 1.0) untuk menghindari pembagian dengan 0
@@ -88,6 +97,10 @@ def parse_card(card, is_active=False, player_state: PlayerState = None) -> np.nd
             features[21] = 1.0 if _get_val(player_state, 'asleep') else 0.0
             features[22] = 1.0 if _get_val(player_state, 'paralyzed') else 0.0
             features[23] = 1.0 if _get_val(player_state, 'confused') else 0.0
+
+        features[24] = max_dmg / 300.0
+        features[25] = (total_dmg / attack_count / 300.0) if attack_count > 0 else 0.0
+        features[26] = 1.0 if attack_count > 0 else 0.0
 
     else:
         # --- Objek Card Biasa ---
