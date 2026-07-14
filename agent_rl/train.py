@@ -19,6 +19,7 @@ Set via env: TOTAL_TIMESTEPS=5000000 python train.py
 """
 import os
 import sys
+from collections import deque
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -189,6 +190,9 @@ def train():
     start_time = time.time()
     env_step_counts = np.zeros(NUM_ENVS, dtype=np.int32)
     episodic_returns = np.zeros(NUM_ENVS, dtype=np.float32)
+    
+    # Riwayat kemenangan P0 untuk update P1
+    recent_wins_p0 = deque(maxlen=1000)
 
     print("\n=== MAIN TRAINING LOOP ===")
     for update in range(1, num_updates + 1):
@@ -350,7 +354,12 @@ def train():
         # ── Phase 4: Logging ──
         if update % 1 == 0:
             avg_ret = np.mean(ep_returns) if ep_returns else 0.0
+            
+            # Tambahkan hasil game ke deque history
+            recent_wins_p0.extend(ep_wins_p0)
+            
             win_p0 = (np.mean(ep_wins_p0) * 100) if ep_wins_p0 else 0.0
+            rolling_win_p0 = (np.mean(recent_wins_p0) * 100) if len(recent_wins_p0) > 0 else 0.0
             games_played = len(ep_wins_p0)
             avg_steps = np.mean(ep_steps) if ep_steps else 0.0
 
@@ -376,7 +385,7 @@ def train():
                   f"Step: {global_step:,} | FPS: {fps} | "
                   f"Games: {games_played} | Steps/Game: {avg_steps:.0f} | "
                   f"Return: {avg_ret:+.2f} | "
-                  f"Win P0: {win_p0:.1f}% | "
+                  f"Win P0 (Batch): {win_p0:.1f}% | Win P0 (1K Roll): {rolling_win_p0:.1f}% | "
                   f"Loss: {mean_loss:.4f} | "
                   f"Clip: {current_clip_ratio:.3f} | "
                   f"Entropy: {current_entropy_coef:.3f} | "
@@ -384,9 +393,10 @@ def train():
             print(f"  End ─ {reason_str}")
             
             # P1 Frozen Weight Update Logic
-            if win_p0 >= 60.0 and games_played >= 10:
-                print(f"  🔥 Winrate P0 mencapai {win_p0:.1f}%! Update bobot P1 dengan bobot P0 terbaru.")
+            if rolling_win_p0 >= 60.0 and len(recent_wins_p0) == 1000:
+                print(f"  🔥 Rolling Winrate 1000 Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dengan bobot P0 terbaru dan reset history.")
                 params_repl_p1 = params_repl_p0
+                recent_wins_p0.clear()
 
         # ── Phase 5: Checkpointing ──
         if update % 50 == 0:
