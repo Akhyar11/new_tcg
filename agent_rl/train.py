@@ -465,16 +465,12 @@ def train():
             norm_scale = running_std
             pct = (update / num_updates) * 100
 
-            print(f"Update {update:04d}/{num_updates} ({pct:.0f}%) | "
-                  f"Step: {global_step:,} | FPS: {fps} | "
-                  f"Games: {games_played} | Steps/Game: {avg_steps:.0f} | "
-                  f"Return: {avg_ret:+.2f} | "
-                  f"Win P0 (Batch): {win_p0:.1f}% | Win P0 ({len(recent_wins_p0)}/{recent_wins_p0.maxlen} Roll): {rolling_win_p0:.1f}% | "
-                  f"Loss: {mean_loss:.4f} | "
-                  f"Clip: {current_clip_ratio:.3f} | "
-                  f"Entropy: {current_entropy_coef:.3f} | "
-                  f"Norm: {norm_scale:.2f}")
-            print(f"  End ─ {reason_str}")
+            print(f"Update {update:04d}/{num_updates} ({pct:.0f}%) | Step: {global_step:,} | FPS: {fps}")
+            print(f"  ├── Games: {games_played} | Avg Steps/Game: {avg_steps:.1f}")
+            print(f"  ├── Win P0 (Batch): {win_p0:.1f}% | Rolling Win ({len(recent_wins_p0)}/{recent_wins_p0.maxlen}): {rolling_win_p0:.1f}%")
+            print(f"  ├── Return: {avg_ret:+.2f} | Loss: {mean_loss:.4f} | Norm Scale: {norm_scale:.2f}")
+            print(f"  ├── Hyperparams | Clip: {current_clip_ratio:.3f} | Entropy: {current_entropy_coef:.3f}")
+            print(f"  └── End Reasons | {reason_str}")
             
             # P1 Frozen Weight Update Logic
             if rolling_win_p0 >= 60.0 and len(recent_wins_p0) == recent_wins_p0.maxlen:
