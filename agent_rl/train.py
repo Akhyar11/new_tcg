@@ -119,6 +119,23 @@ def upload_to_kaggle(save_dir, message="Update models"):
     except Exception as e:
         print(f"[!] Terjadi error saat upload Kaggle: {e}")
 
+def download_from_kaggle(save_dir):
+    dataset_id = os.environ.get("KAGGLE_DATASET_ID")
+    if not dataset_id:
+        return
+    print(f"[*] Mencoba mendownload checkpoint dari Kaggle Dataset ({dataset_id})...")
+    try:
+        subprocess.run(
+            ["kaggle", "datasets", "download", "-d", dataset_id, "-p", save_dir, "--unzip"],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        print("[*] Sukses mendownload dan unzip model dari Kaggle.")
+    except subprocess.CalledProcessError as e:
+        print(f"[!] Kaggle download gagal (Mungkin dataset masih kosong). Output: {e.output}")
+    except Exception as e:
+        print(f"[!] Terjadi error saat download Kaggle: {e}")
 
 def auto_config_gpu():
     global NUM_ENVS, BATCH_SIZE
@@ -181,6 +198,12 @@ def train():
 
     model_final_path = os.path.join(SAVE_DIR, "model_final.msgpack")
     model_base_path = os.path.join(SAVE_DIR, "model_base.msgpack")
+
+    # Download via Kaggle API jika script dijalankan di Colab/Lokal (tidak ada di mount path Kaggle)
+    alt_final = os.path.join(KAGGLE_INPUT_DIR, "model_final.msgpack") if KAGGLE_INPUT_DIR else ""
+    if not os.path.exists(model_final_path) and not os.path.exists(model_base_path):
+        if not alt_final or not os.path.exists(alt_final):
+            download_from_kaggle(SAVE_DIR)
 
     # Kaggle Fallback Logic
     # Jika script dijalankan di Kaggle, dataset asli ada di KAGGLE_INPUT_DIR (Read-only)
