@@ -477,16 +477,12 @@ def train():
             
             # P1 Frozen Weight Update Logic
             if rolling_win_p0 >= 60.0 and len(recent_wins_p0) == recent_wins_p0.maxlen:
-                print(f"  🔥 Rolling Winrate {recent_wins_p0.maxlen} Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dan simpan ke Kaggle.")
+                print(f"  🔥 Rolling Winrate {recent_wins_p0.maxlen} Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dan simpan model_final ke Kaggle.")
                 params_repl_p1 = params_repl_p0
-                save_checkpoint(unreplicate(params_repl_p1), "model_base.msgpack")
+                # OPSI A: HANYA simpan model_final.msgpack dan upload
                 save_checkpoint(unreplicate(params_repl_p0), "model_final.msgpack")
-                upload_to_kaggle(SAVE_DIR, message=f"Update model dengan winrate {rolling_win_p0:.1f}%")
+                upload_to_kaggle(SAVE_DIR, message=f"Update model_final dengan winrate P0 {rolling_win_p0:.1f}%")
                 recent_wins_p0.clear()
-
-        # ── Phase 5: Checkpointing (Local Only) ──
-        if update % 50 == 0:
-            save_checkpoint(unreplicate(params_repl_p0), "model_final.msgpack")
 
         # ⭐ Memory monitoring — deteksi leak
         if update % MEM_LOG_INTERVAL == 0:
