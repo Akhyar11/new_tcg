@@ -47,9 +47,9 @@ import glob
 import argparse
 from dotenv import load_dotenv
 
-load_dotenv()
-
 ROOT = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(ROOT, ".env"))
+
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
