@@ -91,6 +91,53 @@ import json
 
 from kaggle.api.kaggle_api_extended import KaggleApi
 
+class ProgressTracker:
+    def __init__(self, iterable, total):
+        self.iterable = iterable
+        self.total = total
+        self.is_tty = sys.stdout.isatty()
+        try:
+            # Check if running in Jupyter/Kaggle notebook environment
+            __IPYTHON__
+            self.is_tty = True
+        except NameError:
+            pass
+            
+        if self.is_tty:
+            self.pbar = tqdm(iterable, total=total, desc="PPO Training", file=sys.stdout, mininterval=1.0)
+        else:
+            self.pbar = iter(iterable)
+            self.current = 0
+            
+    def __iter__(self):
+        return self
+        
+    def __next__(self):
+        if self.is_tty:
+            return next(self.pbar)
+        else:
+            self.current += 1
+            if self.current > self.total:
+                raise StopIteration
+            return self.current
+
+    def set_postfix(self, postfix_dict):
+        if self.is_tty:
+            self.pbar.set_postfix(postfix_dict)
+            sys.stdout.flush()
+        else:
+            postfix_str = " | ".join(f"{k}: {v}" for k, v in postfix_dict.items())
+            print(f"[Update {self.current}/{self.total}] {postfix_str}")
+            sys.stdout.flush()
+
+    def write(self, message):
+        if self.is_tty:
+            self.pbar.write(message)
+            sys.stdout.flush()
+        else:
+            print(message)
+            sys.stdout.flush()
+
 def get_kaggle_api():
     # Map KAGGLE_API_TOKEN from .env to KAGGLE_KEY if KAGGLE_KEY is not set
     if "KAGGLE_KEY" not in os.environ and "KAGGLE_API_TOKEN" in os.environ:
@@ -301,7 +348,7 @@ def train():
     p1_update_count = 0
 
     print("\n=== MAIN TRAINING LOOP ===")
-    pbar = tqdm(range(1, num_updates + 1), desc="PPO Training")
+    pbar = ProgressTracker(range(1, num_updates + 1), total=num_updates)
     for update in pbar:
         # Anneal entropy coefficient
         progress = update / num_updates
