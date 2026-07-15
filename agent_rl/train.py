@@ -519,7 +519,7 @@ def train():
             sys.stdout.flush()
             
             # P1 Frozen Weight Update Logic
-            if rolling_win_p0 >= 40.0 and len(recent_wins_p0) == recent_wins_p0.maxlen:
+            if rolling_win_p0 >= 60.0 and len(recent_wins_p0) == recent_wins_p0.maxlen:
                 p1_update_count += 1
                 print(f"  🔥 [P1 Update #{p1_update_count}] Rolling Winrate {recent_wins_p0.maxlen} Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dan simpan model_final ke Kaggle.")
                 sys.stdout.flush()
