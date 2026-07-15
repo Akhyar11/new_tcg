@@ -276,6 +276,8 @@ def train():
     
     # Riwayat kemenangan P0 untuk update P1
     recent_wins_p0 = deque(maxlen=200)
+    recent_wins_meta = deque(maxlen=200)
+    recent_wins_random = deque(maxlen=200)
 
     print("\n=== MAIN TRAINING LOOP ===")
     for update in range(1, num_updates + 1):
@@ -291,6 +293,8 @@ def train():
 
         ep_returns = []
         ep_wins_p0 = []
+        ep_wins_meta = []
+        ep_wins_random = []
         ep_steps = []
         ep_end_reasons = []
 
@@ -352,10 +356,21 @@ def train():
                     episodic_returns[i] = 0.0
                     result = infos[i].get("result", -1)
                     end_reason = infos[i].get("end_reason", 0)
+                    p0_deck_type = infos[i].get("p0_deck_type", 0)
+                    
+                    is_win = -1
                     if result == 0:
-                        ep_wins_p0.append(1)
+                        is_win = 1
                     elif result == 1:
-                        ep_wins_p0.append(0)
+                        is_win = 0
+                        
+                    if is_win != -1:
+                        ep_wins_p0.append(is_win)
+                        if p0_deck_type == 0:
+                            ep_wins_meta.append(is_win)
+                        else:
+                            ep_wins_random.append(is_win)
+                            
                     ep_steps.append(env_step_counts[i])
                     ep_end_reasons.append(end_reason)
                     env_step_counts[i] = 0
@@ -441,9 +456,16 @@ def train():
             
             # Tambahkan hasil game ke deque history
             recent_wins_p0.extend(ep_wins_p0)
+            recent_wins_meta.extend(ep_wins_meta)
+            recent_wins_random.extend(ep_wins_random)
             
             win_p0 = (np.mean(ep_wins_p0) * 100) if ep_wins_p0 else 0.0
             rolling_win_p0 = (np.mean(recent_wins_p0) * 100) if len(recent_wins_p0) > 0 else 0.0
+            
+            # Win rates by deck category
+            win_meta = (np.mean(recent_wins_meta) * 100) if len(recent_wins_meta) > 0 else 0.0
+            win_random = (np.mean(recent_wins_random) * 100) if len(recent_wins_random) > 0 else 0.0
+            
             games_played = len(ep_wins_p0)
             avg_steps = np.mean(ep_steps) if ep_steps else 0.0
 
@@ -468,6 +490,7 @@ def train():
             print(f"Update {update:04d}/{num_updates} ({pct:.0f}%) | Step: {global_step:,} | FPS: {fps}")
             print(f"  ├── Games: {games_played} | Avg Steps/Game: {avg_steps:.1f}")
             print(f"  ├── Win P0 (Batch): {win_p0:.1f}% | Rolling Win ({len(recent_wins_p0)}/{recent_wins_p0.maxlen}): {rolling_win_p0:.1f}%")
+            print(f"  ├── Win Rate by Deck | Meta ({len(recent_wins_meta)}): {win_meta:.1f}% | Random ({len(recent_wins_random)}): {win_random:.1f}%")
             print(f"  ├── Return: {avg_ret:+.2f} | Loss: {mean_loss:.4f} | Norm Scale: {norm_scale:.2f}")
             print(f"  ├── Hyperparams | Clip: {current_clip_ratio:.3f} | Entropy: {current_entropy_coef:.3f}")
             print(f"  └── End Reasons | {reason_str}")
@@ -476,10 +499,11 @@ def train():
             if rolling_win_p0 >= 60.0 and len(recent_wins_p0) == recent_wins_p0.maxlen:
                 print(f"  🔥 Rolling Winrate {recent_wins_p0.maxlen} Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dan simpan model_final ke Kaggle.")
                 params_repl_p1 = params_repl_p0
-                # OPSI A: HANYA simpan model_final.msgpack dan upload
                 save_checkpoint(unreplicate(params_repl_p0), "model_final.msgpack")
                 upload_to_kaggle(SAVE_DIR, message=f"Update model_final dengan winrate P0 {rolling_win_p0:.1f}%")
                 recent_wins_p0.clear()
+                recent_wins_meta.clear()
+                recent_wins_random.clear()
 
         # ⭐ Memory monitoring — deteksi leak
         if update % MEM_LOG_INTERVAL == 0:
