@@ -42,7 +42,9 @@ def battle_start(deck0: list[int], deck1: list[int]) -> tuple[dict, StartData]:
 
 def battle_finish():
     """End the battle and free the memory used during it."""
-    lib.BattleFinish(Battle.battle_ptr)
+    if Battle.battle_ptr is not None and Battle.battle_ptr != 0:
+        lib.BattleFinish(Battle.battle_ptr)
+        Battle.battle_ptr = None
 
 
 def battle_select(select_list: list[int]) -> dict:
