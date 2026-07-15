@@ -300,20 +300,26 @@ def ensure_models_downloaded():
     kaggle_in = os.environ.get("KAGGLE_INPUT_DIR", "")
     alt_final = os.path.join(kaggle_in, "model_final.msgpack") if kaggle_in else ""
     
-    log(f"[DEBUG] Cek model lokal: {model_final} -> {os.path.exists(model_final)}")
-    log(f"[DEBUG] Cek model kaggle_in: {alt_final} -> {os.path.exists(alt_final) if alt_final else False}")
+    local_exists = os.path.exists(model_final) or os.path.exists(model_base)
+    kaggle_in_exists = os.path.exists(alt_final) if alt_final else False
     
-    if not os.path.exists(model_final) and not os.path.exists(model_base):
-        if not alt_final or not os.path.exists(alt_final):
-            log(f"Mendownload checkpoint dari Kaggle Dataset ({dataset_id})...")
-            try:
-                subprocess.run(
-                    ["kaggle", "datasets", "download", "-d", dataset_id, "-p", CHECKPOINT_DIR, "--unzip"],
-                    check=True, capture_output=True, text=True
-                )
-                log("Sukses mendownload model dari Kaggle.")
-            except Exception as e:
-                log(f"Gagal download dari Kaggle (mungkin dataset kosong): {e}")
+    log(f"[DEBUG] Cek model lokal: {model_final} -> {local_exists}")
+    log(f"[DEBUG] Cek model kaggle_in: {alt_final} -> {kaggle_in_exists}")
+    
+    if not local_exists and not kaggle_in_exists:
+        log(f"Mendownload checkpoint dari Kaggle Dataset ({dataset_id}) menggunakan Python API...")
+        try:
+            from kaggle.api.kaggle_api_extended import KaggleApi
+            api = KaggleApi()
+            api.authenticate()
+            api.dataset_download_files(dataset_id, path=CHECKPOINT_DIR, unzip=True)
+            log("Sukses mendownload model dari Kaggle.")
+        except Exception as e:
+            log(f"Gagal download dari Kaggle (mungkin dataset kosong): {e}")
+    elif local_exists:
+        log("Menggunakan checkpoint lokal yang sudah ada.")
+    elif kaggle_in_exists:
+        log(f"Menggunakan checkpoint dari {kaggle_in}.")
 
 
 def run_pipeline(args):

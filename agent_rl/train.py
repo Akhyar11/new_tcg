@@ -88,6 +88,13 @@ def save_checkpoint(params, filename):
 import subprocess
 import json
 
+from kaggle.api.kaggle_api_extended import KaggleApi
+
+def get_kaggle_api():
+    api = KaggleApi()
+    api.authenticate()
+    return api
+
 def upload_to_kaggle(save_dir, message="Update models"):
     dataset_id = os.environ.get("KAGGLE_DATASET_ID")
     if not dataset_id:
@@ -105,25 +112,10 @@ def upload_to_kaggle(save_dir, message="Update models"):
             json.dump(metadata, f, indent=4)
 
     try:
-        # PENTING: Google Colab sering menggunakan library kaggle versi lawas (1.5.12)
-        # yang menyebabkan error 401 Unauthorized saat StartBlobUpload.
-        # Kita force-upgrade secara otomatis agar tidak perlu manual.
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--upgrade", "kaggle", "--quiet"],
-            check=False
-        )
-
-        # Supaya tidak nyangkut saat kaggle nanya interaktif (quiet command)
-        print(f"[*] Mengupload ke Kaggle Dataset ({dataset_id})...")
-        subprocess.run(
-            ["kaggle", "datasets", "version", "-p", save_dir, "-m", message, "--dir-mode", "zip"],
-            check=True,
-            capture_output=True,
-            text=True
-        )
+        print(f"[*] Mengupload ke Kaggle Dataset ({dataset_id}) menggunakan Python API...")
+        api = get_kaggle_api()
+        api.dataset_create_version(save_dir, version_notes=message, dir_mode="zip")
         print("[*] Sukses sinkronisasi ke Kaggle Dataset.")
-    except subprocess.CalledProcessError as e:
-        print(f"[!] Gagal upload ke Kaggle. Output: {e.output}\nError: {e.stderr}")
     except Exception as e:
         print(f"[!] Terjadi error saat upload Kaggle: {e}")
 
@@ -131,17 +123,11 @@ def download_from_kaggle(save_dir):
     dataset_id = os.environ.get("KAGGLE_DATASET_ID")
     if not dataset_id:
         return
-    print(f"[*] Mencoba mendownload checkpoint dari Kaggle Dataset ({dataset_id})...")
+    print(f"[*] Mencoba mendownload checkpoint dari Kaggle Dataset ({dataset_id}) menggunakan Python API...")
     try:
-        subprocess.run(
-            ["kaggle", "datasets", "download", "-d", dataset_id, "-p", save_dir, "--unzip"],
-            check=True,
-            capture_output=True,
-            text=True
-        )
+        api = get_kaggle_api()
+        api.dataset_download_files(dataset_id, path=save_dir, unzip=True)
         print("[*] Sukses mendownload dan unzip model dari Kaggle.")
-    except subprocess.CalledProcessError as e:
-        print(f"[!] Kaggle download gagal (Mungkin dataset masih kosong). Output: {e.output}")
     except Exception as e:
         print(f"[!] Terjadi error saat download Kaggle: {e}")
 
@@ -491,16 +477,16 @@ def train():
             
             # P1 Frozen Weight Update Logic
             if rolling_win_p0 >= 60.0 and len(recent_wins_p0) == recent_wins_p0.maxlen:
-                print(f"  🔥 Rolling Winrate {recent_wins_p0.maxlen} Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dengan bobot P0 terbaru, simpan sebagai model_base, dan reset history.")
+                print(f"  🔥 Rolling Winrate {recent_wins_p0.maxlen} Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dan simpan ke Kaggle.")
                 params_repl_p1 = params_repl_p0
                 save_checkpoint(unreplicate(params_repl_p1), "model_base.msgpack")
-                upload_to_kaggle(SAVE_DIR, message=f"Update model_base with winrate {rolling_win_p0:.1f}%")
+                save_checkpoint(unreplicate(params_repl_p0), "model_final.msgpack")
+                upload_to_kaggle(SAVE_DIR, message=f"Update model dengan winrate {rolling_win_p0:.1f}%")
                 recent_wins_p0.clear()
 
-        # ── Phase 5: Checkpointing ──
+        # ── Phase 5: Checkpointing (Local Only) ──
         if update % 50 == 0:
             save_checkpoint(unreplicate(params_repl_p0), "model_final.msgpack")
-            upload_to_kaggle(SAVE_DIR, message=f"Auto-update model_final at step {update}")
 
         # ⭐ Memory monitoring — deteksi leak
         if update % MEM_LOG_INTERVAL == 0:
