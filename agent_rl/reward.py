@@ -249,9 +249,8 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
     turn = new_state.turn
     my_new = new_state.players[player_index]
 
-    # ── 1. Step penalty — exponential, stall semakin mahal ──
-    # Turn 1: -0.03, Turn 50: -0.05, Turn 100: -0.08, Turn 200: -0.12
-    r_step = -0.03 * (1.15 ** (turn / 50.0))
+    # Penalti langkah linier yang sangat kecil agar tidak meracuni target kemenangan
+    r_step = -0.002 * turn
 
     # ── 2. Intermediate rewards ──
     r_event = 0.0
@@ -357,18 +356,9 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
 
         if draw:
             r_terminal = 0.0
-        elif end_reason == 1:
-            # Prize win/loss
-            r_terminal = 2.0 if won else -2.0
-        elif end_reason == 2:
-            # Deck-out — 0 untuk KEDUA sisi (symmetric)
-            r_terminal = 0.0
-        elif end_reason in (3, 4):
-            # NoActive / Effect
-            r_terminal = 0.50 if won else -0.50
         else:
-            # Fallback
-            r_terminal = 1.0 if won else -1.0
+            # Menang = +2.0, Kalah = -2.0 untuk semua alasan kemenangan yang valid
+            r_terminal = 2.0 if won else -2.0
 
     total = r_step + r_event + r_terminal
     return float(np.clip(total, -5.0, 5.0))

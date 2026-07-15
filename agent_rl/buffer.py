@@ -57,7 +57,7 @@ class RolloutBuffer:
                 next_non_terminal = 1.0 - last_dones
                 actual_next_values = np.where(self.turn_changed[t], -last_values, last_values)
             else:
-                next_non_terminal = 1.0 - self.dones[t + 1]
+                next_non_terminal = 1.0 - self.dones[t]
                 actual_next_values = np.where(self.turn_changed[t], -self.values[t + 1], self.values[t + 1])
 
             # GAE Standard with Zero-Sum Correction
@@ -87,8 +87,12 @@ class RolloutBuffer:
         b_values = self.values.reshape((self.buffer_size,))
         b_active_players = self.active_players.reshape((self.buffer_size,))
 
-        # Normalisasi Advantages di tingkat batch raksasa (membantu stabilitas JAX)
-        b_advantages = (b_advantages - b_advantages.mean()) / (b_advantages.std() + 1e-8)
+        # Normalisasi Advantages HANYA untuk P0 (active_player == 0)
+        p0_mask = (b_active_players == 0)
+        if p0_mask.sum() > 0:
+            p0_mean = b_advantages[p0_mask].mean()
+            p0_std = b_advantages[p0_mask].std() + 1e-8
+            b_advantages = np.where(p0_mask, (b_advantages - p0_mean) / p0_std, b_advantages)
 
         # Acak urutan indeks
         indices = np.random.permutation(self.buffer_size)

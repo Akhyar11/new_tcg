@@ -127,7 +127,22 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
         success = False
         for _ in range(10):
             try:
-                (d0, type0), (d1, type1) = sample_deck(), sample_deck()
+                # Memastikan jenis dek P0 dan P1 selalu simetris (sama-sama Meta atau sama-sama Random)
+                # agar evaluasi performa kebijakan tidak terganggu oleh imbalance deck
+                deck_type_prob = random.random()
+                if deck_type_prob < 0.70 and len(loaded_new_decks) > 0:
+                    d0, type0 = random.choice(loaded_new_decks), 0
+                    d1, type1 = random.choice(loaded_new_decks), 0
+                elif len(loaded_gen_decks) > 0:
+                    d0, type0 = random.choice(loaded_gen_decks), 1
+                    d1, type1 = random.choice(loaded_gen_decks), 1
+                elif len(loaded_new_decks) > 0:
+                    d0, type0 = random.choice(loaded_new_decks), 0
+                    d1, type1 = random.choice(loaded_new_decks), 0
+                else:
+                    d0, type0 = [1]*56 + [210]*4, 0
+                    d1, type1 = [1]*56 + [210]*4, 0
+
                 obs_dict, _ = battle_start(d0, d1)
                 obs = to_dataclass(obs_dict, Observation)
                 old_state = obs.current
