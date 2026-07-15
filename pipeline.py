@@ -288,7 +288,32 @@ def phase_run_ga(iteration: int, args):
 
 # ─── Main Pipeline ───
 
+def ensure_models_downloaded():
+    dataset_id = os.environ.get("KAGGLE_DATASET_ID")
+    if not dataset_id:
+        return
+        
+    model_final = os.path.join(CHECKPOINT_DIR, "model_final.msgpack")
+    model_base = os.path.join(CHECKPOINT_DIR, "model_base.msgpack")
+    kaggle_in = os.environ.get("KAGGLE_INPUT_DIR", "")
+    alt_final = os.path.join(kaggle_in, "model_final.msgpack") if kaggle_in else ""
+    
+    if not os.path.exists(model_final) and not os.path.exists(model_base):
+        if not alt_final or not os.path.exists(alt_final):
+            log(f"Mendownload checkpoint dari Kaggle Dataset ({dataset_id})...")
+            try:
+                subprocess.run(
+                    ["kaggle", "datasets", "download", "-d", dataset_id, "-p", CHECKPOINT_DIR, "--unzip"],
+                    check=True, capture_output=True, text=True
+                )
+                log("Sukses mendownload model dari Kaggle.")
+            except Exception as e:
+                log(f"Gagal download dari Kaggle (mungkin dataset kosong): {e}")
+
+
 def run_pipeline(args):
+    ensure_models_downloaded()
+    
     log(f"{'='*60}")
     log(f"  PIPELINE GA ↔ RL TRAINING")
     log(f"  Initial Train 5M steps → Loop (GA → Tuning 2M steps)")
