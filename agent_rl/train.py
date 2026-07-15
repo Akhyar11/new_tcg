@@ -97,18 +97,14 @@ import json
 from kaggle.api.kaggle_api_extended import KaggleApi
 
 def get_kaggle_api():
-    # Map KAGGLE_API_TOKEN from .env to KAGGLE_KEY (prioritaskan dari .env)
-    if "KAGGLE_API_TOKEN" in os.environ:
-        os.environ["KAGGLE_KEY"] = os.environ["KAGGLE_API_TOKEN"]
+    os.environ["KAGGLE_USERNAME"] = "akhyarsafrudin"
+    os.environ["KAGGLE_KEY"] = "03c3e536ffedc7d6153c1b3b8515242b"
     api = KaggleApi()
     api.authenticate()
     return api
 
 def upload_to_kaggle(save_dir, message="Update models"):
-    dataset_id = os.environ.get("KAGGLE_DATASET_ID")
-    if not dataset_id:
-        print("[!] KAGGLE_DATASET_ID tidak diset. Lewati sinkronisasi Kaggle.")
-        return
+    dataset_id = "akhyarsafrudin/tcg-models"
 
     metadata_path = os.path.join(save_dir, "dataset-metadata.json")
     if not os.path.exists(metadata_path):
@@ -159,9 +155,7 @@ def upload_to_kaggle(save_dir, message="Update models"):
         print(f"[!] Terjadi error saat upload Kaggle: {e}")
 
 def download_from_kaggle(save_dir):
-    dataset_id = os.environ.get("KAGGLE_DATASET_ID")
-    if not dataset_id:
-        return
+    dataset_id = "akhyarsafrudin/tcg-models"
     print(f"[*] Mencoba mendownload checkpoint dari Kaggle Dataset ({dataset_id}) menggunakan Python API...")
     try:
         api = get_kaggle_api()
