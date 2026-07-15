@@ -123,8 +123,23 @@ def upload_to_kaggle(save_dir, message="Update models"):
             print(f"[*] Memeriksa status dataset Kaggle ({dataset_id})...")
             api.dataset_status(dataset_id)
         except Exception as status_err:
-            dataset_exists = False
-            print(f"[*] Dataset tidak ditemukan atau tidak dapat diakses ({status_err}).")
+            status_code = getattr(status_err, 'status', None)
+            err_msg = str(status_err).lower()
+            
+            # Jika error 401 (Unauthorized) atau kredensial tidak valid
+            if status_code in (401, 403) or "unauthorized" in err_msg or "unauthenticated" in err_msg or "401" in err_msg:
+                print(f"[!] Kaggle Authentication Error: Kredensial tidak valid atau tidak memiliki akses (HTTP {status_code}).")
+                print("    Silakan periksa kembali KAGGLE_USERNAME dan KAGGLE_API_TOKEN di file .env Anda.")
+                return
+                
+            # Jika error 404 (Not Found), berarti dataset belum ada
+            if status_code == 404 or "404" in err_msg or "not found" in err_msg:
+                dataset_exists = False
+                print(f"[*] Dataset belum ada di Kaggle. Akan mencoba membuat dataset baru.")
+            else:
+                # Fallback untuk error lain
+                dataset_exists = False
+                print(f"[*] Dataset tidak dapat diakses ({status_err}). Mencoba membuat dataset baru.")
 
         if dataset_exists:
             print(f"[*] Mengupload versi baru ke Kaggle Dataset ({dataset_id}) menggunakan Python API...")
