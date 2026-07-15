@@ -213,28 +213,14 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
 
                 if probs.sum() > 0:
                     remaining = probs.copy()
-                    masked_logits_copy = masked_logits.copy()
                     sampled_jax_indices = []
-                    
-                    active_player = obs.current.yourIndex if obs.current else 0
-                    
                     for _ in range(min_c):
                         if remaining.sum() <= 0:
                             break
-                        
-                        if active_player == 1:
-                            # P1: Gunakan argmax (Deterministic)
-                            idx = np.argmax(masked_logits_copy)
-                        else:
-                            # P0: Gunakan probabilitas (Stochastic)
-                            p = remaining / remaining.sum()
-                            idx = np.random.choice(len(p), p=p)
-                            
+                        p = remaining / remaining.sum()
+                        idx = np.random.choice(len(p), p=p)
                         sampled_jax_indices.append(int(idx))
-                        
-                        # Cegah memilih indeks yang sama untuk multiple choices
                         remaining[idx] = 0.0
-                        masked_logits_copy[idx] = -1e9
                 else:
                     sampled_jax_indices = [160]
 
