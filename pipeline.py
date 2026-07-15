@@ -45,6 +45,9 @@ import json
 import shutil
 import glob
 import argparse
+from dotenv import load_dotenv
+
+load_dotenv()
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 if ROOT not in sys.path:
@@ -75,7 +78,7 @@ else:
     print("[Pipeline] GPU tidak terdeteksi - mode CPU")
 
 # ─── Config ───
-CHECKPOINT_DIR = os.path.join(ROOT, "checkpoints")
+CHECKPOINT_DIR = os.environ.get("SAVE_DIR", "checkpoints")
 RL_DECK_DIR = os.path.join(ROOT, "agent_rl", "deck")
 GA_DECK_DIR = os.path.join(ROOT, "deck_ga", "best_decks")
 GENERATED_DECK_DIR = os.path.join(ROOT, "agent_rl", "deck_generated")
@@ -168,15 +171,15 @@ def phase_train_rl(iteration: int, args, total_steps: int, new_deck_dir: str, ge
     os.environ["NEW_DECK_PATH"] = new_deck_dir
     os.environ["GEN_DECK_PATH"] = gen_deck_dir
 
-    # GPU-aware scaling: naikkan NUM_ENVS dan BATCH_SIZE untuk multiple GPU
-    if _NUM_GPUS > 1:
-        envs_per_gpu = 8
-        batch_per_gpu = 32
-        recommended_envs = _NUM_GPUS * envs_per_gpu
-        recommended_batch = _NUM_GPUS * batch_per_gpu
+    # GPU/CPU-aware scaling: naikkan NUM_ENVS dan BATCH_SIZE untuk memaksimalkan resource
+    if _NUM_GPUS >= 1:
+        # Jika menggunakan instance seperti Vast.ai (1 GPU, 12 Core, 16GB VRAM)
+        # 32 envs sangat cocok untuk 12 core CPU, Batch 1024 sangat ringan untuk 16GB VRAM
+        recommended_envs = 32 * _NUM_GPUS
+        recommended_batch = 1024 * _NUM_GPUS
         os.environ["RL_NUM_ENVS"] = str(recommended_envs)
         os.environ["RL_BATCH_SIZE"] = str(recommended_batch)
-        log(f"GPU x{_NUM_GPUS}: NUM_ENVS={recommended_envs}, BATCH_SIZE={recommended_batch}")
+        log(f"Resource Auto-Scaling: NUM_ENVS={recommended_envs}, BATCH_SIZE={recommended_batch} (GPU x{_NUM_GPUS})")
     elif args.rl_workers:
         os.environ["RL_NUM_ENVS"] = str(args.rl_workers)
 
@@ -210,13 +213,6 @@ def phase_train_rl(iteration: int, args, total_steps: int, new_deck_dir: str, ge
         log(f"  Gen Deck path (30%): {gen_deck_dir} ({len(glob.glob(os.path.join(gen_deck_dir, '*.csv')))} decks)")
 
         rl_train.train()
-
-        # Rename final checkpoint to iteration-specific
-        final_cp = os.path.join(CHECKPOINT_DIR, "model_final.msgpack")
-        iter_cp = os.path.join(CHECKPOINT_DIR, f"model_iter_{iteration}.msgpack")
-        if os.path.exists(final_cp):
-            shutil.copy2(final_cp, iter_cp)
-            log(f"Checkpoint saved: model_iter_{iteration}.msgpack")
 
     finally:
         rl_train.TOTAL_TIMESTEPS = orig_total
@@ -354,7 +350,7 @@ def run_pipeline(args):
             save_state(state)
 
             log(f"Iteration {iteration} selesai!")
-            log(f"  RL Model: model_iter_{iteration}.msgpack")
+            log(f"  RL Model: model_final.msgpack")
 
     # ─── Final ───
     elapsed = time.time() - state.get("start_time", time.time())

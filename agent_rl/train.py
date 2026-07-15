@@ -20,6 +20,10 @@ Set via env: TOTAL_TIMESTEPS=5000000 python train.py
 import os
 import sys
 from collections import deque
+from dotenv import load_dotenv
+
+# Muat variabel environment dari .env
+load_dotenv()
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -64,9 +68,10 @@ GAE_LAMBDA = 0.95
 CLIP_RATIO = 0.2       # Starting clip ratio (akan di-anneal)
 # VF_COEF = 0.5        # Di ppo_update.py sudah hardcoded 0.5
 
-SAVE_DIR = "checkpoints"
+SAVE_DIR = os.environ.get("SAVE_DIR", "tcg_models")
 NEW_DECK_PATH = os.environ.get("NEW_DECK_PATH", "new_deck")
 GEN_DECK_PATH = os.environ.get("GEN_DECK_PATH", "agent_rl/deck_generated")
+KAGGLE_INPUT_DIR = os.environ.get("KAGGLE_INPUT_DIR", "")  # Contoh: /kaggle/input/tcg-models
 
 # Memory monitoring — cetak setiap N update
 MEM_LOG_INTERVAL = 100
@@ -79,6 +84,40 @@ def save_checkpoint(params, filename):
     with open(path, 'wb') as f:
         f.write(serialization.to_bytes(params))
     print(f"[*] Checkpoint saved: {path}")
+
+import subprocess
+import json
+
+def upload_to_kaggle(save_dir, message="Update models"):
+    dataset_id = os.environ.get("KAGGLE_DATASET_ID")
+    if not dataset_id:
+        print("[!] KAGGLE_DATASET_ID tidak diset. Lewati sinkronisasi Kaggle.")
+        return
+
+    metadata_path = os.path.join(save_dir, "dataset-metadata.json")
+    if not os.path.exists(metadata_path):
+        metadata = {
+            "title": dataset_id.split("/")[-1],
+            "id": dataset_id,
+            "licenses": [{"name": "CC0-1.0"}]
+        }
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f, indent=4)
+
+    try:
+        # Supaya tidak nyangkut saat kaggle nanya interaktif (quiet command)
+        print(f"[*] Mengupload ke Kaggle Dataset ({dataset_id})...")
+        subprocess.run(
+            ["kaggle", "datasets", "version", "-p", save_dir, "-m", message, "--dir-mode", "zip"],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+        print("[*] Sukses sinkronisasi ke Kaggle Dataset.")
+    except subprocess.CalledProcessError as e:
+        print(f"[!] Gagal upload ke Kaggle. Output: {e.output}\nError: {e.stderr}")
+    except Exception as e:
+        print(f"[!] Terjadi error saat upload Kaggle: {e}")
 
 
 def auto_config_gpu():
@@ -137,28 +176,59 @@ def train():
     dummy_seq = jnp.zeros((1, 113, 31))
     dummy_glob = jnp.zeros((1, 266))
 
-    params = model.init(init_rng, dummy_seq, dummy_glob)
+    params_p0 = model.init(init_rng, dummy_seq, dummy_glob)
+    params_p1 = model.init(init_rng, dummy_seq, dummy_glob)
 
-    # Resume dari checkpoint
-    checkpoint_path = os.path.join(SAVE_DIR, "model_final.msgpack")
-    if os.path.exists(checkpoint_path):
-        print(f"[*] Resuming from checkpoint: {checkpoint_path}")
-        with open(checkpoint_path, 'rb') as f:
-            params = serialization.from_bytes(params, f.read())
+    model_final_path = os.path.join(SAVE_DIR, "model_final.msgpack")
+    model_base_path = os.path.join(SAVE_DIR, "model_base.msgpack")
+
+    # Kaggle Fallback Logic
+    # Jika script dijalankan di Kaggle, dataset asli ada di KAGGLE_INPUT_DIR (Read-only)
+    if not os.path.exists(model_final_path) and KAGGLE_INPUT_DIR:
+        alt_final = os.path.join(KAGGLE_INPUT_DIR, "model_final.msgpack")
+        if os.path.exists(alt_final):
+            model_final_path = alt_final
+            
+    if not os.path.exists(model_base_path) and KAGGLE_INPUT_DIR:
+        alt_base = os.path.join(KAGGLE_INPUT_DIR, "model_base.msgpack")
+        if os.path.exists(alt_base):
+            model_base_path = alt_base
+
+    # Load logic for P0
+    if os.path.exists(model_final_path):
+        print(f"[*] Resuming P0 from model_final: {model_final_path}")
+        with open(model_final_path, 'rb') as f:
+            params_p0 = serialization.from_bytes(params_p0, f.read())
+    elif os.path.exists(model_base_path):
+        print(f"[*] Resuming P0 from model_base: {model_base_path}")
+        with open(model_base_path, 'rb') as f:
+            params_p0 = serialization.from_bytes(params_p0, f.read())
     else:
-        print("[*] Starting from scratch (random weights).")
+        print("[*] P0 Starting from scratch (random weights).")
+
+    # Load logic for P1
+    if os.path.exists(model_final_path):
+        print(f"[*] Resuming P1 from model_final: {model_final_path}")
+        with open(model_final_path, 'rb') as f:
+            params_p1 = serialization.from_bytes(params_p1, f.read())
+    elif os.path.exists(model_base_path):
+        print(f"[*] Resuming P1 from model_base: {model_base_path}")
+        with open(model_base_path, 'rb') as f:
+            params_p1 = serialization.from_bytes(params_p1, f.read())
+    else:
+        print("[*] P1 Starting from scratch (random weights).")
 
     tx = optax.chain(
         optax.clip_by_global_norm(0.5),
         optax.adam(learning_rate=LEARNING_RATE, eps=1e-5)
     )
-    opt_state = tx.init(params)
+    opt_state = tx.init(params_p0)
 
     best_reward = -999.0  # Track best average return for separate save
 
     # Replicate to all GPUs
-    params_repl_p0 = replicate(params)
-    params_repl_p1 = replicate(params)
+    params_repl_p0 = replicate(params_p0)
+    params_repl_p1 = replicate(params_p1)
     opt_state_repl = replicate(opt_state)
 
     # State active_players tracker
@@ -390,19 +460,16 @@ def train():
             
             # P1 Frozen Weight Update Logic
             if rolling_win_p0 >= 60.0 and len(recent_wins_p0) == recent_wins_p0.maxlen:
-                print(f"  🔥 Rolling Winrate {recent_wins_p0.maxlen} Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dengan bobot P0 terbaru dan reset history.")
+                print(f"  🔥 Rolling Winrate {recent_wins_p0.maxlen} Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dengan bobot P0 terbaru, simpan sebagai model_base, dan reset history.")
                 params_repl_p1 = params_repl_p0
+                save_checkpoint(unreplicate(params_repl_p1), "model_base.msgpack")
+                upload_to_kaggle(SAVE_DIR, message=f"Update model_base with winrate {rolling_win_p0:.1f}%")
                 recent_wins_p0.clear()
 
         # ── Phase 5: Checkpointing ──
         if update % 50 == 0:
-            save_checkpoint(unreplicate(params_repl_p0), f"model_update_{update}.msgpack")
-
-        # Save best model (by average return)
-        if ep_returns and avg_ret > best_reward:
-            best_reward = avg_ret
-            save_checkpoint(unreplicate(params_repl_p0), "model_best.msgpack")
-            print(f"  ⭐ New best model saved! Avg return: {best_reward:+.2f}")
+            save_checkpoint(unreplicate(params_repl_p0), "model_final.msgpack")
+            upload_to_kaggle(SAVE_DIR, message=f"Auto-update model_final at step {update}")
 
         # ⭐ Memory monitoring — deteksi leak
         if update % MEM_LOG_INTERVAL == 0:
@@ -424,6 +491,7 @@ def train():
     print("Training complete. Closing env.")
     env.close()
     save_checkpoint(unreplicate(params_repl_p0), "model_final.msgpack")
+    upload_to_kaggle(SAVE_DIR, message="Final training checkpoint")
     print(f"Best model saved with avg return: {best_reward:+.2f}")
 
 

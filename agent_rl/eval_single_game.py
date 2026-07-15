@@ -134,10 +134,13 @@ def main():
     params_p0 = model.init(init_rng, dummy_seq, dummy_glob)
     params_p1 = model.init(init_rng, dummy_seq, dummy_glob)
     
-    ckpt_path = os.path.join(ROOT, "checkpoints", "model_final.msgpack")
-    with open(ckpt_path, 'rb') as f:
+    ckpt_path_p0 = os.path.join(ROOT, "checkpoints", "model_update_2150.msgpack")
+    with open(ckpt_path_p0, 'rb') as f:
         params_p0 = serialization.from_bytes(params_p0, f.read())
-        params_p1 = params_p0 # Self play
+        
+    ckpt_path_p1 = os.path.join(ROOT, "checkpoints", "model_update_100.msgpack")
+    with open(ckpt_path_p1, 'rb') as f:
+        params_p1 = serialization.from_bytes(params_p1, f.read())
         
     model_apply = jax.jit(model.apply)
     _ = model_apply(params_p0, dummy_seq, dummy_glob)

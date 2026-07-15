@@ -1,7 +1,6 @@
 # Lingkungan Virtual Python (Virtual Environment)
 venv/
 env/
-.env
 
 # File Cache & Temporary Python
 __pycache__/
