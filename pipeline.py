@@ -301,29 +301,36 @@ def ensure_models_downloaded():
     alt_final = os.path.join(kaggle_in, "model_final.msgpack") if kaggle_in else ""
     
     local_exists = os.path.exists(model_final) or os.path.exists(model_base)
-    kaggle_in_exists = os.path.exists(alt_final) if alt_final else False
+    alt_base = os.path.join(kaggle_in, "model_base.msgpack") if kaggle_in else ""
+    kaggle_in_exists = (os.path.exists(alt_final) if alt_final else False) or (os.path.exists(alt_base) if alt_base else False)
     
     log(f"[DEBUG] Cek model lokal: {model_final} -> {local_exists}")
     log(f"[DEBUG] Cek model kaggle_in: {alt_final} -> {kaggle_in_exists}")
     
-    if not local_exists and not kaggle_in_exists:
-        log(f"Mendownload checkpoint dari Kaggle Dataset ({dataset_id}) menggunakan Python API...")
-        try:
-            os.environ.pop("KAGGLE_API_TOKEN", None)
-            os.environ["KAGGLE_USERNAME"] = "akhyarsafrudin"
-            os.environ["KAGGLE_KEY"] = "03c3e536ffedc7d6153c1b3b8515242b"
-            
-            from kaggle.api.kaggle_api_extended import KaggleApi
-            api = KaggleApi()
-            api.authenticate()
-            api.dataset_download_files(dataset_id, path=CHECKPOINT_DIR, unzip=True)
-            log("Sukses mendownload model dari Kaggle.")
-        except Exception as e:
-            log(f"Gagal download dari Kaggle: {e}")
-    elif local_exists:
+    if not local_exists:
+        if kaggle_in_exists:
+            log(f"Menyalin model checkpoint dari Kaggle Input ({kaggle_in}) ke lokal...")
+            os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+            if alt_final and os.path.exists(alt_final):
+                shutil.copy(alt_final, model_final)
+            if alt_base and os.path.exists(alt_base):
+                shutil.copy(alt_base, model_base)
+        else:
+            log(f"Mendownload checkpoint dari Kaggle Dataset ({dataset_id}) menggunakan Python API...")
+            try:
+                os.environ.pop("KAGGLE_API_TOKEN", None)
+                os.environ["KAGGLE_USERNAME"] = "akhyarsafrudin"
+                os.environ["KAGGLE_KEY"] = "03c3e536ffedc7d6153c1b3b8515242b"
+                
+                from kaggle.api.kaggle_api_extended import KaggleApi
+                api = KaggleApi()
+                api.authenticate()
+                api.dataset_download_files(dataset_id, path=CHECKPOINT_DIR, unzip=True)
+                log("Sukses mendownload model dari Kaggle.")
+            except Exception as e:
+                log(f"Gagal download dari Kaggle: {e}")
+    else:
         log("Menggunakan checkpoint lokal yang sudah ada.")
-    elif kaggle_in_exists:
-        log(f"Menggunakan checkpoint dari {kaggle_in}.")
 
 
 def run_pipeline(args):
