@@ -22,8 +22,14 @@ import sys
 from collections import deque
 from dotenv import load_dotenv
 
-# Muat variabel environment dari .env
-load_dotenv()
+# Muat variabel environment dari .env secara robust
+current_dir = os.path.dirname(os.path.abspath(__file__))
+root_dir = os.path.dirname(current_dir)
+env_path = os.path.join(root_dir, ".env")
+if os.path.exists(env_path):
+    load_dotenv(env_path)
+else:
+    load_dotenv()
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
