@@ -69,6 +69,7 @@ except Exception:
 
 if _NUM_GPUS > 0:
     os.environ.setdefault("XLA_PYTHON_CLIENT_MEM_FRACTION", "0.85")
+    os.environ.setdefault("TF_GPU_ALLOCATOR", "cuda_malloc_async")
     print(f"[Pipeline] {_NUM_GPUS} GPU(s) terdeteksi - mode XLA/GPU")
     for env_key in ["CUDA_VISIBLE_DEVICES", "JAX_PLATFORMS"]:
         val = os.environ.get(env_key, "")
@@ -171,17 +172,16 @@ def phase_train_rl(iteration: int, args, total_steps: int, new_deck_dir: str, ge
     os.environ["NEW_DECK_PATH"] = new_deck_dir
     os.environ["GEN_DECK_PATH"] = gen_deck_dir
 
-    # GPU/CPU-aware scaling: naikkan NUM_ENVS dan BATCH_SIZE untuk memaksimalkan resource
-    if _NUM_GPUS >= 1:
-        # Jika menggunakan instance seperti Vast.ai (1 GPU, 12 Core, 16GB VRAM)
-        # 32 envs sangat cocok untuk 12 core CPU, Batch 1024 sangat ringan untuk 16GB VRAM
-        recommended_envs = 32 * _NUM_GPUS
-        recommended_batch = 1024 * _NUM_GPUS
+    # GPU/CPU-aware scaling: disesuaikan agar aman untuk memori lokal
+    if args.rl_workers:
+        os.environ["RL_NUM_ENVS"] = str(args.rl_workers)
+    elif _NUM_GPUS >= 1:
+        # Mengurangi jumlah environment dan batch size agar tidak OOM di lokal
+        recommended_envs = int(os.environ.get("RL_NUM_ENVS", 8 * _NUM_GPUS))
+        recommended_batch = int(os.environ.get("RL_BATCH_SIZE", 64 * _NUM_GPUS))
         os.environ["RL_NUM_ENVS"] = str(recommended_envs)
         os.environ["RL_BATCH_SIZE"] = str(recommended_batch)
-        log(f"Resource Auto-Scaling: NUM_ENVS={recommended_envs}, BATCH_SIZE={recommended_batch} (GPU x{_NUM_GPUS})")
-    elif args.rl_workers:
-        os.environ["RL_NUM_ENVS"] = str(args.rl_workers)
+        log(f"Resource Auto-Scaling (Local Safe): NUM_ENVS={recommended_envs}, BATCH_SIZE={recommended_batch} (GPU x{_NUM_GPUS})")
 
     # Pastikan GPU visibility untuk JAX
     if _NUM_GPUS > 0:
