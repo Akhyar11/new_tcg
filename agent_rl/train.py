@@ -94,138 +94,75 @@ def save_checkpoint(params, filename):
 import subprocess
 import json
 
-import base64
-import urllib.request
-import zipfile
-import io
+from kaggle.api.kaggle_api_extended import KaggleApi
 
-def get_auth_header():
-    auth_str = "akhyarsafrudin:03c3e536ffedc7d6153c1b3b8515242b"
-    return "Basic " + base64.b64encode(auth_str.encode("utf-8")).decode("utf-8")
+def get_kaggle_api():
+    os.environ["KAGGLE_USERNAME"] = "akhyarsafrudin"
+    os.environ["KAGGLE_KEY"] = "03c3e536ffedc7d6153c1b3b8515242b"
+    api = KaggleApi()
+    api.authenticate()
+    return api
 
 def upload_to_kaggle(save_dir, message="Update models"):
     dataset_id = "akhyarsafrudin/tcg-models"
-    auth_header = get_auth_header()
-    
-    if not os.path.exists(save_dir):
-        print(f"[!] Directory {save_dir} tidak ditemukan. Lewati upload.")
-        return
-        
-    files_to_upload = []
-    for f in os.listdir(save_dir):
-        if f.endswith(".msgpack"):
-            files_to_upload.append(f)
-            
-    if not files_to_upload:
-        print("[!] Tidak ada file .msgpack di folder checkpoints untuk diunggah.")
-        return
-        
-    print(f"[*] Menemukan file untuk diunggah: {files_to_upload}")
-    
-    uploaded_tokens = []
-    for filename in files_to_upload:
-        filepath = os.path.join(save_dir, filename)
-        filesize = os.path.getsize(filepath)
-        print(f"[*] Menginisialisasi upload untuk {filename} ({filesize} bytes)...")
-        
-        # Request upload URL
-        upload_init_url = f"https://www.kaggle.com/api/v1/datasets/upload/file/{dataset_id}"
-        payload = json.dumps({
-            "fileName": filename,
-            "contentLength": filesize
-        }).encode("utf-8")
-        
-        req = urllib.request.Request(
-            upload_init_url,
-            data=payload,
-            headers={
-                "Authorization": auth_header,
-                "Content-Type": "application/json"
-            }
-        )
-        
-        try:
-            with urllib.request.urlopen(req) as response:
-                res_data = json.loads(response.read().decode("utf-8"))
-                upload_url = res_data["uploadUrl"]
-                token = res_data["token"]
-        except Exception as e:
-            print(f"[!] Gagal meminta URL upload untuk {filename}: {e}")
-            if hasattr(e, 'read'):
-                print("    Response:", e.read().decode('utf-8'))
-            return
-            
-        print(f"[*] Mengunggah file {filename} ke GCS...")
-        try:
-            with open(filepath, 'rb') as f_in:
-                file_data = f_in.read()
-                
-            req_put = urllib.request.Request(
-                upload_url,
-                data=file_data,
-                method="PUT",
-                headers={"Content-Length": str(filesize)}
-            )
-            gcs_opener = urllib.request.build_opener()
-            with gcs_opener.open(req_put) as response:
-                pass
-            print(f"[*] Upload {filename} ke GCS sukses.")
-        except Exception as e:
-            print(f"[!] Gagal mengunggah file {filename} ke GCS: {e}")
-            return
-            
-        uploaded_tokens.append({"token": token})
-        
-    print("[*] Membuat versi dataset baru di Kaggle...")
-    finalize_url = f"https://www.kaggle.com/api/v1/datasets/create/version/{dataset_id}"
-    finalize_payload = json.dumps({
-        "versionNotes": message,
-        "files": uploaded_tokens
-    }).encode("utf-8")
-    
-    req_finalize = urllib.request.Request(
-        finalize_url,
-        data=finalize_payload,
-        headers={
-            "Authorization": auth_header,
-            "Content-Type": "application/json"
+
+    metadata_path = os.path.join(save_dir, "dataset-metadata.json")
+    if not os.path.exists(metadata_path):
+        metadata = {
+            "title": dataset_id.split("/")[-1],
+            "id": dataset_id,
+            "licenses": [{"name": "CC0-1.0"}]
         }
-    )
-    
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f, indent=4)
+
     try:
-        with urllib.request.urlopen(req_finalize) as response:
-            res_data = json.loads(response.read().decode("utf-8"))
+        api = get_kaggle_api()
+        
+        # Check if dataset exists
+        dataset_exists = True
+        try:
+            print(f"[*] Memeriksa status dataset Kaggle ({dataset_id})...")
+            api.dataset_status(dataset_id)
+        except Exception as status_err:
+            status_code = getattr(status_err, 'status', None)
+            err_msg = str(status_err).lower()
+            
+            # Jika error 401 (Unauthorized) atau kredensial tidak valid
+            if status_code in (401, 403) or "unauthorized" in err_msg or "unauthenticated" in err_msg or "401" in err_msg:
+                print(f"[!] Kaggle Authentication Error: Kredensial tidak valid atau tidak memiliki akses (HTTP {status_code}).")
+                print("    Silakan periksa kembali KAGGLE_USERNAME dan KAGGLE_API_TOKEN di file .env Anda.")
+                return
+                
+            # Jika error 404 (Not Found), berarti dataset belum ada
+            if status_code == 404 or "404" in err_msg or "not found" in err_msg:
+                dataset_exists = False
+                print(f"[*] Dataset belum ada di Kaggle. Akan mencoba membuat dataset baru.")
+            else:
+                # Fallback untuk error lain
+                dataset_exists = False
+                print(f"[*] Dataset tidak dapat diakses ({status_err}). Mencoba membuat dataset baru.")
+
+        if dataset_exists:
+            print(f"[*] Mengupload versi baru ke Kaggle Dataset ({dataset_id}) menggunakan Python API...")
+            api.dataset_create_version(save_dir, version_notes=message, dir_mode="zip")
             print("[*] Sukses sinkronisasi ke Kaggle Dataset.")
-            print(f"    Dataset URL: {res_data.get('url')}")
-            print(f"    Versi Baru: {res_data.get('versionNumber')}")
+        else:
+            print(f"[*] Mencoba membuat dataset baru di Kaggle ({dataset_id})...")
+            api.dataset_create_new(save_dir, public=False, quiet=False, convert_to_csv=False, dir_mode="zip")
+            print("[*] Sukses membuat dan mengunggah ke Kaggle Dataset baru.")
     except Exception as e:
-        print(f"[!] Gagal memfinalisasi versi baru di Kaggle: {e}")
-        if hasattr(e, 'read'):
-            print("    Response:", e.read().decode('utf-8'))
+        print(f"[!] Terjadi error saat upload Kaggle: {e}")
 
 def download_from_kaggle(save_dir):
     dataset_id = "akhyarsafrudin/tcg-models"
-    auth_header = get_auth_header()
-    
-    print(f"[*] Mencoba mendownload checkpoint dari Kaggle Dataset ({dataset_id}) secara langsung...")
-    download_url = f"https://www.kaggle.com/api/v1/datasets/download/{dataset_id}"
-    
-    req = urllib.request.Request(
-        download_url,
-        headers={"Authorization": auth_header}
-    )
-    
+    print(f"[*] Mencoba mendownload checkpoint dari Kaggle Dataset ({dataset_id}) menggunakan Python API...")
     try:
-        with urllib.request.urlopen(req) as response:
-            zip_data = response.read()
-        print("[*] Download sukses, mengekstrak file...")
-        
-        os.makedirs(save_dir, exist_ok=True)
-        with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
-            z.extractall(save_dir)
+        api = get_kaggle_api()
+        api.dataset_download_files(dataset_id, path=save_dir, unzip=True)
         print("[*] Sukses mendownload dan unzip model dari Kaggle.")
     except Exception as e:
-        print(f"[!] Gagal mendownload dari Kaggle: {e}")
+        print(f"[!] Terjadi error saat download Kaggle: {e}")
 
 def auto_config_gpu():
     global NUM_ENVS, BATCH_SIZE
