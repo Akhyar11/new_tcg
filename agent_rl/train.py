@@ -104,7 +104,8 @@ class ProgressTracker:
             pass
             
         if self.is_tty:
-            self.pbar = tqdm(iterable, total=total, desc="PPO Training", file=sys.stdout, mininterval=1.0)
+            self.tqdm_pbar = tqdm(iterable, total=total, desc="PPO Training", file=sys.stdout, mininterval=1.0)
+            self.pbar = iter(self.tqdm_pbar)
         else:
             self.pbar = iter(iterable)
             self.current = 0
@@ -123,7 +124,7 @@ class ProgressTracker:
 
     def set_postfix(self, postfix_dict):
         if self.is_tty:
-            self.pbar.set_postfix(postfix_dict)
+            self.tqdm_pbar.set_postfix(postfix_dict)
             sys.stdout.flush()
         else:
             postfix_str = " | ".join(f"{k}: {v}" for k, v in postfix_dict.items())
@@ -132,7 +133,7 @@ class ProgressTracker:
 
     def write(self, message):
         if self.is_tty:
-            self.pbar.write(message)
+            self.tqdm_pbar.write(message)
             sys.stdout.flush()
         else:
             print(message)
