@@ -312,17 +312,18 @@ def train():
             _, _, values_sharded_p0, logits_sharded_p0 = get_action_and_value(
                 params_repl_p0, model.apply, next_seq_sharded, next_glob_sharded, step_rngs
             )
-            _, _, _, logits_sharded_p1 = get_action_and_value(
+            _, _, values_sharded_p1, logits_sharded_p1 = get_action_and_value(
                 params_repl_p1, model.apply, next_seq_sharded, next_glob_sharded, step_rngs
             )
 
             logits_np_p0 = np.array(logits_sharded_p0).reshape((NUM_ENVS, -1))
             logits_np_p1 = np.array(logits_sharded_p1).reshape((NUM_ENVS, -1))
             values_np_p0 = np.array(values_sharded_p0).reshape((NUM_ENVS,))
+            values_np_p1 = np.array(values_sharded_p1).reshape((NUM_ENVS,))
 
             # Gabungkan logits & value sesuai active player
             logits_np = np.where(current_active_players[:, None] == 0, logits_np_p0, logits_np_p1)
-            values_np = np.where(current_active_players == 0, values_np_p0, 0.0)
+            values_np = np.where(current_active_players == 0, values_np_p0, values_np_p1)
 
             next_obs, rewards, dones, infos = env.step(logits_np)
 

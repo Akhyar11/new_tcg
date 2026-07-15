@@ -14,15 +14,27 @@ def load_deck(filepath):
     return deck
 
 def run_full_game():
-    print("Memuat deck dari agent_rl/deck.csv...")
+    import os
+    import glob
+    print("Memuat deck...")
+    deck_path = "agent_rl/deck.csv"
+    if not os.path.exists(deck_path):
+        new_decks = glob.glob("new_deck/*.csv")
+        if new_decks:
+            deck_path = new_decks[0]
+            print(f"agent_rl/deck.csv tidak ditemukan. Menggunakan fallback: {deck_path}")
+        else:
+            print("Tidak ada deck CSV ditemukan!")
+            return
+            
     try:
-        deck = load_deck("agent_rl/deck.csv")
+        deck = load_deck(deck_path)
     except Exception as e:
         print(f"Gagal memuat deck: {e}")
         return
 
-    if len(deck) != 60:
-        print(f"Jumlah kartu di deck tidak 60! (Ada {len(deck)} kartu)")
+    if not deck or len(deck) != 60:
+        print(f"Jumlah kartu di deck tidak 60! (Ada {len(deck) if deck else 0} kartu)")
         return
         
     print("Memulai permainan...")
@@ -34,17 +46,20 @@ def run_full_game():
             
         obs = to_dataclass(obs_dict, Observation)
         
-        from agent_rl.reward import calc_potential, calculate_step_reward
-        old_potential = calc_potential(obs.current, 0) if obs.current else 0.0
+        from agent_rl.reward import calculate_step_reward, detect_events, reset_trackers
+        reset_trackers()
         
+        def get_end_reason(obs_data) -> int:
+            if obs_data is None or not obs_data.logs:
+                return 0
+            for log in obs_data.logs:
+                if log.type == LogType.RESULT:
+                    return log.reason if log.reason is not None else 0
+            return 0
+
+        old_state = obs.current
         step = 0
         while True:
-            # Hitung Reward dan Potential dari State terbaru
-            new_potential = calc_potential(obs.current, 0) if obs.current else 0.0
-            step_reward = calculate_step_reward(old_potential, new_potential, obs.current, 0)
-            if step > 0:
-                print(f"[Reward Tester] Step {step-1} selesai. Potential P0: {new_potential:.4f} | Reward P0: {step_reward:.4f}")
-            old_potential = new_potential
             
             if obs.current is not None and obs.current.result != -1:
                 print(f"\n>>> GAME OVER! Pemenang (Player Index): {obs.current.result} <<<")
@@ -130,8 +145,16 @@ def run_full_game():
                 # Sorting choices descending is usually required if multiple elements from same array are selected? 
                 # C++ engine usually doesn't care if it's just indices of select.option
                 try:
+                    prev_player = obs.current.yourIndex if obs.current else 0
                     obs_dict = battle_select(choices)
                     obs = to_dataclass(obs_dict, Observation)
+                    
+                    if obs.current:
+                        end_reason = get_end_reason(obs)
+                        events = detect_events(old_state, obs.current, prev_player, obs.logs)
+                        step_reward = calculate_step_reward(obs.current, prev_player, events, end_reason)
+                        print(f"[Reward Tester] Step {step} selesai. Player: P{prev_player} | Reward: {step_reward:.4f} | Events: {events}")
+                        old_state = obs.current
                 except Exception as e:
                     print(f"Error saat execute select {choices}: {e}")
                     break

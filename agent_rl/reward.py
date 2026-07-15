@@ -45,8 +45,9 @@ from cg.api import all_card_data, CardType, LogType
 # Counter global per-game untuk diminishing returns (direset via reset_trackers())
 _event_counters = {}
 
-# Cache card database per-worker
+# Cache card & attack database per-worker
 _CARD_DB = None
+_ATTACK_DB = None
 
 def _get_card_db():
     global _CARD_DB
@@ -55,9 +56,18 @@ def _get_card_db():
     return _CARD_DB
 
 
+def _get_attack_db():
+    global _ATTACK_DB
+    if _ATTACK_DB is None:
+        from cg.api import all_attack
+        _ATTACK_DB = {a.attackId: a for a in all_attack()}
+    return _ATTACK_DB
+
+
 def reset_trackers():
     """Reset event counters untuk game baru."""
     _event_counters.clear()
+    _event_counters['ready_serials'] = set()
 
 
 def _increment_counter(key: str) -> int:
@@ -83,13 +93,12 @@ def detect_events(old_state, new_state, player_index: int, logs: list = None) ->
     opp_new = new_state.players[opp_index]
 
     # 1. Energy Attach
-    if not old_state.energyAttached and new_state.energyAttached:
-        old_energy = sum(len(p.energies) for p in my_old.active if p) + \
-                     sum(len(p.energies) for p in my_old.bench if p)
-        new_energy = sum(len(p.energies) for p in my_new.active if p) + \
-                     sum(len(p.energies) for p in my_new.bench if p)
-        if new_energy > old_energy:
-            events['energy_attached'] = new_energy - old_energy
+    old_energy = sum(len(p.energies) for p in my_old.active if p) + \
+                 sum(len(p.energies) for p in my_old.bench if p)
+    new_energy = sum(len(p.energies) for p in my_new.active if p) + \
+                 sum(len(p.energies) for p in my_new.bench if p)
+    if new_energy > old_energy:
+        events['energy_attached'] = new_energy - old_energy
 
     # 2. Prize Taken
     old_prize = len(my_old.prize)
@@ -105,16 +114,32 @@ def detect_events(old_state, new_state, player_index: int, logs: list = None) ->
     new_my_active = my_new.active
 
     damage_dealt = 0
-    if old_opp_active and old_opp_active[0] and new_opp_active and new_opp_active[0]:
-        hp_loss = old_opp_active[0].hp - new_opp_active[0].hp
-        if hp_loss > 0:
-            damage_dealt = hp_loss
-
     damage_received = 0
-    if old_my_active and old_my_active[0] and new_my_active and new_my_active[0]:
-        hp_loss_self = old_my_active[0].hp - new_my_active[0].hp
-        if hp_loss_self > 0:
-            damage_received = hp_loss_self
+    has_hp_logs = False
+    if logs:
+        for log in logs:
+            if log.type == LogType.HP_CHANGE:
+                val = log.value if log.value is not None else 0
+                if val < 0:
+                    has_hp_logs = True
+                    dmg = -val
+                    if log.playerIndex == opp_index:
+                        damage_dealt += dmg
+                    elif log.playerIndex == player_index:
+                        damage_received += dmg
+
+    if not has_hp_logs:
+        if old_opp_active and old_opp_active[0] and new_opp_active and new_opp_active[0]:
+            if old_opp_active[0].serial == new_opp_active[0].serial:
+                hp_loss = old_opp_active[0].hp - new_opp_active[0].hp
+                if hp_loss > 0:
+                    damage_dealt = hp_loss
+
+        if old_my_active and old_my_active[0] and new_my_active and new_my_active[0]:
+            if old_my_active[0].serial == new_my_active[0].serial:
+                hp_loss_self = old_my_active[0].hp - new_my_active[0].hp
+                if hp_loss_self > 0:
+                    damage_received = hp_loss_self
 
     net_damage = damage_dealt - damage_received
     if net_damage > 0:
@@ -172,42 +197,57 @@ def detect_events(old_state, new_state, player_index: int, logs: list = None) ->
             elif card.cardType == CardType.ITEM:
                 events['item_played'] = True
 
+    # Ensure ready_serials exists
+    if 'ready_serials' not in _event_counters:
+        _event_counters['ready_serials'] = set()
+    ready_serials = _event_counters['ready_serials']
+
+    # 8. Battle Ready Milestone (Kesiapan Tempur)
+    card_db = _get_card_db()
+    attack_db = _get_attack_db()
+    
+    my_pokemon = [p for p in list(my_new.bench) + list(my_new.active) if p]
+    for p in my_pokemon:
+        p_id = p.id
+        p_serial = p.serial
+        card_data = card_db.get(p_id)
+        if card_data and getattr(card_data, 'attacks', None):
+            total_cost = 0
+            for atk_id in card_data.attacks:
+                atk = attack_db.get(atk_id)
+                if atk and getattr(atk, 'energies', None):
+                    if len(atk.energies) > total_cost:
+                        total_cost = len(atk.energies)
+            
+            if total_cost > 0 and len(p.energies) >= total_cost:
+                if p_serial not in ready_serials:
+                    ready_serials.add(p_serial)
+                    events['battle_ready'] = events.get('battle_ready', 0) + 1
+
+    # 9. Strategic / Normal Retreat
+    if old_my_active and old_my_active[0] and new_my_active and new_my_active[0]:
+        if not old_state.retreated and new_state.retreated:
+            old_serial = old_my_active[0].serial
+            retreated_bench = [p for p in my_new.bench if p and p.serial == old_serial]
+            if retreated_bench:
+                hp_ratio = old_my_active[0].hp / old_my_active[0].maxHp
+                if hp_ratio < 0.5:
+                    events['strategic_retreat'] = True
+                else:
+                    events['normal_retreat'] = True
+
     return events
 
 
 def calculate_step_reward(new_state, player_index: int, events: dict = None, end_reason: int = 0) -> float:
     """
     Reward dengan skala seimbang untuk konvergensi PPO.
-
-    ┌───────────────────────────────────┬──────────┬────────────────────────┐
-    │ Komponen                          │ Value    │ Diminishing           │
-    ├───────────────────────────────────┼──────────┼────────────────────────┤
-    │ Step penalty (turn 1→200)         │ -0.03    │ 0.03→0.12 (expon.)    │
-    │ Energy attach                     │ +0.15    │ 0.80^n                │
-    │ Evolve (active)                   │ +0.30    │ 0.70^n                │
-    │ Evolve (bench)                    │ +0.20    │ 0.70^n                │
-    │ Supporter                         │ +0.06    │ 0.80^n                │
-    │ Item                              │ +0.04    │ 0.80^n                │
-    │ Bench building                    │ +0.10    │ 0.85^n                │
-    │ Net damage (max)                  │ +0.40    │ per-step cap          │
-    │ Damage received (max)             │ -0.20    │ per-step cap          │
-    │ Prize taken (single)              │ +0.80    │ flat                  │
-    │ Prize taken (ex/double)           │ +1.20    │ flat                  │
-    │ Terminal — Prize win              │ +1.50    │ —                     │
-    │ Terminal — Prize loss             │ -1.50    │ —                     │
-    │ Terminal — Deck-out (either)      │ 0.00     │ —                     │
-    │ Terminal — NoActive/Effect (win)  │ +0.30    │ —                     │
-    │ Terminal — NoActive/Effect (loss) │ -0.30    │ —                     │
-    │ Terminal — Draw                   │ 0.00     │ —                     │
-    └───────────────────────────────────┴──────────┴────────────────────────┘
-
-    Anti-Hacking tetap dipertahankan dari v2:
-    - Net damage, serial tracking, state verification.
     """
     if new_state is None:
         return 0.0
 
     turn = new_state.turn
+    my_new = new_state.players[player_index]
 
     # ── 1. Step penalty — exponential, stall semakin mahal ──
     # Turn 1: -0.03, Turn 50: -0.05, Turn 100: -0.08, Turn 200: -0.12
@@ -254,6 +294,22 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
             decay = 0.50 ** n
             r_event += 0.02 * decay
 
+        # Battle Ready Milestone (Kesiapan Tempur)
+        if events.get('battle_ready', 0) > 0:
+            n = _increment_counter('battle_ready')
+            decay = 0.50 ** n
+            r_event += 0.05 * events['battle_ready'] * decay
+
+        # Strategic / Normal Retreat
+        if events.get('strategic_retreat'):
+            n = _increment_counter('retreat')
+            decay = 0.50 ** n
+            r_event += 0.05 * decay
+        elif events.get('normal_retreat'):
+            n = _increment_counter('retreat')
+            decay = 0.50 ** n
+            r_event += 0.00 * decay
+
         # Net damage — Primary source of intermediate reward
         if events.get('net_damage', 0) > 0:
             # 10 damage = +0.04. 100 damage = +0.40. Cap at +1.0 per step
@@ -278,10 +334,21 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
         if events.get('ko') and not events.get('prize_taken'):
             r_event += 0.30
 
+    # ── 3. Intra-Game Reward Annealing ──
+    # Kurangi bobot intermediate reward seiring berkurangnya prize card (game mendekati akhir)
+    prizes_left = len(my_new.prize) if my_new and my_new.prize else 6
+    intermediate_scale = max(0.1, prizes_left / 6.0)
+    
+    # Juga kurangi seiring bertambahnya turn (late game)
+    turn_scale = max(0.1, 1.0 - (turn / 100.0))
+    
+    # Kalikan r_event dengan faktor skala gabungan
+    r_event = r_event * (intermediate_scale * turn_scale)
+
     # Cap intermediate per step
     r_event = np.clip(r_event, -1.5, 2.5)
 
-    # ── 3. Terminal reward ──
+    # ── 4. Terminal reward ──
     r_terminal = 0.0
     if new_state.result != -1:
         won = (new_state.result == player_index)

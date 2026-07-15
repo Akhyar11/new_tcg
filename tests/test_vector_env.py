@@ -10,7 +10,7 @@ def test_vector_env():
     try:
         print("Melakukan Reset serentak...")
         obs = env.reset()
-        print(f"Bentuk BATCH seq_input: {obs['seq_input'].shape} (Harus: 4, 93, 31)")
+        print(f"Bentuk BATCH seq_input: {obs['seq_input'].shape} (Harus: 4, 113, 31)")
         print(f"Bentuk BATCH glob_input: {obs['glob_input'].shape} (Harus: 4, 266)")
         
         print("\nMelakukan 10 step acak paralel...")
