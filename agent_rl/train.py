@@ -278,6 +278,7 @@ def train():
     recent_wins_p0 = deque(maxlen=200)
     recent_wins_m_vs_m = deque(maxlen=200)
     recent_wins_m_vs_r = deque(maxlen=200)
+    recent_wins_r_vs_r = deque(maxlen=200)
 
     print("\n=== MAIN TRAINING LOOP ===")
     for update in range(1, num_updates + 1):
@@ -295,6 +296,7 @@ def train():
         ep_wins_p0 = []
         ep_wins_m_vs_m = []
         ep_wins_m_vs_r = []
+        ep_wins_r_vs_r = []
         ep_steps = []
         ep_end_reasons = []
 
@@ -371,6 +373,8 @@ def train():
                             ep_wins_m_vs_m.append(is_win)
                         elif p0_deck_type == 0 and p1_deck_type == 1:
                             ep_wins_m_vs_r.append(is_win)
+                        elif p0_deck_type == 1 and p1_deck_type == 1:
+                            ep_wins_r_vs_r.append(is_win)
                             
                     ep_steps.append(env_step_counts[i])
                     ep_end_reasons.append(end_reason)
@@ -459,6 +463,7 @@ def train():
             recent_wins_p0.extend(ep_wins_p0)
             recent_wins_m_vs_m.extend(ep_wins_m_vs_m)
             recent_wins_m_vs_r.extend(ep_wins_m_vs_r)
+            recent_wins_r_vs_r.extend(ep_wins_r_vs_r)
             
             win_p0 = (np.mean(ep_wins_p0) * 100) if ep_wins_p0 else 0.0
             rolling_win_p0 = (np.mean(recent_wins_p0) * 100) if len(recent_wins_p0) > 0 else 0.0
@@ -466,6 +471,7 @@ def train():
             # Win rates by specific matchup
             win_m_vs_m = (np.mean(recent_wins_m_vs_m) * 100) if len(recent_wins_m_vs_m) > 0 else 0.0
             win_m_vs_r = (np.mean(recent_wins_m_vs_r) * 100) if len(recent_wins_m_vs_r) > 0 else 0.0
+            win_r_vs_r = (np.mean(recent_wins_r_vs_r) * 100) if len(recent_wins_r_vs_r) > 0 else 0.0
             
             games_played = len(ep_wins_p0)
             avg_steps = np.mean(ep_steps) if ep_steps else 0.0
@@ -491,7 +497,7 @@ def train():
             print(f"Update {update:04d}/{num_updates} ({pct:.0f}%) | Step: {global_step:,} | FPS: {fps}")
             print(f"  ├── Games: {games_played} | Avg Steps/Game: {avg_steps:.1f}")
             print(f"  ├── Win P0 (Batch): {win_p0:.1f}% | Rolling Win ({len(recent_wins_p0)}/{recent_wins_p0.maxlen}): {rolling_win_p0:.1f}%")
-            print(f"  ├── Win Rate Matchup | Meta vs Meta ({len(recent_wins_m_vs_m)}): {win_m_vs_m:.1f}% | Meta vs Random ({len(recent_wins_m_vs_r)}): {win_m_vs_r:.1f}%")
+            print(f"  ├── Win Rate Matchup | Meta vs Meta ({len(recent_wins_m_vs_m)}): {win_m_vs_m:.1f}% | Meta vs Random ({len(recent_wins_m_vs_r)}): {win_m_vs_r:.1f}% | Random vs Random ({len(recent_wins_r_vs_r)}): {win_r_vs_r:.1f}%")
             print(f"  ├── Return: {avg_ret:+.2f} | Loss: {mean_loss:.4f} | Norm Scale: {norm_scale:.2f}")
             print(f"  ├── Hyperparams | Clip: {current_clip_ratio:.3f} | Entropy: {current_entropy_coef:.3f}")
             print(f"  └── End Reasons | {reason_str}")
@@ -505,6 +511,7 @@ def train():
                 recent_wins_p0.clear()
                 recent_wins_m_vs_m.clear()
                 recent_wins_m_vs_r.clear()
+                recent_wins_r_vs_r.clear()
 
         # ⭐ Memory monitoring — deteksi leak
         if update % MEM_LOG_INTERVAL == 0:
