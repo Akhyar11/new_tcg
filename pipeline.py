@@ -319,6 +319,9 @@ def ensure_models_downloaded():
             log(f"Mendownload checkpoint dari Kaggle Dataset ({dataset_id}) menggunakan Python API...")
             try:
                 os.environ.pop("KAGGLE_API_TOKEN", None)
+                os.environ.pop("KAGGLE_API_V1_TOKEN", None)
+                os.environ.pop("KAGGLE_KERNEL_RUN_TYPE", None)
+                os.environ.pop("KAGGLE_DATA_PROXY_URL", None)
                 os.environ["KAGGLE_USERNAME"] = "akhyarsafrudin"
                 os.environ["KAGGLE_KEY"] = "03c3e536ffedc7d6153c1b3b8515242b"
                 

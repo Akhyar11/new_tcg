@@ -96,6 +96,9 @@ import json
 
 def get_kaggle_api():
     os.environ.pop("KAGGLE_API_TOKEN", None)
+    os.environ.pop("KAGGLE_API_V1_TOKEN", None)
+    os.environ.pop("KAGGLE_KERNEL_RUN_TYPE", None)
+    os.environ.pop("KAGGLE_DATA_PROXY_URL", None)
     os.environ["KAGGLE_USERNAME"] = "akhyarsafrudin"
     os.environ["KAGGLE_KEY"] = "03c3e536ffedc7d6153c1b3b8515242b"
     from kaggle.api.kaggle_api_extended import KaggleApi
