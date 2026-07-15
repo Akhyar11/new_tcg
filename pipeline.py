@@ -290,13 +290,18 @@ def phase_run_ga(iteration: int, args):
 
 def ensure_models_downloaded():
     dataset_id = os.environ.get("KAGGLE_DATASET_ID")
+    log(f"[DEBUG] KAGGLE_DATASET_ID = {dataset_id}")
     if not dataset_id:
+        log("[DEBUG] KAGGLE_DATASET_ID kosong, lewati sinkronisasi Kaggle.")
         return
         
     model_final = os.path.join(CHECKPOINT_DIR, "model_final.msgpack")
     model_base = os.path.join(CHECKPOINT_DIR, "model_base.msgpack")
     kaggle_in = os.environ.get("KAGGLE_INPUT_DIR", "")
     alt_final = os.path.join(kaggle_in, "model_final.msgpack") if kaggle_in else ""
+    
+    log(f"[DEBUG] Cek model lokal: {model_final} -> {os.path.exists(model_final)}")
+    log(f"[DEBUG] Cek model kaggle_in: {alt_final} -> {os.path.exists(alt_final) if alt_final else False}")
     
     if not os.path.exists(model_final) and not os.path.exists(model_base):
         if not alt_final or not os.path.exists(alt_final):
