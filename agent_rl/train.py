@@ -105,6 +105,14 @@ def upload_to_kaggle(save_dir, message="Update models"):
             json.dump(metadata, f, indent=4)
 
     try:
+        # PENTING: Google Colab sering menggunakan library kaggle versi lawas (1.5.12)
+        # yang menyebabkan error 401 Unauthorized saat StartBlobUpload.
+        # Kita force-upgrade secara otomatis agar tidak perlu manual.
+        subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--upgrade", "kaggle", "--quiet"],
+            check=False
+        )
+
         # Supaya tidak nyangkut saat kaggle nanya interaktif (quiet command)
         print(f"[*] Mengupload ke Kaggle Dataset ({dataset_id})...")
         subprocess.run(
