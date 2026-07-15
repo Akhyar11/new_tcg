@@ -39,7 +39,6 @@ from agent_rl.model import PokemonAgent
 from agent_rl.vector_env import VectorEnv
 from agent_rl.buffer import RolloutBuffer
 from agent_rl.ppo_update import ppo_update_step, get_action_and_value
-from tqdm import tqdm
 from flax.jax_utils import replicate, unreplicate
 
 # ─── Hyperparameters ───
@@ -90,54 +89,6 @@ import subprocess
 import json
 
 from kaggle.api.kaggle_api_extended import KaggleApi
-
-class ProgressTracker:
-    def __init__(self, iterable, total):
-        self.iterable = iterable
-        self.total = total
-        self.is_tty = sys.stdout.isatty()
-        try:
-            # Check if running in Jupyter/Kaggle notebook environment
-            __IPYTHON__
-            self.is_tty = True
-        except NameError:
-            pass
-            
-        if self.is_tty:
-            self.tqdm_pbar = tqdm(iterable, total=total, desc="PPO Training", file=sys.stdout, mininterval=1.0)
-            self.pbar = iter(self.tqdm_pbar)
-        else:
-            self.pbar = iter(iterable)
-            self.current = 0
-            
-    def __iter__(self):
-        return self
-        
-    def __next__(self):
-        if self.is_tty:
-            return next(self.pbar)
-        else:
-            self.current += 1
-            if self.current > self.total:
-                raise StopIteration
-            return self.current
-
-    def set_postfix(self, postfix_dict):
-        if self.is_tty:
-            self.tqdm_pbar.set_postfix(postfix_dict)
-            sys.stdout.flush()
-        else:
-            postfix_str = " | ".join(f"{k}: {v}" for k, v in postfix_dict.items())
-            print(f"[Update {self.current}/{self.total}] {postfix_str}")
-            sys.stdout.flush()
-
-    def write(self, message):
-        if self.is_tty:
-            self.tqdm_pbar.write(message)
-            sys.stdout.flush()
-        else:
-            print(message)
-            sys.stdout.flush()
 
 def get_kaggle_api():
     # Map KAGGLE_API_TOKEN from .env to KAGGLE_KEY if KAGGLE_KEY is not set
@@ -349,8 +300,7 @@ def train():
     p1_update_count = 0
 
     print("\n=== MAIN TRAINING LOOP ===")
-    pbar = ProgressTracker(range(1, num_updates + 1), total=num_updates)
-    for update in pbar:
+    for update in range(1, num_updates + 1):
         # Anneal entropy coefficient
         progress = update / num_updates
         if FINETUNE_MODE:
@@ -519,7 +469,8 @@ def train():
 
         # ⭐ NaN guard: rollback params DAN opt_state jika loss NaN/Inf
         if not np.isfinite(mean_loss):
-            pbar.write(f"  ⚠️ WARNING: Loss NaN/Inf ({mean_loss})! Rollback ke update sebelumnya.")
+            print(f"  ⚠️ WARNING: Loss NaN/Inf ({mean_loss})! Rollback ke update sebelumnya.")
+            sys.stdout.flush()
             params_repl_p0 = params_before
             opt_state_repl = opt_state_before
             mean_loss = 0.0
@@ -545,22 +496,15 @@ def train():
             fps = int((NUM_ENVS * N_STEPS) / (time.time() - start_time + 1e-8))
             start_time = time.time()
             
-            # Update progress bar postfix with key metrics
-            pbar.set_postfix({
-                "Loss": f"{mean_loss:.4f}",
-                "Win": f"{win_p0:.1f}%",
-                "RollWin": f"{rolling_win_p0:.1f}%",
-                "MvM": f"{win_m_vs_m:.1f}%",
-                "MvR": f"{win_m_vs_r:.1f}%",
-                "P1_Up": p1_update_count,
-                "FPS": fps,
-                "Steps": f"{global_step:,}"
-            })
+            # Print a single clean line per update to stdout and flush
+            print(f"Update {update:04d}/{num_updates} | Loss: {mean_loss:.4f} | Win: {win_p0:.1f}% | RollWin: {rolling_win_p0:.1f}% | MvM: {win_m_vs_m:.1f}% | MvR: {win_m_vs_r:.1f}% | P1_Up: {p1_update_count} | FPS: {fps} | Steps: {global_step:,}")
+            sys.stdout.flush()
             
             # P1 Frozen Weight Update Logic
             if rolling_win_p0 >= 60.0 and len(recent_wins_p0) == recent_wins_p0.maxlen:
                 p1_update_count += 1
-                pbar.write(f"  🔥 [P1 Update #{p1_update_count}] Rolling Winrate {recent_wins_p0.maxlen} Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dan simpan model_final ke Kaggle.")
+                print(f"  🔥 [P1 Update #{p1_update_count}] Rolling Winrate {recent_wins_p0.maxlen} Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dan simpan model_final ke Kaggle.")
+                sys.stdout.flush()
                 params_repl_p1 = params_repl_p0
                 save_checkpoint(unreplicate(params_repl_p0), "model_final.msgpack")
                 upload_to_kaggle(SAVE_DIR, message=f"Update model_final dengan winrate P0 {rolling_win_p0:.1f}% (Update #{p1_update_count})")
@@ -574,10 +518,11 @@ def train():
             proc = psutil.Process()
             mem_mb = proc.memory_info().rss / 1e6
             cpu_percent = proc.cpu_percent(interval=0.1)
-            pbar.write(f"  [MEM] RSS={mem_mb:.0f}MB | CPU={cpu_percent:.0f}%")
+            print(f"  [MEM] RSS={mem_mb:.0f}MB | CPU={cpu_percent:.0f}%")
             # Peringatan jika memory > 12GB (Kaggle limit ~16GB)
             if mem_mb > 12000:
-                pbar.write(f"  ⚠️ WARNING: Memory usage tinggi ({mem_mb:.0f}MB)! Berisiko OOM.")
+                print(f"  ⚠️ WARNING: Memory usage tinggi ({mem_mb:.0f}MB)! Berisiko OOM.")
+            sys.stdout.flush()
 
         # Update entropy & clip ratio di ppo_update function via closure approach
         # Actually, we need to pass these params. Let me update the ppo_update call.
