@@ -50,8 +50,8 @@ File **baru** yang murni berisi rumus matematika pembaruan bobot *(weight update
 
 ### 8. `agent_rl/train.py` (Domain: Orkestrasi / Loop Utama)
 File utama (*Entry Point*) yang akan dieksekusi saat proses *training*.
-- [ ] Inisialisasi Model, `vector_env`, `buffer`, dan *Optimizer* (Optax).
-- [ ] Buat *Main Training Loop*:
+- [x] Inisialisasi Model, `vector_env`, `buffer`, dan *Optimizer* (Optax).
+- [x] Buat *Main Training Loop*:
   - Fase Pengumpulan (Menggerakkan `vector_env` dan mencatat ke `buffer`).
   - Fase Update (Melempar data `buffer` ke fungsi di `ppo_update.py`).
-- [ ] Integrasikan fitur penyimpanan bobot (checkpoint) dan pemantauan metrik latihan (misal: *mean reward*, *win-rate*).
+- [x] Integrasikan fitur penyimpanan bobot (checkpoint) dan pemantauan metrik latihan (misal: *mean reward*, *win-rate*).

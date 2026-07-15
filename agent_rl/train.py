@@ -39,6 +39,7 @@ from agent_rl.model import PokemonAgent
 from agent_rl.vector_env import VectorEnv
 from agent_rl.buffer import RolloutBuffer
 from agent_rl.ppo_update import ppo_update_step, get_action_and_value
+from tqdm import tqdm
 from flax.jax_utils import replicate, unreplicate
 
 # ─── Hyperparameters ───
@@ -91,6 +92,9 @@ import json
 from kaggle.api.kaggle_api_extended import KaggleApi
 
 def get_kaggle_api():
+    # Map KAGGLE_API_TOKEN from .env to KAGGLE_KEY if KAGGLE_KEY is not set
+    if "KAGGLE_KEY" not in os.environ and "KAGGLE_API_TOKEN" in os.environ:
+        os.environ["KAGGLE_KEY"] = os.environ["KAGGLE_API_TOKEN"]
     api = KaggleApi()
     api.authenticate()
     return api
@@ -112,10 +116,25 @@ def upload_to_kaggle(save_dir, message="Update models"):
             json.dump(metadata, f, indent=4)
 
     try:
-        print(f"[*] Mengupload ke Kaggle Dataset ({dataset_id}) menggunakan Python API...")
         api = get_kaggle_api()
-        api.dataset_create_version(save_dir, version_notes=message, dir_mode="zip")
-        print("[*] Sukses sinkronisasi ke Kaggle Dataset.")
+        
+        # Check if dataset exists
+        dataset_exists = True
+        try:
+            print(f"[*] Memeriksa status dataset Kaggle ({dataset_id})...")
+            api.dataset_status(dataset_id)
+        except Exception as status_err:
+            dataset_exists = False
+            print(f"[*] Dataset tidak ditemukan atau tidak dapat diakses ({status_err}).")
+
+        if dataset_exists:
+            print(f"[*] Mengupload versi baru ke Kaggle Dataset ({dataset_id}) menggunakan Python API...")
+            api.dataset_create_version(save_dir, version_notes=message, dir_mode="zip")
+            print("[*] Sukses sinkronisasi ke Kaggle Dataset.")
+        else:
+            print(f"[*] Mencoba membuat dataset baru di Kaggle ({dataset_id})...")
+            api.dataset_create_new(save_dir, public=False, quiet=False, convert_to_csv=False, dir_mode="zip")
+            print("[*] Sukses membuat dan mengunggah ke Kaggle Dataset baru.")
     except Exception as e:
         print(f"[!] Terjadi error saat upload Kaggle: {e}")
 
@@ -279,9 +298,11 @@ def train():
     recent_wins_m_vs_m = deque(maxlen=100)
     recent_wins_m_vs_r = deque(maxlen=100)
     recent_wins_r_vs_r = deque(maxlen=100)
+    p1_update_count = 0
 
     print("\n=== MAIN TRAINING LOOP ===")
-    for update in range(1, num_updates + 1):
+    pbar = tqdm(range(1, num_updates + 1), desc="PPO Training")
+    for update in pbar:
         # Anneal entropy coefficient
         progress = update / num_updates
         if FINETUNE_MODE:
@@ -450,7 +471,7 @@ def train():
 
         # ⭐ NaN guard: rollback params DAN opt_state jika loss NaN/Inf
         if not np.isfinite(mean_loss):
-            print(f"  ⚠️ WARNING: Loss NaN/Inf ({mean_loss})! Rollback ke update sebelumnya.")
+            pbar.write(f"  ⚠️ WARNING: Loss NaN/Inf ({mean_loss})! Rollback ke update sebelumnya.")
             params_repl_p0 = params_before
             opt_state_repl = opt_state_before
             mean_loss = 0.0
@@ -473,41 +494,28 @@ def train():
             win_m_vs_r = (np.mean(recent_wins_m_vs_r) * 100) if len(recent_wins_m_vs_r) > 0 else 0.0
             win_r_vs_r = (np.mean(recent_wins_r_vs_r) * 100) if len(recent_wins_r_vs_r) > 0 else 0.0
             
-            games_played = len(ep_wins_p0)
-            avg_steps = np.mean(ep_steps) if ep_steps else 0.0
-
-            reason_labels = {1: "Prize", 2: "DeckOut", 3: "NoActive", 4: "Effect", 9: "Timeout"}
-            if ep_end_reasons:
-                reason_counts = {}
-                for r in ep_end_reasons:
-                    reason_counts[r] = reason_counts.get(r, 0) + 1
-                reason_str = " | ".join(
-                    f"{reason_labels.get(r, f'R{r}')}:{c}/{games_played}"
-                    for r, c in sorted(reason_counts.items())
-                )
-            else:
-                reason_str = "N/A"
-
             fps = int((NUM_ENVS * N_STEPS) / (time.time() - start_time + 1e-8))
             start_time = time.time()
-
-            norm_scale = running_std
-            pct = (update / num_updates) * 100
-
-            print(f"Update {update:04d}/{num_updates} ({pct:.0f}%) | Step: {global_step:,} | FPS: {fps}")
-            print(f"  ├── Games: {games_played} | Avg Steps/Game: {avg_steps:.1f}")
-            print(f"  ├── Win P0 (Batch): {win_p0:.1f}% | Rolling Win ({len(recent_wins_p0)}/{recent_wins_p0.maxlen}): {rolling_win_p0:.1f}%")
-            print(f"  ├── Win Rate Matchup | Meta vs Meta ({len(recent_wins_m_vs_m)}): {win_m_vs_m:.1f}% | Meta vs Random ({len(recent_wins_m_vs_r)}): {win_m_vs_r:.1f}% | Random vs Random ({len(recent_wins_r_vs_r)}): {win_r_vs_r:.1f}%")
-            print(f"  ├── Return: {avg_ret:+.2f} | Loss: {mean_loss:.4f} | Norm Scale: {norm_scale:.2f}")
-            print(f"  ├── Hyperparams | Clip: {current_clip_ratio:.3f} | Entropy: {current_entropy_coef:.3f}")
-            print(f"  └── End Reasons | {reason_str}")
+            
+            # Update progress bar postfix with key metrics
+            pbar.set_postfix({
+                "Loss": f"{mean_loss:.4f}",
+                "Win": f"{win_p0:.1f}%",
+                "RollWin": f"{rolling_win_p0:.1f}%",
+                "MvM": f"{win_m_vs_m:.1f}%",
+                "MvR": f"{win_m_vs_r:.1f}%",
+                "P1_Up": p1_update_count,
+                "FPS": fps,
+                "Steps": f"{global_step:,}"
+            })
             
             # P1 Frozen Weight Update Logic
             if rolling_win_p0 >= 60.0 and len(recent_wins_p0) == recent_wins_p0.maxlen:
-                print(f"  🔥 Rolling Winrate {recent_wins_p0.maxlen} Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dan simpan model_final ke Kaggle.")
+                p1_update_count += 1
+                pbar.write(f"  🔥 [P1 Update #{p1_update_count}] Rolling Winrate {recent_wins_p0.maxlen} Game P0 mencapai {rolling_win_p0:.1f}%! Update bobot P1 dan simpan model_final ke Kaggle.")
                 params_repl_p1 = params_repl_p0
                 save_checkpoint(unreplicate(params_repl_p0), "model_final.msgpack")
-                upload_to_kaggle(SAVE_DIR, message=f"Update model_final dengan winrate P0 {rolling_win_p0:.1f}%")
+                upload_to_kaggle(SAVE_DIR, message=f"Update model_final dengan winrate P0 {rolling_win_p0:.1f}% (Update #{p1_update_count})")
                 recent_wins_p0.clear()
                 recent_wins_m_vs_m.clear()
                 recent_wins_m_vs_r.clear()
@@ -518,10 +526,10 @@ def train():
             proc = psutil.Process()
             mem_mb = proc.memory_info().rss / 1e6
             cpu_percent = proc.cpu_percent(interval=0.1)
-            print(f"  [MEM] RSS={mem_mb:.0f}MB | CPU={cpu_percent:.0f}%")
+            pbar.write(f"  [MEM] RSS={mem_mb:.0f}MB | CPU={cpu_percent:.0f}%")
             # Peringatan jika memory > 12GB (Kaggle limit ~16GB)
             if mem_mb > 12000:
-                print(f"  ⚠️ WARNING: Memory usage tinggi ({mem_mb:.0f}MB)! Berisiko OOM.")
+                pbar.write(f"  ⚠️ WARNING: Memory usage tinggi ({mem_mb:.0f}MB)! Berisiko OOM.")
 
         # Update entropy & clip ratio di ppo_update function via closure approach
         # Actually, we need to pass these params. Let me update the ppo_update call.
