@@ -307,15 +307,34 @@ def ensure_models_downloaded():
     log(f"[DEBUG] Cek model kaggle_in: {alt_final} -> {kaggle_in_exists}")
     
     if not local_exists and not kaggle_in_exists:
-        log(f"Mendownload checkpoint dari Kaggle Dataset ({dataset_id}) menggunakan Python API...")
+        log(f"Mendownload checkpoint dari Kaggle Dataset ({dataset_id}) secara langsung...")
         try:
-            from kaggle.api.kaggle_api_extended import KaggleApi
-            api = KaggleApi()
-            api.authenticate()
-            api.dataset_download_files(dataset_id, path=CHECKPOINT_DIR, unzip=True)
+            import urllib.request
+            import base64
+            import zipfile
+            import io
+            
+            username = os.environ.get("KAGGLE_USERNAME", "akhyarsafrudin")
+            key = os.environ.get("KAGGLE_API_TOKEN", "03c3e536ffedc7d6153c1b3b8515242b")
+            
+            auth_str = f"{username}:{key}"
+            auth_header = "Basic " + base64.b64encode(auth_str.encode("utf-8")).decode("utf-8")
+            
+            download_url = f"https://www.kaggle.com/api/v1/datasets/download/{dataset_id}"
+            req = urllib.request.Request(
+                download_url,
+                headers={"Authorization": auth_header}
+            )
+            
+            with urllib.request.urlopen(req) as response:
+                zip_data = response.read()
+                
+            os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+            with zipfile.ZipFile(io.BytesIO(zip_data)) as z:
+                z.extractall(CHECKPOINT_DIR)
             log("Sukses mendownload model dari Kaggle.")
         except Exception as e:
-            log(f"Gagal download dari Kaggle (mungkin dataset kosong): {e}")
+            log(f"Gagal download dari Kaggle: {e}")
     elif local_exists:
         log("Menggunakan checkpoint lokal yang sudah ada.")
     elif kaggle_in_exists:
