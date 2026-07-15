@@ -97,8 +97,8 @@ import json
 from kaggle.api.kaggle_api_extended import KaggleApi
 
 def get_kaggle_api():
-    # Map KAGGLE_API_TOKEN from .env to KAGGLE_KEY if KAGGLE_KEY is not set
-    if "KAGGLE_KEY" not in os.environ and "KAGGLE_API_TOKEN" in os.environ:
+    # Map KAGGLE_API_TOKEN from .env to KAGGLE_KEY (prioritaskan dari .env)
+    if "KAGGLE_API_TOKEN" in os.environ:
         os.environ["KAGGLE_KEY"] = os.environ["KAGGLE_API_TOKEN"]
     api = KaggleApi()
     api.authenticate()
