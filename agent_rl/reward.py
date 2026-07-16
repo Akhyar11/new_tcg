@@ -94,13 +94,48 @@ def detect_events(old_state, new_state, player_index: int, logs: list = None) ->
     opp_old = old_state.players[opp_index]
     opp_new = new_state.players[opp_index]
 
-    # 1. Energy Attach
-    old_energy = sum(len(p.energies) for p in my_old.active if p) + \
-                 sum(len(p.energies) for p in my_old.bench if p)
-    new_energy = sum(len(p.energies) for p in my_new.active if p) + \
-                 sum(len(p.energies) for p in my_new.bench if p)
-    if new_energy > old_energy:
-        events['energy_attached'] = new_energy - old_energy
+    card_db = _get_card_db()
+    attack_db = _get_attack_db()
+
+    # 1. Energy Attach & Waste Detection
+    old_pokemons = [p for p in list(my_old.active) + list(my_old.bench) if p]
+    new_pokemons = [p for p in list(my_new.active) + list(my_new.bench) if p]
+    
+    old_energy_map = {p.serial: len(p.energies) for p in old_pokemons}
+    energy_useful = 0
+    energy_wasted = 0
+    
+    for p in new_pokemons:
+        old_e = old_energy_map.get(p.serial, 0)
+        new_e = len(p.energies)
+        if new_e > old_e:
+            attached = new_e - old_e
+            
+            # Cari cost energy terbesar dari Pokemon ini
+            max_cost = 0
+            c_data = card_db.get(p.id)
+            if c_data and getattr(c_data, 'attacks', None):
+                for atk_id in c_data.attacks:
+                    atk = attack_db.get(atk_id)
+                    if atk and getattr(atk, 'energies', None):
+                        if len(atk.energies) > max_cost:
+                            max_cost = len(atk.energies)
+            
+            # Toleransi +1 energi ekstra (misal untuk retreat)
+            limit = max_cost + 1
+            
+            if old_e >= limit:
+                energy_wasted += attached
+            else:
+                useful = min(limit - old_e, attached)
+                wasted = attached - useful
+                energy_useful += useful
+                energy_wasted += wasted
+
+    if energy_useful > 0:
+        events['energy_attached'] = energy_useful
+    if energy_wasted > 0:
+        events['energy_wasted'] = energy_wasted
 
     # 2. Prize Taken
     old_prize = len(my_old.prize)
@@ -271,6 +306,11 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
             decay = 0.50 ** n
             r_energy = 0.03 * events['energy_attached'] * decay
             r_event += r_energy
+
+        # Hukuman untuk pembuangan energi (over-attaching)
+        if events.get('energy_wasted', 0) > 0:
+            r_wasted = -0.15 * events['energy_wasted']
+            r_event += r_wasted
 
         # Evolution (active)
         if events.get('evolved'):
