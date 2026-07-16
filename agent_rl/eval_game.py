@@ -98,9 +98,13 @@ def ai_select(model_apply, params, obs, use_argmax=False):
     # Build mask
     options = obs.select.option
     min_c = obs.select.minCount
-    mock_select = {
-        "options": [{"type": OptionType(o.type).name, "index": o.index} for o in options]
-    }
+    import dataclasses
+    mock_options = []
+    for o in options:
+        d = dataclasses.asdict(o)
+        d["type"] = OptionType(o.type).name
+        mock_options.append(d)
+    mock_select = {"options": mock_options}
     mask_array = create_action_mask(mock_select)
 
     # Mask logits
@@ -130,7 +134,7 @@ def ai_select(model_apply, params, obs, use_argmax=False):
     choices = []
     for jax_idx in sampled_indices:
         for cpp_idx, opt in enumerate(mock_select["options"]):
-            mapped_idx = get_action_index_for_option(opt)
+            mapped_idx = get_action_index_for_option(opt, cpp_idx)
             if mapped_idx == jax_idx and cpp_idx not in choices:
                 choices.append(cpp_idx)
                 break

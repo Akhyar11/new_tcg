@@ -227,7 +227,13 @@ def extract_features(state: State, select_data: SelectData, your_index: int, opp
     # Convert SelectData objects into python dict to match create_action_mask prototype
     try:
         if select_data is not None and select_data.option is not None:
-            mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in select_data.option]}
+            import dataclasses
+            mock_options = []
+            for o in select_data.option:
+                d = dataclasses.asdict(o)
+                d["type"] = OptionType(o.type).name
+                mock_options.append(d)
+            mock_select_dict = {"options": mock_options}
         else:
             mock_select_dict = {"options": []}
     except ValueError:

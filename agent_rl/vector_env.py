@@ -206,19 +206,20 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                 mock_select_dict = {"options": []}
                 min_c = 1
                 if obs and obs.select and obs.select.option:
-                    mock_select_dict = {
-                        "options": [
-                            {"type": OptionType(o.type).name, "index": o.index}
-                            for o in obs.select.option
-                        ]
-                    }
+                    import dataclasses
+                    mock_options = []
+                    for o in obs.select.option:
+                        d = dataclasses.asdict(o)
+                        d["type"] = OptionType(o.type).name
+                        mock_options.append(d)
+                    mock_select_dict = {"options": mock_options}
                     min_c = obs.select.minCount
 
                 options = mock_select_dict["options"]
 
                 legal_mask = np.zeros(250, dtype=np.float32)
-                for opt in options:
-                    idx = get_action_index_for_option(opt)
+                for cpp_idx, opt in enumerate(options):
+                    idx = get_action_index_for_option(opt, cpp_idx)
                     if 0 <= idx < 250:
                         legal_mask[idx] = 1.0
 
@@ -241,7 +242,7 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                 choices = []
                 for jax_idx in sampled_jax_indices:
                     for cpp_idx, opt in enumerate(options):
-                        mapped_idx = get_action_index_for_option(opt)
+                        mapped_idx = get_action_index_for_option(opt, cpp_idx)
                         if mapped_idx == jax_idx and cpp_idx not in choices:
                             choices.append(cpp_idx)
                             break
@@ -256,7 +257,7 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                 actions_mask = np.zeros(250, dtype=np.bool_)
                 for c in choices:
                     if c < len(options):
-                        idx = get_action_index_for_option(options[c])
+                        idx = get_action_index_for_option(options[c], c)
                         if 0 <= idx < 250:
                             actions_mask[idx] = True
 
