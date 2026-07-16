@@ -311,10 +311,10 @@ def train():
     episodic_returns = np.zeros(NUM_ENVS, dtype=np.float32)
     
     # Riwayat kemenangan P0 untuk update P1
-    recent_wins_p0 = deque(maxlen=100)
-    recent_wins_m_vs_m = deque(maxlen=100)
-    recent_wins_m_vs_r = deque(maxlen=100)
-    recent_wins_r_vs_r = deque(maxlen=100)
+    recent_wins_p0 = deque(maxlen=200)
+    recent_wins_m_vs_m = deque(maxlen=200)
+    recent_wins_m_vs_r = deque(maxlen=200)
+    recent_wins_r_vs_r = deque(maxlen=200)
     p1_update_count = 0
 
     print("\n=== MAIN TRAINING LOOP ===")
@@ -514,8 +514,16 @@ def train():
             fps = int((NUM_ENVS * N_STEPS) / (time.time() - start_time + 1e-8))
             start_time = time.time()
             
-            # Print a single clean line per update to stdout and flush
-            print(f"Update {update:04d}/{num_updates} | Loss: {mean_loss:.4f} | Win: {win_p0:.1f}% | RollWin: {rolling_win_p0:.1f}% | MvM: {win_m_vs_m:.1f}% | MvR: {win_m_vs_r:.1f}% | P1_Up: {p1_update_count} | FPS: {fps} | Steps: {global_step:,}")
+            # Print multi-line logging per update
+            print(f"\nUpdate {update:04d}/{num_updates} (Steps: {global_step:,})")
+            print(f" - Loss       : {mean_loss:.4f}")
+            print(f" - Winrate P0 : {win_p0:.1f}%")
+            print(f" - Rolling WR : {rolling_win_p0:.1f}%")
+            print(f" - MvM P0     : {win_m_vs_m:.1f}%")
+            print(f" - MvR P0     : {win_m_vs_r:.1f}%")
+            print(f" - P1 Update  : {p1_update_count}")
+            print(f" - FPS        : {fps}")
+            print("-" * 30)
             sys.stdout.flush()
             
             # P1 Frozen Weight Update Logic
