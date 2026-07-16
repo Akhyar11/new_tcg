@@ -252,8 +252,8 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
     turn = new_state.turn
     my_new = new_state.players[player_index]
 
-    # Penalti langkah linier yang sangat kecil agar tidak meracuni target kemenangan
-    r_step = -0.002 * turn
+    # Penalti langkah progresif agar model dihukum lebih besar jika melakukan stalling
+    r_step = -0.005 - (0.001 * min(turn, 50))
 
     # ── 2. Intermediate rewards ──
     r_event = 0.0
@@ -328,27 +328,20 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
         if events.get('prize_taken', 0) > 0:
             n_prizes = events['prize_taken']
             if n_prizes >= 2:
-                r_event += 1.20
+                r_event += 2.00
             else:
-                r_event += 0.80
+                r_event += 1.50
 
         # KO without prize
         if events.get('ko') and not events.get('prize_taken'):
             r_event += 0.30
 
-    # ── 3. Intra-Game Reward Annealing ──
-    # Kurangi bobot intermediate reward seiring berkurangnya prize card (game mendekati akhir)
-    prizes_left = len(my_new.prize) if my_new and my_new.prize else 6
-    intermediate_scale = max(0.1, prizes_left / 6.0)
-    
-    # Juga kurangi seiring bertambahnya turn (late game)
-    turn_scale = max(0.1, 1.0 - (turn / 100.0))
-    
-    # Kalikan r_event dengan faktor skala gabungan
-    r_event = r_event * (intermediate_scale * turn_scale)
+    # ── 3. Cap Intermediate Reward ──
+    # We remove intra-game reward annealing (which previously reduced rewards as prizes/turns decreased).
+    # Annealing was causing the agent to lose motivation to take final prizes or attack in late game.
 
     # Cap intermediate per step
-    r_event = np.clip(r_event, -1.5, 2.5)
+    r_event = np.clip(r_event, -2.5, 3.5)
 
     # ── 4. Terminal reward ──
     r_terminal = 0.0
