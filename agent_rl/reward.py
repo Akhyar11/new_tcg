@@ -67,13 +67,15 @@ def _get_attack_db():
 def reset_trackers():
     """Reset event counters untuk game baru."""
     _event_counters.clear()
-    _event_counters['ready_serials'] = set()
+    _event_counters['ready_serials_0'] = set()
+    _event_counters['ready_serials_1'] = set()
 
 
-def _increment_counter(key: str) -> int:
+def _increment_counter(key: str, player_index: int) -> int:
     """Increment counter dan return nilai sebelum increment."""
-    val = _event_counters.get(key, 0)
-    _event_counters[key] = val + 1
+    full_key = f"{key}_{player_index}"
+    val = _event_counters.get(full_key, 0)
+    _event_counters[full_key] = val + 1
     return val
 
 
@@ -198,9 +200,10 @@ def detect_events(old_state, new_state, player_index: int, logs: list = None) ->
                 events['item_played'] = True
 
     # Ensure ready_serials exists
-    if 'ready_serials' not in _event_counters:
-        _event_counters['ready_serials'] = set()
-    ready_serials = _event_counters['ready_serials']
+    key_ready = f'ready_serials_{player_index}'
+    if key_ready not in _event_counters:
+        _event_counters[key_ready] = set()
+    ready_serials = _event_counters[key_ready]
 
     # 8. Battle Ready Milestone (Kesiapan Tempur)
     card_db = _get_card_db()
@@ -258,54 +261,54 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
     if events:
         # Bench building — minor breadcrumb
         if events.get('bench_built', 0) > 0:
-            n = _increment_counter('bench')
+            n = _increment_counter('bench', player_index)
             decay = 0.50 ** n
             r_event += 0.02 * events['bench_built'] * decay
 
         # Energy attach — minor breadcrumb
         if events.get('energy_attached', 0) > 0:
-            n = _increment_counter('energy')
+            n = _increment_counter('energy', player_index)
             decay = 0.50 ** n
             r_energy = 0.03 * events['energy_attached'] * decay
             r_event += r_energy
 
         # Evolution (active)
         if events.get('evolved'):
-            n = _increment_counter('evolve')
+            n = _increment_counter('evolve', player_index)
             decay = 0.50 ** n
             r_event += 0.05 * decay
 
         # Evolution (bench)
         if events.get('bench_evolved'):
-            n = _increment_counter('bench_evolve')
+            n = _increment_counter('bench_evolve', player_index)
             decay = 0.50 ** n
             r_event += 0.03 * decay
 
         # Supporter
         if events.get('supporter_played'):
-            n = _increment_counter('supporter')
+            n = _increment_counter('supporter', player_index)
             decay = 0.50 ** n
             r_event += 0.02 * decay
 
         # Item
         if events.get('item_played'):
-            n = _increment_counter('item')
+            n = _increment_counter('item', player_index)
             decay = 0.50 ** n
             r_event += 0.02 * decay
 
         # Battle Ready Milestone (Kesiapan Tempur)
         if events.get('battle_ready', 0) > 0:
-            n = _increment_counter('battle_ready')
+            n = _increment_counter('battle_ready', player_index)
             decay = 0.50 ** n
             r_event += 0.05 * events['battle_ready'] * decay
 
         # Strategic / Normal Retreat
         if events.get('strategic_retreat'):
-            n = _increment_counter('retreat')
+            n = _increment_counter('retreat', player_index)
             decay = 0.50 ** n
             r_event += 0.05 * decay
         elif events.get('normal_retreat'):
-            n = _increment_counter('retreat')
+            n = _increment_counter('retreat', player_index)
             decay = 0.50 ** n
             r_event += 0.00 * decay
 
@@ -354,7 +357,7 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
         lost = (new_state.result == (1 - player_index))
         draw = (new_state.result == 2)
 
-        if draw:
+        if draw or end_reason == 2:
             r_terminal = 0.0
         else:
             # Menang = +2.0, Kalah = -2.0 untuk semua alasan kemenangan yang valid

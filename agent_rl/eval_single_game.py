@@ -77,14 +77,17 @@ def ai_select(model_apply, params, obs):
     probs = softmax(masked)
 
     sampled_indices = []
-    remaining = probs.copy()
-    for _ in range(min_c):
-        if remaining.sum() <= 0:
-            break
-        p = remaining / remaining.sum()
-        idx = int(np.random.choice(len(p), p=p))
-        sampled_indices.append(idx)
-        remaining[idx] = 0.0
+    if probs.sum() > 0:
+        remaining = probs.copy()
+        for _ in range(min_c):
+            if remaining.sum() <= 0:
+                break
+            p = remaining / remaining.sum()
+            idx = int(np.random.choice(len(p), p=p))
+            sampled_indices.append(idx)
+            remaining[idx] = 0.0
+    else:
+        sampled_indices = [160]
 
     choices = []
     for jax_idx in sampled_indices:
@@ -115,9 +118,11 @@ def main():
     deck_dir = os.path.join(ROOT, "new_deck")
     deck_files = sorted(glob.glob(os.path.join(deck_dir, "*.csv")))
     
-    # Pick a specific deterministic match for easier analysis
-    random.seed(42)
-    np.random.seed(42)
+    # Use random probabilitas same as training (not deterministic)
+    seed = int(time.time())
+    random.seed(seed)
+    np.random.seed(seed)
+    print(f"Using random seed: {seed}")
     
     d0 = load_deck(deck_files[0])
     d1 = load_deck(deck_files[1])
@@ -134,12 +139,40 @@ def main():
     params_p0 = model.init(init_rng, dummy_seq, dummy_glob)
     params_p1 = model.init(init_rng, dummy_seq, dummy_glob)
     
-    ckpt_path_p0 = os.path.join(ROOT, "checkpoints", "model_update_2150.msgpack")
-    with open(ckpt_path_p0, 'rb') as f:
+    # Cek & download model Kaggle
+    save_dir = os.path.join(ROOT, "tcg_models")
+    model_final_path = os.path.join(save_dir, "model_final.msgpack")
+    model_base_path = os.path.join(save_dir, "model_base.msgpack")
+    
+    # Fallback ke folder Unduhan jika ada
+    alt_final = os.path.expanduser("~/Unduhan/model_final.msgpack")
+    alt_base = os.path.expanduser("~/Unduhan/model_base.msgpack")
+    
+    if not os.path.exists(model_final_path) and os.path.exists(alt_final):
+        model_final_path = alt_final
+    if not os.path.exists(model_base_path) and os.path.exists(alt_base):
+        model_base_path = alt_base
+        
+    if not os.path.exists(model_final_path) or not os.path.exists(model_base_path):
+        print("[*] Model Kaggle belum lengkap. Mendownload...")
+        try:
+            os.environ["KAGGLE_USERNAME"] = "akhyarsafrudin"
+            os.environ["KAGGLE_KEY"] = "03c3e536ffedc7d6153c1b3b8515242b"
+            from kaggle.api.kaggle_api_extended import KaggleApi
+            api = KaggleApi()
+            api.authenticate()
+            api.dataset_download_files("akhyarsafrudin/tcg-models", path=save_dir, unzip=True)
+            model_final_path = os.path.join(save_dir, "model_final.msgpack")
+            model_base_path = os.path.join(save_dir, "model_base.msgpack")
+        except Exception as e:
+            print(f"[!] Gagal download dari Kaggle: {e}")
+    
+    print(f"Loading P0 from {model_final_path}")
+    with open(model_final_path, 'rb') as f:
         params_p0 = serialization.from_bytes(params_p0, f.read())
         
-    ckpt_path_p1 = os.path.join(ROOT, "checkpoints", "model_update_100.msgpack")
-    with open(ckpt_path_p1, 'rb') as f:
+    print(f"Loading P1 from {model_final_path}")
+    with open(model_final_path, 'rb') as f:
         params_p1 = serialization.from_bytes(params_p1, f.read())
         
     model_apply = jax.jit(model.apply)

@@ -25,6 +25,10 @@ def parse_card(card, is_active=False, player_state: PlayerState = None) -> np.nd
     features[0] = card_id
     card_data = CARD_DB.get(card_id)
 
+    if card_data:
+        features[27] = float(getattr(card_data, 'cardType', 0))
+        features[28] = 1.0 if getattr(card_data, 'basic', False) else 0.0
+
     # Periksa apakah ini objek Pokemon di Arena atau Card biasa
     # Pokemon memiliki atribut hp atau key 'hp'
     hp_val = _get_val(card, 'hp')
@@ -105,6 +109,49 @@ def parse_card(card, is_active=False, player_state: PlayerState = None) -> np.nd
     else:
         # --- Objek Card Biasa ---
         features[15] = 1.0 # is_present
+        if card_data and getattr(card_data, 'cardType', -1) == 0:
+            # Jika kartu di tangan adalah Pokemon, berikan fitur serangannya
+            max_hp_val = getattr(card_data, 'hp', 0)
+            if max_hp_val > 0:
+                features[16] = 1.0 # Anggap HP penuh saat di tangan
+                features[17] = 0.0 # Tidak ada damage
+                
+            total_cost = cost_g = cost_r = cost_w = cost_l = cost_other = 0
+            max_dmg = 0
+            total_dmg = 0
+            attack_count = 0
+            if getattr(card_data, 'attacks', None):
+                for atk_id in card_data.attacks:
+                    atk = ATTACK_DB.get(atk_id)
+                    if atk:
+                        atk_g = atk_r = atk_w = atk_l = atk_other = 0
+                        for e in getattr(atk, 'energies', []):
+                            e_val = int(e)
+                            if e_val == 1: atk_g += 1
+                            elif e_val == 2: atk_r += 1
+                            elif e_val == 3: atk_w += 1
+                            elif e_val == 4: atk_l += 1
+                            else: atk_other += 1
+
+                        if len(atk.energies) > total_cost:
+                            total_cost = len(atk.energies)
+                            cost_g, cost_r, cost_w, cost_l, cost_other = atk_g, atk_r, atk_w, atk_l, atk_other
+
+                        dmg = getattr(atk, 'damage', 0)
+                        if dmg > max_dmg:
+                            max_dmg = dmg
+                        total_dmg += dmg
+                        attack_count += 1
+                        
+            features[9] = total_cost / 10.0
+            features[10] = cost_g / 10.0
+            features[11] = cost_r / 10.0
+            features[12] = cost_w / 10.0
+            features[13] = cost_l / 10.0
+            features[14] = cost_other / 10.0
+            features[24] = max_dmg / 300.0
+            features[25] = (total_dmg / attack_count / 300.0) if attack_count > 0 else 0.0
+            features[26] = 1.0 if attack_count > 0 else 0.0
 
     return features
 
