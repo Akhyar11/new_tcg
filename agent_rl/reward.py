@@ -9,10 +9,10 @@ Prinsip desain agar konvergen di 5-10M timesteps:
    Terminal ±1.5, intermediate max ~1.0 per step.
    Gradient tidak didominasi 1-2 steps terakhir.
 
-2. SYMMETRIC DECK-OUT
-   Deck-out = 0 untuk PEMENANG MAUPUN PECUNDANG.
-   Model tidak belajar stalling, juga tidak dihukum
-   karena situasi di luar kendali.
+2. ASYMMETRIC DECK-OUT
+   Kekalahan karena Deck-out memberikan penalti penuh (-2.0).
+   Selain itu, terdapat penalti progresif tiap step jika sisa
+   kartu di deck <= 10 untuk mencegah bunuh diri secara tidak sengaja.
 
 3. STRATEGIC REWARDS
    - Bench building (fundamental TCG)
@@ -376,6 +376,12 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
         if events.get('ko') and not events.get('prize_taken'):
             r_event += 0.30
 
+    # Progressive Deck-Out Penalty
+    if my_new.deckCount <= 10:
+        # Penalti progresif: sisa 10 = -0.10, sisa 1 = -1.00
+        deck_penalty = -0.10 * (11 - my_new.deckCount)
+        r_event += deck_penalty
+
     # ── 3. Cap Intermediate Reward ──
     # We remove intra-game reward annealing (which previously reduced rewards as prizes/turns decreased).
     # Annealing was causing the agent to lose motivation to take final prizes or attack in late game.
@@ -390,10 +396,10 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
         lost = (new_state.result == (1 - player_index))
         draw = (new_state.result == 2)
 
-        if draw or end_reason == 2:
+        if draw:
             r_terminal = 0.0
         else:
-            # Menang = +2.0, Kalah = -2.0 untuk semua alasan kemenangan yang valid
+            # Menang = +2.0, Kalah = -2.0 untuk semua alasan kemenangan yang valid, termasuk deck-out
             r_terminal = 2.0 if won else -2.0
 
     total = r_step + r_event + r_terminal
