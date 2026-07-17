@@ -106,14 +106,11 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
     print(f"[Worker {worker_id}] Loaded {len(loaded_new_decks)} New Decks (70%) and {len(loaded_gen_decks)} Gen Decks (30%)")
 
     def sample_deck():
-        """Pilih deck dengan peluang 70% New Deck, 30% Generated Deck. Return (deck, type_id)"""
-        # type_id: 0 = meta, 1 = random
-        if random.random() < 0.70 and len(loaded_new_decks) > 0:
+        """Pilih deck dengan peluang 100% New Deck (Meta) untuk P0 dan P1. Return (deck, type_id)"""
+        if len(loaded_new_decks) > 0:
             return random.choice(loaded_new_decks), 0
         elif len(loaded_gen_decks) > 0:
             return random.choice(loaded_gen_decks), 1
-        elif len(loaded_new_decks) > 0:
-            return random.choice(loaded_new_decks), 0
         else:
             return [1]*56 + [210]*4, 0
 

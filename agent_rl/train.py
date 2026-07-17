@@ -199,8 +199,8 @@ def train():
     print(f"Num envs: {NUM_ENVS}, Batch size: {BATCH_SIZE}")
     print(f"Gamma: {GAMMA}, GAE lambda: {GAE_LAMBDA}")
     print(f"Initial clip: {CLIP_RATIO}, Initial entropy: {ENTROPY_COEF}")
-    print(f"New Deck path (70%): {NEW_DECK_PATH}")
-    print(f"Gen Deck path (30%): {GEN_DECK_PATH}")
+    print(f"New Deck path (100% Meta): {NEW_DECK_PATH}")
+    print(f"Gen Deck path (Fallback): {GEN_DECK_PATH}")
     print()
 
     num_devices = auto_config_gpu()
