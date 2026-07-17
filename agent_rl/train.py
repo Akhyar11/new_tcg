@@ -311,10 +311,10 @@ def train():
     episodic_returns = np.zeros(NUM_ENVS, dtype=np.float32)
     
     # Riwayat kemenangan P0 untuk update P1
-    recent_wins_p0 = deque(maxlen=100)
-    recent_wins_m_vs_m = deque(maxlen=100)
-    recent_wins_m_vs_r = deque(maxlen=100)
-    recent_wins_r_vs_r = deque(maxlen=100)
+    recent_wins_p0 = deque(maxlen=150)
+    recent_wins_m_vs_m = deque(maxlen=150)
+    recent_wins_m_vs_r = deque(maxlen=150)
+    recent_wins_r_vs_r = deque(maxlen=150)
     p1_update_count = 0
 
     print("\n=== MAIN TRAINING LOOP ===")
