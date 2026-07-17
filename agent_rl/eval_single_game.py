@@ -70,6 +70,10 @@ def ai_select(model_apply, params, obs):
 
     options = obs.select.option
     min_c = obs.select.minCount
+    max_c = obs.select.maxCount
+    print(f"[DEBUG] Selection details: minCount={min_c}, maxCount={max_c}, num_options={len(options)}")
+    for i, opt in enumerate(options):
+        print(f"  opt {i}: type={OptionType(opt.type).name}, index={opt.index}")
     
     import dataclasses
     mock_options = []
@@ -79,7 +83,7 @@ def ai_select(model_apply, params, obs):
         mock_options.append(d)
     mock_select = {"options": mock_options}
 
-    mask_array = create_action_mask(mock_select)
+    mask_array = create_action_mask(mock_select, min_c, max_c)
 
     masked = logits_np - 1e9 * (1.0 - mask_array)
     probs = softmax(masked)
@@ -87,13 +91,24 @@ def ai_select(model_apply, params, obs):
     sampled_indices = []
     if probs.sum() > 0:
         remaining = probs.copy()
-        for _ in range(min_c):
+        for _ in range(max_c):
             if remaining.sum() <= 0:
                 break
             p = remaining / remaining.sum()
             idx = int(np.random.choice(len(p), p=p))
-            sampled_indices.append(idx)
-            remaining[idx] = 0.0
+            if idx == 160:
+                has_end_option = any(get_action_index_for_option(opt, i) == 160 for i, opt in enumerate(mock_select["options"]))
+                if has_end_option:
+                    sampled_indices.append(idx)
+                    remaining[idx] = 0.0
+                elif len(sampled_indices) >= min_c:
+                    break
+                else:
+                    remaining[idx] = 0.0
+                    continue
+            else:
+                sampled_indices.append(idx)
+                remaining[idx] = 0.0
     else:
         sampled_indices = [160]
 
@@ -143,7 +158,7 @@ def main():
     model = PokemonAgent(num_actions=250)
     rng = jax.random.PRNGKey(42)
     _, init_rng = jax.random.split(rng)
-    dummy_seq = jnp.zeros((1, 113, 31))
+    dummy_seq = jnp.zeros((1, 173, 31))
     dummy_glob = jnp.zeros((1, 266))
     
     params_p0 = model.init(init_rng, dummy_seq, dummy_glob)
@@ -164,25 +179,16 @@ def main():
         model_base_path = alt_base
         
     if not os.path.exists(model_final_path) or not os.path.exists(model_base_path):
-        print("[*] Model Kaggle belum lengkap. Mendownload...")
-        try:
-            os.environ["KAGGLE_USERNAME"] = "akhyarsafrudin"
-            os.environ["KAGGLE_KEY"] = "03c3e536ffedc7d6153c1b3b8515242b"
-            from kaggle.api.kaggle_api_extended import KaggleApi
-            api = KaggleApi()
-            api.authenticate()
-            api.dataset_download_files("akhyarsafrudin/tcg-models", path=save_dir, unzip=True)
-            model_final_path = os.path.join(save_dir, "model_final.msgpack")
-            model_base_path = os.path.join(save_dir, "model_base.msgpack")
-        except Exception as e:
-            print(f"[!] Gagal download dari Kaggle: {e}")
+        print("[*] Model belum lengkap di tcg_models. Gunakan upgrade_model.py atau pastikan file ada.")
+
     
     print(f"Loading P0 from {model_final_path}")
     with open(model_final_path, 'rb') as f:
         params_p0 = serialization.from_bytes(params_p0, f.read())
         
-    print(f"Loading P1 from {model_final_path}")
-    with open(model_final_path, 'rb') as f:
+    p1_path = "/home/akhyar/Dokumen/Code/python/new_tcg/model_base.msgpack"
+    print(f"Loading P1 from {p1_path}")
+    with open(p1_path, 'rb') as f:
         params_p1 = serialization.from_bytes(params_p1, f.read())
         
     model_apply = jax.jit(model.apply)

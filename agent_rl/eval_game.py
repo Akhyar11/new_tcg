@@ -98,6 +98,7 @@ def ai_select(model_apply, params, obs, use_argmax=False):
     # Build mask
     options = obs.select.option
     min_c = obs.select.minCount
+    max_c = obs.select.maxCount
     import dataclasses
     mock_options = []
     for o in options:
@@ -105,7 +106,7 @@ def ai_select(model_apply, params, obs, use_argmax=False):
         d["type"] = OptionType(o.type).name
         mock_options.append(d)
     mock_select = {"options": mock_options}
-    mask_array = create_action_mask(mock_select)
+    mask_array = create_action_mask(mock_select, min_c, max_c)
 
     # Mask logits
     masked = logits_np - 1e9 * (1.0 - mask_array)
@@ -117,18 +118,38 @@ def ai_select(model_apply, params, obs, use_argmax=False):
         # Argmax: pilih aksi dengan probabilitas tertinggi
         sorted_idx = np.argsort(-probs)
         for idx in sorted_idx:
-            if mask_array[idx] > 0 and len(sampled_indices) < min_c:
-                sampled_indices.append(int(idx))
+            if mask_array[idx] > 0 and len(sampled_indices) < max_c:
+                if idx == 160:
+                    has_end_option = any(get_action_index_for_option(opt, i) == 160 for i, opt in enumerate(mock_select["options"]))
+                    if has_end_option:
+                        sampled_indices.append(int(idx))
+                    elif len(sampled_indices) >= min_c:
+                        break
+                    else:
+                        continue
+                else:
+                    sampled_indices.append(int(idx))
     else:
         # Stochastic sampling (sama seperti training)
         remaining = probs.copy()
-        for _ in range(min_c):
+        for _ in range(max_c):
             if remaining.sum() <= 0:
                 break
             p = remaining / remaining.sum()
             idx = int(np.random.choice(len(p), p=p))
-            sampled_indices.append(idx)
-            remaining[idx] = 0.0
+            if idx == 160:
+                has_end_option = any(get_action_index_for_option(opt, i) == 160 for i, opt in enumerate(mock_select["options"]))
+                if has_end_option:
+                    sampled_indices.append(idx)
+                    remaining[idx] = 0.0
+                elif len(sampled_indices) >= min_c:
+                    break
+                else:
+                    remaining[idx] = 0.0
+                    continue
+            else:
+                sampled_indices.append(idx)
+                remaining[idx] = 0.0
 
     # Map ke C++ options
     choices = []
@@ -499,7 +520,7 @@ def main():
     rng = jax.random.PRNGKey(42)
     _, init_rng = jax.random.split(rng)
 
-    dummy_seq = jnp.zeros((1, 113, 31))
+    dummy_seq = jnp.zeros((1, 173, 31))
     dummy_glob = jnp.zeros((1, 266))
     params_p0 = model.init(init_rng, dummy_seq, dummy_glob)
     params_p1 = model.init(init_rng, dummy_seq, dummy_glob)

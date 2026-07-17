@@ -113,7 +113,7 @@ def get_action_index_for_option(option: dict, option_list_index: int = 0) -> int
     
     return min(OTHER_START + opt_idx, OTHER_END)
 
-def create_action_mask(select_data: dict) -> np.ndarray:
+def create_action_mask(select_data: dict, min_count: int = 1, max_count: int = 1) -> np.ndarray:
     """
     Menerima list Option C++ (select_data) dan mengembalikan 
     Numpy Float32 Array berukuran 250 (1.0 = Legal, 0.0 = Ilegal).
@@ -125,7 +125,11 @@ def create_action_mask(select_data: dict) -> np.ndarray:
         idx = get_action_index_for_option(option, i)
         mask[idx] = 1.0
         
-    # Perlindungan Failsafe: Jika C++ tidak mereturn opsi legal apapun (hal ini aneh),
+    # Izinkan aksi END (berhenti memilih) jika batas minimum pemilihan kurang dari maksimum
+    if min_count < max_count:
+        mask[ACTION_END] = 1.0
+        
+    # Perlindungan Failsafe: Jika C++ tidak mereturn opsi legal apapun,
     # kita paksa End Turn menjadi legal agar JAX tidak mengalami error/NaN pada softmax.
     if np.sum(mask) == 0:
         mask[ACTION_END] = 1.0
@@ -133,7 +137,7 @@ def create_action_mask(select_data: dict) -> np.ndarray:
     return mask
 
 
-def decode_action(sorted_action_indices: list, select_data: dict, min_count: int = 1) -> list:
+def decode_action(sorted_action_indices: list, select_data: dict, min_count: int = 1, max_count: int = 1) -> list:
     """
     Mengonversi daftar aksi terurut yang dipilih AI (berdasarkan probabilitas tertinggi)
     menjadi list pilihan indeks (0-n) sesuai dengan opsi legal dari C++ engine.
@@ -152,24 +156,23 @@ def decode_action(sorted_action_indices: list, select_data: dict, min_count: int
     choices = []
     # 1. Telusuri pilihan AI dari probabilitas terbesar ke terkecil
     for jax_idx in sorted_action_indices:
+        if jax_idx == 160: # ACTION_END
+            if len(choices) >= min_count:
+                break # Model memilih berhenti dan kuota minimum sudah terpenuhi
+            else:
+                continue # Belum memenuhi minimum, abaikan END
+
         # Cari apakah ada opsi C++ yang cocok dengan pilihan JAX ini
         for cpp_idx, mapped_jax_idx in cpp_option_to_jax_idx:
             if mapped_jax_idx == jax_idx and cpp_idx not in choices:
                 choices.append(cpp_idx)
                 break # Pindah ke JAX idx selanjutnya (satu JAX idx untuk satu opsi C++)
         
-        if len(choices) >= min_count:
+        if len(choices) >= max_count:
             break
 
     # 2. Fallback jika masih belum memenuhi min_count
-    # Pilih sisa opsi secara aman: END > random, jangan pernah sembarangan
     if len(choices) < min_count:
-        # Cari opsi END
-        end_idx = None
-        for i, opt in enumerate(options):
-            if opt.get("type", "").upper() == "END":
-                end_idx = i
-                break
         for cpp_idx in range(len(options)):
             if len(choices) >= min_count:
                 break

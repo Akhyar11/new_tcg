@@ -79,9 +79,9 @@ class PokemonAgent(nn.Module):
         x = CardEmbedding()(card_ids, tool_ids, pre_evo_ids, scalars) # (B, 93, 60)
 
         # 2. Sequence Processing
-        # x shape: (B, 113, 60) -> Linear Projection (B, 113, 128)
+        # x shape: (B, 173, 60) -> Linear Projection (B, 173, 128)
         x = nn.Dense(self.embed_dim)(x)
-        x = PositionalEncoding(seq_len=113, embed_dim=self.embed_dim)(x)
+        x = PositionalEncoding(seq_len=173, embed_dim=self.embed_dim)(x)
         
         # 3x Transformer Layers
         for _ in range(3):

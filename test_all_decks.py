@@ -145,7 +145,7 @@ def main():
     model = PokemonAgent(num_actions=250)
     rng = jax.random.PRNGKey(42)
     _, init_rng = jax.random.split(rng)
-    dummy_seq = jnp.zeros((1, 113, 31))
+    dummy_seq = jnp.zeros((1, 173, 31))
     dummy_glob = jnp.zeros((1, 266))
     
     params = model.init(init_rng, dummy_seq, dummy_glob)

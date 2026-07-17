@@ -52,7 +52,7 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
     # Attach to Shared Memories
     shms = {k: SharedMemory(name=v) for k, v in shm_names.items()}
     
-    seq_input_buf = np.ndarray((num_envs, 113, 31), dtype=np.float32, buffer=shms['seq_input'].buf)[worker_id]
+    seq_input_buf = np.ndarray((num_envs, 173, 31), dtype=np.float32, buffer=shms['seq_input'].buf)[worker_id]
     glob_input_buf = np.ndarray((num_envs, 266), dtype=np.float32, buffer=shms['glob_input'].buf)[worker_id]
     logits_buf = np.ndarray((num_envs, 250), dtype=np.float32, buffer=shms['logits'].buf)[worker_id]
     
@@ -202,6 +202,7 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
 
                 mock_select_dict = {"options": []}
                 min_c = 1
+                max_c = 1
                 if obs and obs.select and obs.select.option:
                     import dataclasses
                     mock_options = []
@@ -211,6 +212,7 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                         mock_options.append(d)
                     mock_select_dict = {"options": mock_options}
                     min_c = obs.select.minCount
+                    max_c = obs.select.maxCount
 
                 options = mock_select_dict["options"]
 
@@ -220,19 +222,33 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                     if 0 <= idx < 250:
                         legal_mask[idx] = 1.0
 
+                if min_c < max_c:
+                    legal_mask[160] = 1.0
+
                 masked_logits = logits - 1e9 * (1.0 - legal_mask)
                 probs = softmax(masked_logits)
 
                 if probs.sum() > 0:
                     remaining = probs.copy()
                     sampled_jax_indices = []
-                    for _ in range(min_c):
+                    for _ in range(max_c):
                         if remaining.sum() <= 0:
                             break
                         p = remaining / remaining.sum()
                         idx = np.random.choice(len(p), p=p)
-                        sampled_jax_indices.append(int(idx))
-                        remaining[idx] = 0.0
+                        if idx == 160:
+                            has_end_option = any(get_action_index_for_option(opt, i) == 160 for i, opt in enumerate(options))
+                            if has_end_option:
+                                sampled_jax_indices.append(int(idx))
+                                remaining[idx] = 0.0
+                            elif len(sampled_jax_indices) >= min_c:
+                                break
+                            else:
+                                remaining[idx] = 0.0
+                                continue
+                        else:
+                            sampled_jax_indices.append(int(idx))
+                            remaining[idx] = 0.0
                 else:
                     sampled_jax_indices = [160]
 
@@ -436,7 +452,7 @@ class VectorEnv:
             arr.fill(0)
             return arr
 
-        self.seq_input = create_shm('seq_input', (num_envs, 113, 31), np.float32)
+        self.seq_input = create_shm('seq_input', (num_envs, 173, 31), np.float32)
         self.glob_input = create_shm('glob_input', (num_envs, 266), np.float32)
         self.logits = create_shm('logits', (num_envs, 250), np.float32)
         self.rewards = create_shm('rewards', (num_envs,), np.float32)
