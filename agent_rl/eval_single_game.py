@@ -132,11 +132,13 @@ def main():
     np.random.seed(seed)
     print(f"Using random seed: {seed}")
     
-    d0 = load_deck(deck_files[0])
-    d1 = load_deck(deck_files[1])
+    d0_path = os.path.join(deck_dir, "Mega Gardevoir's Symphonia.csv")
+    d1_path = os.path.join(deck_dir, "Miraidon Future Speed.csv")
+    d0 = load_deck(d0_path)
+    d1 = load_deck(d1_path)
     
-    print(f"Deck 0: {os.path.basename(deck_files[0])}")
-    print(f"Deck 1: {os.path.basename(deck_files[1])}")
+    print(f"Deck 0: {os.path.basename(d0_path)}")
+    print(f"Deck 1: {os.path.basename(d1_path)}")
 
     model = PokemonAgent(num_actions=250)
     rng = jax.random.PRNGKey(42)
