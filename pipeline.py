@@ -108,10 +108,10 @@ def parse_args():
                         help="NUM_ENVS untuk RL training (default: 8)")
     parser.add_argument("--ga-gens", type=int, default=None,
                         help="Generasi GA per iterasi (default: config default)")
-    parser.add_argument("--rl-steps", type=int, default=15000000,
-                        help="Total timesteps RL per iterasi tuning (default: 15M)")
-    parser.add_argument("--init-steps", type=int, default=15000000,
-                        help="Total timesteps RL untuk Initial Train (default: 15M)")
+    parser.add_argument("--rl-steps", type=int, default=30000000,
+                        help="Total timesteps RL per iterasi tuning (default: 30M)")
+    parser.add_argument("--init-steps", type=int, default=30000000,
+                        help="Total timesteps RL untuk Initial Train (default: 30M)")
     parser.add_argument("--rl-deck-samples", type=int, default=10,
                         help="Jumlah deck GA terbaik yang dicopy ke RL (default: 10)")
     return parser.parse_args()
