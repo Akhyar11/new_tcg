@@ -399,7 +399,7 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
     # Jika agent baru saja mengisi bench yang kosong (menyelamatkan diri)
     if events.get('bench_built', 0) > 0 and bench_count == events['bench_built']:
         n = _increment_counter('bench_rescue', player_index)
-        decay = 0.50 ** n  # Mencegah reward hacking: +0.20, +0.10, +0.05, ...
+        decay = 0.50 ** n
         r_event += 0.1 * decay  # Extra reward khusus untuk bench pertama
 
     # ── 3. Cap Intermediate Reward ──
