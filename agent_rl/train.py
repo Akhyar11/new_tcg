@@ -313,7 +313,7 @@ def train():
 
     tx = optax.chain(
         optax.clip_by_global_norm(0.5),
-        optax.adam(learning_rate=LEARNING_RATE, eps=1e-5)
+        optax.adamw(learning_rate=LEARNING_RATE, eps=1e-5, weight_decay=1e-4)
     )
     opt_state = tx.init(params_p0)
 

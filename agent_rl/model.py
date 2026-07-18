@@ -49,8 +49,8 @@ class CardEmbedding(nn.Module):
 
     @nn.compact
     def __call__(self, card_ids, tool_ids, pre_evo_ids, scalars):
-        # card_ids, tool_ids, pre_evo_ids shape: (B, 93)
-        # scalars shape: (B, 93, 28)
+        # card_ids, tool_ids, pre_evo_ids shape: (B, 173)
+        # scalars shape: (B, 173, 28)
         
         # 1. Gunakan SATU layer embedding agar bobotnya sama (shared weights)
         shared_embed = nn.Embed(num_embeddings=self.vocab_size, features=self.embed_dim, name="knowledge_embed")
@@ -65,11 +65,16 @@ class CardEmbedding(nn.Module):
         tool_emb = jax.lax.stop_gradient(tool_emb)
         pre_evo_emb = jax.lax.stop_gradient(pre_evo_emb)
         
-        # Penjumlahan Additive
-        total_emb = card_emb + tool_emb + pre_evo_emb # (B, 93, 32)
+        # 3. Proyeksikan masing-masing secara linear ke dimensi embed_dim sebelum dijumlahkan.
+        # Ini memberikan fleksibilitas bagi model RL untuk mengadaptasi bobot semantik yang dibekukan.
+        proj_card = nn.Dense(self.embed_dim, name="proj_card")(card_emb)
+        proj_tool = nn.Dense(self.embed_dim, name="proj_tool")(tool_emb)
+        proj_pre_evo = nn.Dense(self.embed_dim, name="proj_pre_evo")(pre_evo_emb)
+        
+        total_emb = proj_card + proj_tool + proj_pre_evo # (B, 173, 32)
         
         # Penggabungan dengan scalar stats
-        x = jnp.concatenate([total_emb, scalars], axis=-1) # (B, 93, 32 + 28) = (B, 93, 60)
+        x = jnp.concatenate([total_emb, scalars], axis=-1) # (B, 173, 32 + 28) = (B, 173, 60)
         return x
 
 class PokemonAgent(nn.Module):
@@ -79,13 +84,13 @@ class PokemonAgent(nn.Module):
     @nn.compact
     def __call__(self, seq_input, glob_input):
         # 1. Card Embedding
-        # seq_input shape: (B, 93, 31) -> 3 ID + 28 Skalar
+        # seq_input shape: (B, 173, 31) -> 3 ID + 28 Skalar
         card_ids = seq_input[:, :, 0].astype(jnp.int32)
         tool_ids = seq_input[:, :, 1].astype(jnp.int32)
         pre_evo_ids = seq_input[:, :, 2].astype(jnp.int32)
         scalars = seq_input[:, :, 3:]
         
-        x = CardEmbedding()(card_ids, tool_ids, pre_evo_ids, scalars) # (B, 93, 60)
+        x = CardEmbedding()(card_ids, tool_ids, pre_evo_ids, scalars) # (B, 173, 60)
 
         # 2. Sequence Processing
         # x shape: (B, 173, 60) -> Linear Projection (B, 173, 128)
@@ -103,6 +108,7 @@ class PokemonAgent(nn.Module):
         board_slots = x[:, 80:92, :].reshape(x.shape[0], -1) # (B, 1536) Flatten
         stadium_slot = x[:, 92, :]                           # (B, 128) Direct
         opp_known_hand = jnp.mean(x[:, 93:113, :], axis=1)   # (B, 128)
+        my_deck = jnp.mean(x[:, 113:173, :], axis=1)         # (B, 128)
 
         # 2b. Global Processing
         # glob_input shape: (B, 266)
@@ -117,6 +123,7 @@ class PokemonAgent(nn.Module):
             board_slots, 
             stadium_slot,
             opp_known_hand,
+            my_deck,
             glob_x
         ], axis=-1)
 
