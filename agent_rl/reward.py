@@ -389,6 +389,19 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
         deck_penalty = -0.10 * (11 - my_new.deckCount)
         r_event += deck_penalty
 
+    # Penalti Kekosongan Bench (Risiko Kalah Instan)
+    # Jika sesudah set-up awal (turn > 0) bench agen kosong, berikan penalti per step
+    # Ini akan "meneror" agen untuk segera menaruh Basic Pokemon di Bench
+    bench_count = sum(1 for p in my_new.bench if p and p.hp > 0)
+    if bench_count == 0 and turn > 0:
+        r_event -= 0.15
+        
+    # Jika agent baru saja mengisi bench yang kosong (menyelamatkan diri)
+    if events.get('bench_built', 0) > 0 and bench_count == events['bench_built']:
+        n = _increment_counter('bench_rescue', player_index)
+        decay = 0.50 ** n  # Mencegah reward hacking: +0.20, +0.10, +0.05, ...
+        r_event += 0.1 * decay  # Extra reward khusus untuk bench pertama
+
     # ── 3. Cap Intermediate Reward ──
     # We remove intra-game reward annealing (which previously reduced rewards as prizes/turns decreased).
     # Annealing was causing the agent to lose motivation to take final prizes or attack in late game.
