@@ -98,8 +98,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Pipeline GA → RL Training (3 iterasi)")
     parser.add_argument("--quick", "-q", action="store_true",
                         help="Quick test: 1 iterasi, GA 5 gen, RL 100k steps")
-    parser.add_argument("--iterations", "-i", type=int, default=2,
-                        help="Jumlah iterasi tuning GA->RL sesudah initial train (default: 2)")
+    parser.add_argument("--iterations", "-i", type=int, default=0,
+                        help="Jumlah iterasi tuning GA->RL sesudah initial train (default: 0)")
     parser.add_argument("--resume", "-r", action="store_true",
                         help="Resume dari iterasi terakhir (load pipeline_state.json)")
     parser.add_argument("--ga-workers", type=int, default=2,

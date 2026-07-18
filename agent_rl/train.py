@@ -67,7 +67,7 @@ else:
     TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "15000000"))
     LEARNING_RATE = 3e-4
     ENTROPY_COEF = 0.05                # Starting entropy (akan di-anneal)
-    EPOCHS = 4
+    EPOCHS = 1                         # Diubah ke 1 epoch sesuai permintaan
 
 GAMMA = 0.99
 GAE_LAMBDA = 0.95
@@ -250,26 +250,66 @@ def train():
     # Load logic for P0
     if os.path.exists(model_final_path):
         print(f"[*] Resuming P0 from model_final: {model_final_path}")
-        with open(model_final_path, 'rb') as f:
-            params_p0 = serialization.from_bytes(params_p0, f.read())
+        try:
+            with open(model_final_path, 'rb') as f:
+                params_p0 = serialization.from_bytes(params_p0, f.read())
+        except Exception as e:
+            print(f"[!] Gagal meload model_final untuk P0 (mungkin karena perubahan arsitektur): {e}")
     elif os.path.exists(model_base_path):
         print(f"[*] Resuming P0 from model_base: {model_base_path}")
-        with open(model_base_path, 'rb') as f:
-            params_p0 = serialization.from_bytes(params_p0, f.read())
+        try:
+            with open(model_base_path, 'rb') as f:
+                params_p0 = serialization.from_bytes(params_p0, f.read())
+        except Exception as e:
+            print(f"[!] Gagal meload model_base untuk P0: {e}")
     else:
         print("[*] P0 Starting from scratch (random weights).")
 
     # Load logic for P1
     if os.path.exists(model_final_path):
         print(f"[*] Resuming P1 from model_final: {model_final_path}")
-        with open(model_final_path, 'rb') as f:
-            params_p1 = serialization.from_bytes(params_p1, f.read())
+        try:
+            with open(model_final_path, 'rb') as f:
+                params_p1 = serialization.from_bytes(params_p1, f.read())
+        except Exception as e:
+            print(f"[!] Gagal meload model_final untuk P1: {e}")
     elif os.path.exists(model_base_path):
         print(f"[*] Resuming P1 from model_base: {model_base_path}")
-        with open(model_base_path, 'rb') as f:
-            params_p1 = serialization.from_bytes(params_p1, f.read())
+        try:
+            with open(model_base_path, 'rb') as f:
+                params_p1 = serialization.from_bytes(params_p1, f.read())
+        except Exception as e:
+            print(f"[!] Gagal meload model_base untuk P1: {e}")
     else:
         print("[*] P1 Starting from scratch (random weights).")
+
+    # === INJECT KNOWLEDGE DISTILLATION WEIGHTS ===
+    distill_path = os.path.join(root_dir, "knowledge_distillation", "student_embeddings_32d.npy")
+    if os.path.exists(distill_path):
+        print(f"[*] Loading Pre-trained Knowledge Distillation Embeddings dari {distill_path}...")
+        knowledge_weights = np.load(distill_path)
+        
+        # Pastikan ukurannya sesuai dengan vocab_size yang didefinisikan (misal jika model.py masih default 2000 tapi vocab 1268)
+        # Jika ukurannya beda, kita pad dengan nol agar tidak error dengan vocab_size=2000
+        vocab_size = params_p0['params']['CardEmbedding_0']['knowledge_embed']['embedding'].shape[0]
+        embed_dim = params_p0['params']['CardEmbedding_0']['knowledge_embed']['embedding'].shape[1]
+        
+        padded_weights = np.zeros((vocab_size, embed_dim))
+        num_cards = min(knowledge_weights.shape[0], vocab_size)
+        padded_weights[:num_cards, :] = knowledge_weights[:num_cards, :]
+
+        from flax.core import unfreeze, freeze
+        params_p0_mut = unfreeze(params_p0)
+        params_p1_mut = unfreeze(params_p1)
+        
+        params_p0_mut['params']['CardEmbedding_0']['knowledge_embed']['embedding'] = jnp.array(padded_weights)
+        params_p1_mut['params']['CardEmbedding_0']['knowledge_embed']['embedding'] = jnp.array(padded_weights)
+        
+        params_p0 = freeze(params_p0_mut)
+        params_p1 = freeze(params_p1_mut)
+        print("[*] Sukses Inject Distilled Embeddings! (Layer Embedding telah difreeze)")
+    else:
+        print("[!] File student_embeddings_32d.npy tidak ditemukan! RL akan menggunakan embedding random (tidak terdistilasi).")
 
     tx = optax.chain(
         optax.clip_by_global_norm(0.5),

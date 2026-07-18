@@ -52,9 +52,18 @@ class CardEmbedding(nn.Module):
         # card_ids, tool_ids, pre_evo_ids shape: (B, 93)
         # scalars shape: (B, 93, 28)
         
-        card_emb = nn.Embed(num_embeddings=self.vocab_size, features=self.embed_dim)(card_ids)
-        tool_emb = nn.Embed(num_embeddings=self.vocab_size, features=self.embed_dim)(tool_ids)
-        pre_evo_emb = nn.Embed(num_embeddings=self.vocab_size, features=self.embed_dim)(pre_evo_ids)
+        # 1. Gunakan SATU layer embedding agar bobotnya sama (shared weights)
+        shared_embed = nn.Embed(num_embeddings=self.vocab_size, features=self.embed_dim, name="knowledge_embed")
+        
+        card_emb = shared_embed(card_ids)
+        tool_emb = shared_embed(tool_ids)
+        pre_evo_emb = shared_embed(pre_evo_ids)
+        
+        # 2. BEKUKAN (FREEZE) layer embedding! 
+        # JAX akan memotong gradien di titik ini sehingga bobot dari Xenova tidak rusak saat training RL.
+        card_emb = jax.lax.stop_gradient(card_emb)
+        tool_emb = jax.lax.stop_gradient(tool_emb)
+        pre_evo_emb = jax.lax.stop_gradient(pre_evo_emb)
         
         # Penjumlahan Additive
         total_emb = card_emb + tool_emb + pre_evo_emb # (B, 93, 32)

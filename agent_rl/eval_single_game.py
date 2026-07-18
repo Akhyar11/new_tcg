@@ -147,8 +147,8 @@ def main():
     np.random.seed(seed)
     print(f"Using random seed: {seed}")
     
-    d0_path = os.path.join(deck_dir, "Mega Gardevoir's Symphonia.csv")
-    d1_path = os.path.join(deck_dir, "Miraidon Future Speed.csv")
+    d0_path = os.path.join(deck_dir, "Miraidon Future Speed.csv")
+    d1_path = os.path.join(deck_dir, "Mega Gardevoir's Symphonia.csv")
     d0 = load_deck(d0_path)
     d1 = load_deck(d1_path)
     
