@@ -277,7 +277,7 @@ def detect_events(old_state, new_state, player_index: int, logs: list = None) ->
     return events
 
 
-def calculate_step_reward(new_state, player_index: int, events: dict = None, end_reason: int = 0) -> float:
+def calculate_step_reward(new_state, player_index: int, events: dict = None, end_reason: int = 0, turn_changed: bool = False) -> float:
     """
     Reward dengan skala seimbang untuk konvergensi PPO.
     """
@@ -288,12 +288,19 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
     my_new = new_state.players[player_index]
 
     # Penalti langkah progresif agar model dihukum lebih besar jika melakukan stalling
-    r_step = -0.005 - (0.001 * min(turn, 50))
+    # Hanya diterapkan saat giliran berganti (turn_changed) atau game berakhir
+    r_step = 0.0
+    if turn_changed or new_state.result != -1:
+        r_step = -0.005 - (0.001 * min(turn, 50))
 
     # ── 2. Intermediate rewards ──
     r_event = 0.0
 
     if events:
+        # Penalti untuk mengakhiri turn ketika masih ada opsi lain
+        if events.get('premature_end_turn'):
+            r_event -= 0.01
+
         # Bench building — minor breadcrumb
         if events.get('bench_built', 0) > 0:
             n = _increment_counter('bench', player_index)

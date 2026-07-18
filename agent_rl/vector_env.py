@@ -311,6 +311,15 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                     remote.send('done')
                     continue
 
+                # Deteksi jika agen memilih END ketika masih ada opsi lain yang tersedia
+                premature_end_turn = False
+                if choices:
+                    chosen_opts = [options[c] for c in choices if c < len(options)]
+                    has_chosen_end = any(o.get("type") == "END" for o in chosen_opts)
+                    has_other_options = any(o.get("type") != "END" for o in options)
+                    if has_chosen_end and has_other_options:
+                        premature_end_turn = True
+
                 try:
                     obs_dict = battle_select(choices)
                     obs = to_dataclass(obs_dict, Observation)
@@ -327,12 +336,18 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                 if obs.current:
                     end_reason = get_end_reason(obs)
                     events = detect_events(old_state, obs.current, prev_player, obs.logs)
-                    reward = calculate_step_reward(obs.current, prev_player, events, end_reason)
-                    old_state = obs.current
+                    
                     done = (obs.current.result != -1)
                     active_p = prev_player
                     next_p = obs.current.yourIndex if obs.current else prev_player
-                    turn_changed_buf[worker_id] = (active_p != next_p) and not done
+                    turn_changed = (active_p != next_p) and not done
+                    
+                    if premature_end_turn:
+                        events['premature_end_turn'] = True
+                        
+                    reward = calculate_step_reward(obs.current, prev_player, events, end_reason, turn_changed=turn_changed)
+                    old_state = obs.current
+                    turn_changed_buf[worker_id] = turn_changed
                     
                     # Update opp_known_hand tracking
                     opp_index = 1 - prev_player # Assume prev_player is our index (yourIndex)
