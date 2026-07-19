@@ -122,6 +122,28 @@ def load_matching_weights(target_params, bytes_data):
         print(f"[!] Gagal meload secara parsial: {e}")
         return target_params, False
 
+def get_kaggle_api():
+    os.environ.pop("KAGGLE_API_TOKEN", None)
+    os.environ.pop("KAGGLE_API_V1_TOKEN", None)
+    os.environ.pop("KAGGLE_KERNEL_RUN_TYPE", None)
+    os.environ.pop("KAGGLE_DATA_PROXY_URL", None)
+    os.environ["KAGGLE_USERNAME"] = "akhyarsafrudin"
+    os.environ["KAGGLE_KEY"] = "03c3e536ffedc7d6153c1b3b8515242b"
+    from kaggle.api.kaggle_api_extended import KaggleApi
+    api = KaggleApi()
+    api.authenticate()
+    return api
+
+def download_from_kaggle(save_dir):
+    dataset_id = "akhyarsafrudin/tcg-models"
+    print(f"[*] Mencoba mendownload checkpoint dari Kaggle Dataset ({dataset_id}) menggunakan Python API...")
+    try:
+        api = get_kaggle_api()
+        api.dataset_download_files(dataset_id, path=save_dir, unzip=True)
+        print("[*] Sukses mendownload dan unzip model dari Kaggle.")
+    except Exception as e:
+        print(f"[!] Terjadi error saat download Kaggle: {e}")
+
 def main():
     num_devices = jax.device_count()
     print(f"[*] Running on {num_devices} GPU(s).")
@@ -152,6 +174,9 @@ def main():
     else:
         # P1 is LSTM model
         params_p1 = lstm_model.init(init_rng, dummy_seq_lstm, dummy_glob, dummy_carry)
+
+    # Download weights from Kaggle
+    download_from_kaggle(SAVE_DIR)
 
     # --- Load weights ---
     model_lstm_final_path = os.path.join(SAVE_DIR, "model_lstm_final.msgpack")
