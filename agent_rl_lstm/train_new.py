@@ -333,6 +333,9 @@ def main():
 
     global_step = 0
     p1_update_count = 0
+    failure_mode = False
+    collected_failures = []
+    failure_mode_steps = 0
     start_time = time.time()
 
     for update in range(1, num_updates + 1):
@@ -347,6 +350,8 @@ def main():
         # Rollout Phase
         for step in range(N_STEPS):
             global_step += NUM_ENVS
+            if failure_mode:
+                failure_mode_steps += NUM_ENVS
             rng, step_rng = jax.random.split(rng)
             step_rngs = jax.random.split(step_rng, num_devices)
 
@@ -418,6 +423,14 @@ def main():
                         
                     if is_win != -1:
                         ep_wins.append(is_win)
+                        
+                    if is_win == 0 and not failure_mode:
+                        p0_deck = infos[i]["p0_deck_cards"].tolist()
+                        p1_deck = infos[i]["p1_deck_cards"].tolist()
+                        collected_failures.append((p0_deck, p1_deck))
+                        if len(collected_failures) % 10 == 0:
+                            print(f"  [Curriculum] Terkumpul {len(collected_failures)}/200 sampel deck kegagalan...")
+                            sys.stdout.flush()
                         
                     # Save the game length (steps)
                     recent_steps.append(int(env_step_counts[i]))
@@ -514,11 +527,12 @@ def main():
             fps = int((NUM_ENVS * N_STEPS) / (time.time() - start_time + 1e-8))
             start_time = time.time()
 
-            print(f"Update {update:04d}/{num_updates} | Loss: {mean_loss:.4f} | Window WR: {avg_winrate:.1f}% ({len(recent_wins)}/{WIN_WINDOW}) | P1 Updates: {p1_update_count} | Games (Total): {total_games} | Avg Steps: {avg_steps:.1f} | FPS: {fps}")
+            mode_str = f"FAILURE ({failure_mode_steps}/500000)" if failure_mode else f"NORMAL (collected: {len(collected_failures)}/200)"
+            print(f"Update {update:04d}/{num_updates} | Loss: {mean_loss:.4f} | Window WR: {avg_winrate:.1f}% ({len(recent_wins)}/{WIN_WINDOW}) | Mode: {mode_str} | P1 Updates: {p1_update_count} | Games (Total): {total_games} | Avg Steps: {avg_steps:.1f} | FPS: {fps}")
             sys.stdout.flush()
 
             # Target checks
-            if len(recent_wins) >= WIN_WINDOW:
+            if not failure_mode and len(recent_wins) >= WIN_WINDOW:
                 if avg_winrate >= (WIN_TARGET * 100):
                     print(f"\n🚀 TARGET WINRATE DICAPAI! Window WR: {avg_winrate:.1f}% >= {WIN_TARGET*100}%!")
                     if PHASE == 1:
@@ -537,6 +551,66 @@ def main():
                         recent_wins.clear()
                         print("[*] Window WR di-reset. Melanjutkan training Phase 2...")
                         sys.stdout.flush()
+
+            # Curriculum Phase Transitions
+            if not failure_mode and len(collected_failures) >= 200:
+                print(f"\n⚠️ [Curriculum] 200 sampel deck kegagalan terkumpul! Menutup env dan meluncurkan env baru khusus melatih 200 deck kegagalan...")
+                sys.stdout.flush()
+                env.close()
+                env = VectorEnv(num_envs=NUM_ENVS, deck_pairs=collected_failures[:200])
+                failure_mode = True
+                failure_mode_steps = 0
+                recent_wins.clear()
+                recent_steps.clear()
+                
+                # Reset env and carry
+                obs = env.reset()
+                next_seq = obs["seq_input"]
+                next_glob = obs["glob_input"]
+                next_done = np.zeros(NUM_ENVS, dtype=np.float32)
+                carry_c.fill(0)
+                carry_h.fill(0)
+                carry_repl_p0 = (
+                    jnp.array(carry_c).reshape(num_devices, NUM_ENVS // num_devices, 256),
+                    jnp.array(carry_h).reshape(num_devices, NUM_ENVS // num_devices, 256)
+                )
+                if PHASE == 2:
+                    carry_repl_p1 = (
+                        jnp.array(carry_c).reshape(num_devices, NUM_ENVS // num_devices, 256),
+                        jnp.array(carry_h).reshape(num_devices, NUM_ENVS // num_devices, 256)
+                    )
+
+            elif failure_mode:
+                # Check for recovery success (winrate >= 60% over at least 100 games) or step limit
+                if (len(recent_wins) >= 100 and avg_winrate >= 60.0) or (failure_mode_steps >= 500000):
+                    if failure_mode_steps >= 500000:
+                        print(f"\n⚠️ [Curriculum] Batas maks step kebangkitan tercapai ({failure_mode_steps}). Kembali ke pool deck umum...")
+                    else:
+                        print(f"\n🎉 [Curriculum] Target winrate kebangkitan tercapai! ({avg_winrate:.1f}% >= 60%). Kembali ke pool deck umum...")
+                    sys.stdout.flush()
+                    env.close()
+                    env = VectorEnv(num_envs=NUM_ENVS, new_deck_path=NEW_DECK_PATH, gen_deck_path=GEN_DECK_PATH)
+                    failure_mode = False
+                    collected_failures = []
+                    recent_wins.clear()
+                    recent_steps.clear()
+                    
+                    # Reset env and carry
+                    obs = env.reset()
+                    next_seq = obs["seq_input"]
+                    next_glob = obs["glob_input"]
+                    next_done = np.zeros(NUM_ENVS, dtype=np.float32)
+                    carry_c.fill(0)
+                    carry_h.fill(0)
+                    carry_repl_p0 = (
+                        jnp.array(carry_c).reshape(num_devices, NUM_ENVS // num_devices, 256),
+                        jnp.array(carry_h).reshape(num_devices, NUM_ENVS // num_devices, 256)
+                    )
+                    if PHASE == 2:
+                        carry_repl_p1 = (
+                            jnp.array(carry_c).reshape(num_devices, NUM_ENVS // num_devices, 256),
+                            jnp.array(carry_h).reshape(num_devices, NUM_ENVS // num_devices, 256)
+                        )
 
         if update % 100 == 0:
             mem_mb = psutil.Process().memory_info().rss / 1e6
