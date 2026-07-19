@@ -159,6 +159,8 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                     success = True
                     break
             except Exception as e:
+                print(f"[Worker {worker_id}] start_new_battle attempt failed: {e}")
+                import traceback; traceback.print_exc()
                 battle_finish()
                 
         if not success:
@@ -175,7 +177,9 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                     features = extract_features(obs.current, obs.select, obs.current.yourIndex, opp_known_hand)
                     np.copyto(seq_input_buf, features['seq_input'])
                     np.copyto(glob_input_buf, features['glob_input'])
-            except:
+            except Exception as fe:
+                print(f"[Worker {worker_id}] start_new_battle fallback failed: {fe}")
+                import traceback; traceback.print_exc()
                 obs = Observation(current=None, select=None, logs=[])
                 old_state = None
                 seq_input_buf.fill(0)
@@ -335,13 +339,15 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                     obs_dict = battle_select(choices)
                     obs = to_dataclass(obs_dict, Observation)
                 except Exception as e:
+                    print(f"[Worker {worker_id}] battle_select(choices={choices}) failed with error: {e}")
                     try:
                         opt_count = len(obs.select.option) if obs.select and obs.select.option else 0
                         min_c = obs.select.minCount if obs.select else 0
                         fallback = list(range(min(opt_count, min_c))) if min_c > 0 else []
                         obs_dict = battle_select(fallback)
                         obs = to_dataclass(obs_dict, Observation)
-                    except:
+                    except Exception as fe:
+                        print(f"[Worker {worker_id}] battle_select(fallback={fallback}) failed with error: {fe}")
                         obs = Observation(current=None, select=None, logs=[])
 
                 if obs.current:

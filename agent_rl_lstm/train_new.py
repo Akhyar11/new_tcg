@@ -146,6 +146,9 @@ def download_from_kaggle(save_dir):
         print(f"[!] Terjadi error saat download Kaggle: {e}")
 
 def upload_to_kaggle(save_dir, message="Update models"):
+    if os.environ.get("NO_KAGGLE_UPLOAD", "0") == "1":
+        print("[*] Kaggle Upload dinonaktifkan (NO_KAGGLE_UPLOAD=1). Skip upload.")
+        return
     dataset_id = "akhyarsafrudin/tcg-models"
 
     metadata_path = os.path.join(save_dir, "dataset-metadata.json")

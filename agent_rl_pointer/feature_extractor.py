@@ -228,11 +228,9 @@ def extract_features(state: State, select_data: SelectData, your_index: int, opp
     # Slot 93-112: Opponent Known Hand (20)
     fill_sequence(seq_input, 93, 20, opp_known_hand)
 
-    # Slot 113-172: My Deck (60) - Hybrid Deck Tracking
+    # Slot 113-172: My Deck (60) - Terisi saat efek search/pilih kartu dari deck
     if select_data is not None and select_data.deck is not None:
         fill_sequence(seq_input, 113, 60, select_data.deck)
-    else:
-        fill_sequence(seq_input, 113, 60, my_state.deck)
 
     # 2. GLOBAL STATE (266)
     glob_input = np.zeros(266, dtype=np.float32)
