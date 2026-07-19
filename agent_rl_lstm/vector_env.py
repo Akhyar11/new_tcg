@@ -145,6 +145,8 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                     d1, type1 = sample_deck()
 
                 obs_dict, _ = battle_start(d0, d1)
+                if obs_dict is None:
+                    raise ValueError("battle_start returned None")
                 obs = to_dataclass(obs_dict, Observation)
                 old_state = obs.current
                 
@@ -159,6 +161,8 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                     success = True
                     break
             except Exception as e:
+                print(f"[Worker {worker_id}] start_new_battle attempt failed: {e}")
+                import traceback; traceback.print_exc()
                 battle_finish()
                 
         if not success:
@@ -167,6 +171,8 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
             p1_deck_type_buf[worker_id] = 0
             try:
                 obs_dict, _ = battle_start(d0, d1)
+                if obs_dict is None:
+                    raise ValueError("battle_start returned None")
                 obs = to_dataclass(obs_dict, Observation)
                 old_state = obs.current
                 if obs.current and obs.select and obs.current.result == -1:
@@ -175,7 +181,9 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                     features = extract_features(obs.current, obs.select, obs.current.yourIndex, opp_known_hand)
                     np.copyto(seq_input_buf, features['seq_input'])
                     np.copyto(glob_input_buf, features['glob_input'])
-            except:
+            except Exception as fe:
+                print(f"[Worker {worker_id}] start_new_battle fallback failed: {fe}")
+                import traceback; traceback.print_exc()
                 obs = Observation(current=None, select=None, logs=[])
                 old_state = None
                 seq_input_buf.fill(0)
