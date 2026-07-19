@@ -14,8 +14,8 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Pipeline LSTM Training (Phase 1 -> Phase 2)")
-    parser.add_argument("--rl-steps", type=int, default=10000000,
-                        help="Total timesteps per run (default: 10M)")
+    parser.add_argument("--rl-steps", type=int, default=20000000,
+                        help="Total timesteps per run (default: 20M)")
     parser.add_argument("--num-envs", type=int, default=8,
                         help="Number of environments (default: 8)")
     parser.add_argument("--batch-size", type=int, default=64,

@@ -45,7 +45,7 @@ from flax.jax_utils import replicate, unreplicate
 NUM_ENVS = int(os.environ.get("RL_NUM_ENVS", "8"))
 N_STEPS = 128
 BATCH_SIZE = int(os.environ.get("RL_BATCH_SIZE", "64"))
-TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "10000000"))
+TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "20000000"))
 LEARNING_RATE = 3e-4
 ENTROPY_COEF = 0.05
 EPOCHS = 1
