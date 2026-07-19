@@ -10,6 +10,7 @@ import os
 import sys
 import time
 from collections import deque
+import json
 from dotenv import load_dotenv
 
 # Setup paths
@@ -143,6 +144,57 @@ def download_from_kaggle(save_dir):
         print("[*] Sukses mendownload dan unzip model dari Kaggle.")
     except Exception as e:
         print(f"[!] Terjadi error saat download Kaggle: {e}")
+
+def upload_to_kaggle(save_dir, message="Update models"):
+    dataset_id = "akhyarsafrudin/tcg-models"
+
+    metadata_path = os.path.join(save_dir, "dataset-metadata.json")
+    if not os.path.exists(metadata_path):
+        metadata = {
+            "title": dataset_id.split("/")[-1],
+            "id": dataset_id,
+            "licenses": [{"name": "CC0-1.0"}]
+        }
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f, indent=4)
+
+    try:
+        api = get_kaggle_api()
+        
+        # Check if dataset exists
+        dataset_exists = True
+        try:
+            print(f"[*] Memeriksa status dataset Kaggle ({dataset_id})...")
+            api.dataset_status(dataset_id)
+        except Exception as status_err:
+            status_code = getattr(status_err, 'status', None)
+            err_msg = str(status_err).lower()
+            
+            # Jika error 401 (Unauthorized) atau kredensial tidak valid
+            if status_code in (401, 403) or "unauthorized" in err_msg or "unauthenticated" in err_msg or "401" in err_msg:
+                print(f"[!] Kaggle Authentication Error: Kredensial tidak valid atau tidak memiliki akses (HTTP {status_code}).")
+                print("    Silakan periksa kembali KAGGLE_USERNAME dan KAGGLE_API_TOKEN di file .env Anda.")
+                return
+                
+            # Jika error 404 (Not Found), berarti dataset belum ada
+            if status_code == 404 or "404" in err_msg or "not found" in err_msg:
+                dataset_exists = False
+                print(f"[*] Dataset belum ada di Kaggle. Akan mencoba membuat dataset baru.")
+            else:
+                # Fallback untuk error lain
+                dataset_exists = False
+                print(f"[*] Dataset tidak dapat diakses ({status_err}). Mencoba membuat dataset baru.")
+
+        if dataset_exists:
+            print(f"[*] Mengupload versi baru ke Kaggle Dataset ({dataset_id}) menggunakan Python API...")
+            api.dataset_create_version(save_dir, version_notes=message, dir_mode="zip")
+            print("[*] Sukses sinkronisasi ke Kaggle Dataset.")
+        else:
+            print(f"[*] Mencoba membuat dataset baru di Kaggle ({dataset_id})...")
+            api.dataset_create_new(save_dir, public=False, quiet=False, convert_to_csv=False, dir_mode="zip")
+            print("[*] Sukses membuat dan mengunggah ke Kaggle Dataset baru.")
+    except Exception as e:
+        print(f"[!] Terjadi error saat upload Kaggle: {e}")
 
 def main():
     num_devices = jax.device_count()
@@ -481,6 +533,7 @@ def main():
                         print(f"🔥 [P1 Weights Update #{p1_update_count}] Meng-update parameter P1 dengan model P0 saat ini.")
                         params_repl_p1 = params_repl_p0
                         save_checkpoint(unreplicate(params_repl_p0), "model_lstm_final.msgpack")
+                        upload_to_kaggle(SAVE_DIR, message=f"P1 Update #{p1_update_count} (Winrate target achieved in Phase 2)")
                         recent_wins.clear()
                         print("[*] Window WR di-reset. Melanjutkan training Phase 2...")
                         sys.stdout.flush()
