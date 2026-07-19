@@ -278,6 +278,7 @@ def main():
     print(f"[*] Target updates: {num_updates}. Buffer size: {N_STEPS * NUM_ENVS}")
 
     global_step = 0
+    p1_update_count = 0
     start_time = time.time()
 
     for update in range(1, num_updates + 1):
@@ -470,7 +471,8 @@ def main():
                         return
                     else:
                         # Phase 2: Update P1 frozen model using P0 weights, clear window, and continue.
-                        print(f"🔥 [P1 Weights Update] Meng-update parameter P1 dengan model P0 saat ini.")
+                        p1_update_count += 1
+                        print(f"🔥 [P1 Weights Update #{p1_update_count}] Meng-update parameter P1 dengan model P0 saat ini.")
                         params_repl_p1 = params_repl_p0
                         save_checkpoint(unreplicate(params_repl_p0), "model_lstm_final.msgpack")
                         recent_wins.clear()
