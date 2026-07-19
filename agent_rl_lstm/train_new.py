@@ -69,7 +69,7 @@ if PHASE == 1:
     print(f"          Target: {WIN_TARGET*100}% winrate over {WIN_WINDOW} game window.")
 else:
     WIN_WINDOW = 150
-    WIN_TARGET = 0.70
+    WIN_TARGET = 0.65
     print(f"[Phase 2] Training LSTM (P0) vs Frozen LSTM (P1)")
     print(f"          Target: {WIN_TARGET*100}% winrate over {WIN_WINDOW} game window to update P1.")
 
