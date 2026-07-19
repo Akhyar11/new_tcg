@@ -2,7 +2,7 @@
 """
 PPO Training script supporting:
 Phase 1: LSTM (P0) vs Frozen FF (P1)
-  - Target: 65% winrate over a 200-game window.
+  - Target: 60% winrate over a 150-game window.
 Phase 2: LSTM (P0) vs Frozen LSTM (P1)
   - Target: 60% winrate over a 150-game window (leads to P1 weights update).
 """
@@ -46,7 +46,7 @@ NUM_ENVS = int(os.environ.get("RL_NUM_ENVS", "8"))
 N_STEPS = 128
 BATCH_SIZE = int(os.environ.get("RL_BATCH_SIZE", "64"))
 TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "20000000"))
-LEARNING_RATE = 3e-4
+LEARNING_RATE = 1e-5
 ENTROPY_COEF = 0.05
 EPOCHS = 1
 GAMMA = 0.99
@@ -63,13 +63,13 @@ assert PHASE in [1, 2], "TRAIN_PHASE must be 1 or 2"
 
 # Window & Target settings
 if PHASE == 1:
-    WIN_WINDOW = 200
-    WIN_TARGET = 0.65
+    WIN_WINDOW = 150
+    WIN_TARGET = 0.60
     print(f"[Phase 1] Training LSTM (P0) vs Frozen FF (P1)")
     print(f"          Target: {WIN_TARGET*100}% winrate over {WIN_WINDOW} game window.")
 else:
     WIN_WINDOW = 150
-    WIN_TARGET = 0.65
+    WIN_TARGET = 0.60
     print(f"[Phase 2] Training LSTM (P0) vs Frozen LSTM (P1)")
     print(f"          Target: {WIN_TARGET*100}% winrate over {WIN_WINDOW} game window to update P1.")
 
@@ -428,8 +428,8 @@ def main():
                         p0_deck = infos[i]["p0_deck_cards"].tolist()
                         p1_deck = infos[i]["p1_deck_cards"].tolist()
                         collected_failures.append((p0_deck, p1_deck))
-                        if len(collected_failures) % 10 == 0:
-                            print(f"  [Curriculum] Terkumpul {len(collected_failures)}/200 sampel deck kegagalan...")
+                        if len(collected_failures) % 50 == 0:
+                            print(f"  [Curriculum] Terkumpul {len(collected_failures)}/1000 sampel deck kegagalan...")
                             sys.stdout.flush()
                         
                     # Save the game length (steps)
@@ -527,7 +527,7 @@ def main():
             fps = int((NUM_ENVS * N_STEPS) / (time.time() - start_time + 1e-8))
             start_time = time.time()
 
-            mode_str = f"FAILURE ({failure_mode_steps}/500000)" if failure_mode else f"NORMAL (collected: {len(collected_failures)}/200)"
+            mode_str = f"FAILURE ({failure_mode_steps}/500000)" if failure_mode else f"NORMAL (collected: {len(collected_failures)}/1000)"
             print(f"Update {update:04d}/{num_updates} | Loss: {mean_loss:.4f} | Window WR: {avg_winrate:.1f}% ({len(recent_wins)}/{WIN_WINDOW}) | Mode: {mode_str} | P1 Updates: {p1_update_count} | Games (Total): {total_games} | Avg Steps: {avg_steps:.1f} | FPS: {fps}")
             sys.stdout.flush()
 
@@ -553,11 +553,11 @@ def main():
                         sys.stdout.flush()
 
             # Curriculum Phase Transitions
-            if not failure_mode and len(collected_failures) >= 200:
-                print(f"\n⚠️ [Curriculum] 200 sampel deck kegagalan terkumpul! Menutup env dan meluncurkan env baru khusus melatih 200 deck kegagalan...")
+            if not failure_mode and len(collected_failures) >= 1000:
+                print(f"\n⚠️ [Curriculum] 1000 sampel deck kegagalan terkumpul! Menutup env dan meluncurkan env baru khusus melatih 1000 deck kegagalan...")
                 sys.stdout.flush()
                 env.close()
-                env = VectorEnv(num_envs=NUM_ENVS, deck_pairs=collected_failures[:200])
+                env = VectorEnv(num_envs=NUM_ENVS, deck_pairs=collected_failures[:1000])
                 failure_mode = True
                 failure_mode_steps = 0
                 recent_wins.clear()

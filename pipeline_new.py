@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Pipeline orchestrator:
-Phase 1: Run train_new.py with TRAIN_PHASE=1 (LSTM vs FF) until 65% winrate over 200 window is achieved.
+Phase 1: Run train_new.py with TRAIN_PHASE=1 (LSTM vs FF) until 60% winrate over 150 window is achieved.
 Phase 2: Run train_new.py with TRAIN_PHASE=2 (LSTM vs LSTM) with 60% winrate target over 150 window.
 """
 import os
