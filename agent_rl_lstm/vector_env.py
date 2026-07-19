@@ -66,8 +66,8 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
     turn_changed_buf = np.ndarray((num_envs,), dtype=np.bool_, buffer=shms['turn_changed'].buf)
     result_buf = np.ndarray((num_envs,), dtype=np.int32, buffer=shms['result'].buf)
     end_reason_buf = np.ndarray((num_envs,), dtype=np.int32, buffer=shms['end_reason'].buf)
-    p0_deck_type_buf = np.ndarray((num_envs,), dtype=np.int32, buffer=shms['p0_deck_type'].buf)[worker_id]
-    p1_deck_type_buf = np.ndarray((num_envs,), dtype=np.int32, buffer=shms['p1_deck_type'].buf)[worker_id]
+    p0_deck_type_buf = np.ndarray((num_envs,), dtype=np.int32, buffer=shms['p0_deck_type'].buf)
+    p1_deck_type_buf = np.ndarray((num_envs,), dtype=np.int32, buffer=shms['p1_deck_type'].buf)
     p0_deck_cards_buf = np.ndarray((num_envs, 60), dtype=np.int32, buffer=shms['p0_deck_cards'].buf)[worker_id]
     p1_deck_cards_buf = np.ndarray((num_envs, 60), dtype=np.int32, buffer=shms['p1_deck_cards'].buf)[worker_id]
 

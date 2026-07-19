@@ -2,7 +2,7 @@
 """
 PPO Training script supporting:
 Phase 1: LSTM (P0) vs Frozen FF (P1)
-  - Target: 70% winrate over a 200-game window.
+  - Target: 65% winrate over a 200-game window.
 Phase 2: LSTM (P0) vs Frozen LSTM (P1)
   - Target: 60% winrate over a 150-game window (leads to P1 weights update).
 """
@@ -64,7 +64,7 @@ assert PHASE in [1, 2], "TRAIN_PHASE must be 1 or 2"
 # Window & Target settings
 if PHASE == 1:
     WIN_WINDOW = 200
-    WIN_TARGET = 0.70
+    WIN_TARGET = 0.65
     print(f"[Phase 1] Training LSTM (P0) vs Frozen FF (P1)")
     print(f"          Target: {WIN_TARGET*100}% winrate over {WIN_WINDOW} game window.")
 else:
