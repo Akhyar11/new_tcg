@@ -63,8 +63,8 @@ if FINETUNE_MODE:
     print(f"[FineTune] MODE AKTIF — LR={LEARNING_RATE}, Entropy={ENTROPY_COEF}, Epochs={EPOCHS}, Steps={TOTAL_TIMESTEPS}")
 else:
     # 15M timesteps
-    # Override: TOTAL_TIMESTEPS=30000000 python train.py
-    TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "30000000"))
+    # Override: TOTAL_TIMESTEPS=15000000 python train.py
+    TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "15000000"))
     LEARNING_RATE = 3e-4
     ENTROPY_COEF = 0.05                # Starting entropy (akan di-anneal)
     EPOCHS = 1                         # Diubah ke 1 epoch sesuai permintaan
