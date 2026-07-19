@@ -199,7 +199,7 @@ class PokemonAgent(nn.Module):
         keys = keys.at[:, 161, :].add(x[:, 80, :])
         
         # ATTACK (162-167) -> My Active (80)
-        keys = keys.at[:, 162:168, :].add(x[:, 80, :])
+        keys = keys.at[:, 162:168, :].add(x[:, 80, jnp.newaxis, :])
         
         # ABILITY (168-179) -> My/Opp Active & Bench
         keys = keys.at[:, 168, :].add(x[:, 80, :])
