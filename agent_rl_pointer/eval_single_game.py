@@ -147,8 +147,8 @@ def main():
     np.random.seed(seed)
     print(f"Using random seed: {seed}")
     
-    d0_path = os.path.join(deck_dir, "Miraidon Future Speed.csv")
-    d1_path = os.path.join(deck_dir, "Miraidon Future Speed.csv")
+    d0_path = os.path.join(deck_dir, "Mega Lucario Aura Strike.csv")
+    d1_path = os.path.join(deck_dir, "Mega Lucario Aura Strike.csv")
     d0 = load_deck(d0_path)
     d1 = load_deck(d1_path)
     
@@ -165,9 +165,7 @@ def main():
     params_p1 = model.init(init_rng, dummy_seq, dummy_glob)
     
     # Cek & download model Kaggle
-    save_dir = os.path.join(ROOT, "checkpoints")
-    if not os.path.exists(save_dir):
-        save_dir = os.path.join(ROOT, "tcg_models")
+    save_dir = os.path.join(ROOT, "tcg_models")
     model_final_path = os.path.join(save_dir, "model_final.msgpack")
     model_base_path = os.path.join(save_dir, "model_base.msgpack")
     
@@ -181,13 +179,14 @@ def main():
         model_base_path = alt_base
         
     if not os.path.exists(model_final_path) or not os.path.exists(model_base_path):
-        print(f"[*] Model belum lengkap di {save_dir}. Gunakan upgrade_model.py atau pastikan file ada.")
+        print("[*] Model belum lengkap di tcg_models. Gunakan upgrade_model.py atau pastikan file ada.")
 
+    
     print(f"Loading P0 from {model_final_path}")
     with open(model_final_path, 'rb') as f:
         params_p0 = serialization.from_bytes(params_p0, f.read())
         
-    p1_path = model_final_path
+    p1_path = "/home/akhyar/Dokumen/Code/python/new_tcg/tcg_models/model_base.msgpack"
     print(f"Loading P1 from {p1_path}")
     with open(p1_path, 'rb') as f:
         params_p1 = serialization.from_bytes(params_p1, f.read())

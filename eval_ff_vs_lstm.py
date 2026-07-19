@@ -67,12 +67,10 @@ def ai_select_lstm(model_apply, params, carry, obs):
     seq_input = np.expand_dims(features["seq_input"], axis=0)
     glob_input = np.expand_dims(features["glob_input"], axis=0)
 
-    # Tambahkan dummy time dimension untuk LSTM: (batch=1, time=1, features)
-    seq_input = np.expand_dims(seq_input, axis=1)
-    glob_input = np.expand_dims(glob_input, axis=1)
-
-    new_carry, logits_raw, value = model_apply(params, carry, seq_input, glob_input)
-    logits_np = np.array(logits_raw[0, 0])
+    # Call model with correct parameter ordering: (params, seq_input, glob_input, carry)
+    # Output is (logits, value, new_carry)
+    logits_raw, value, new_carry = model_apply(params, seq_input, glob_input, carry)
+    logits_np = np.array(logits_raw[0])
     value_np = float(np.array(value).flatten()[0])
 
     options = obs.select.option
@@ -210,9 +208,26 @@ def main():
     np.random.seed(seed)
     print(f"Using random seed: {seed}")
     
-    deck_path = os.path.join(deck_dir, "Mega Lucario Aura Strike.csv")
+    deck_name = "Mega Lucario Aura Strike.csv"
+    if len(sys.argv) > 1:
+        arg = sys.argv[1]
+        if os.path.exists(arg):
+            deck_path = arg
+        elif os.path.exists(os.path.join(deck_dir, arg)):
+            deck_path = os.path.join(deck_dir, arg)
+        elif os.path.exists(os.path.join(deck_dir, arg + ".csv")):
+            deck_path = os.path.join(deck_dir, arg + ".csv")
+        else:
+            print(f"[!] Deck '{arg}' tidak ditemukan. Memakai default.")
+            deck_path = os.path.join(deck_dir, deck_name)
+    else:
+        deck_path = os.path.join(deck_dir, deck_name)
+        
     d0 = load_deck(deck_path)
     d1 = load_deck(deck_path)
+    if d0 is None or d1 is None:
+        print(f"[!] Gagal me-load deck {deck_path}. Pastikan file valid dengan 60 kartu.")
+        return
     
     print(f"Deck P0 (LSTM) & P1 (FF): {os.path.basename(deck_path)}")
 
@@ -227,10 +242,10 @@ def main():
     # Init LSTM Model (P0)
     lstm_model = LSTMModel(num_actions=250)
     rng, init_rng_lstm = jax.random.split(rng)
-    dummy_seq_lstm = jnp.zeros((1, 1, 173, 31))
-    dummy_glob_lstm = jnp.zeros((1, 1, 266))
+    dummy_seq_lstm = jnp.zeros((1, 173, 31))
+    dummy_glob_lstm = jnp.zeros((1, 266))
     dummy_carry = (jnp.zeros((1, 256)), jnp.zeros((1, 256)))
-    params_lstm = lstm_model.init(init_rng_lstm, dummy_carry, dummy_seq_lstm, dummy_glob_lstm)
+    params_lstm = lstm_model.init(init_rng_lstm, dummy_seq_lstm, dummy_glob_lstm, dummy_carry)
     
     # Load Weights
     save_dir = os.path.join(ROOT, "tcg_models")
@@ -256,7 +271,7 @@ def main():
     
     # Warmup
     _ = ff_apply(params_ff, dummy_seq_ff, dummy_glob_ff)
-    _ = lstm_apply(params_lstm, dummy_carry, dummy_seq_lstm, dummy_glob_lstm)
+    _ = lstm_apply(params_lstm, dummy_seq_lstm, dummy_glob_lstm, dummy_carry)
     
     obs_dict, _ = battle_start(d0, d1)
     obs = to_dataclass(obs_dict, Observation)
