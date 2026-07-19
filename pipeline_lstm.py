@@ -88,7 +88,7 @@ DECK_BACKUP_DIR = os.path.join(ROOT, "pipeline_deck_backups")
 NEW_DECK_DIR = os.path.join(ROOT, "new_deck")
 
 # RL defaults — cocok untuk convergence-grade training
-DEFAULT_RL_STEPS = 15_000_000     # Per iterasi (3 iterasi = 45M)
+DEFAULT_RL_STEPS = 30_000_000     # Per iterasi (1 iterasi = 30M)
 QUICK_RL_STEPS = 100_000
 
 REASON_LABELS = {1: "Prize✓", 2: "DeckOut✗", 3: "NoActive✓", 4: "Effect✓"}
