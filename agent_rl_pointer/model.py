@@ -114,8 +114,8 @@ class PokemonAgent(nn.Module):
         for _ in range(3):
             x = TransformerBlock(embed_dim=self.embed_dim)(x)
 
-        # BEKUKAN representasi sequence (Transformer & Embedding) agar tidak terpengaruh gradien
-        x = jax.lax.stop_gradient(x)
+        # Transformer bebas belajar dari sinyal RL.
+        # Embedding (KB Distillation) tetap frozen via stop_gradient di CardEmbedding (line 54-56).
 
         # 3. Attention Pooling
         hand_pooler = AttentionPooling(embed_dim=self.embed_dim, name="hand_pooler")

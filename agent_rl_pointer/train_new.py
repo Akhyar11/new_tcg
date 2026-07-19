@@ -57,9 +57,9 @@ from flax.jax_utils import replicate, unreplicate
 # --- Config ---
 NUM_ENVS = int(os.environ.get("RL_NUM_ENVS", "8"))
 N_STEPS = 128
-BATCH_SIZE = int(os.environ.get("RL_BATCH_SIZE", "64"))
+BATCH_SIZE = int(os.environ.get("RL_BATCH_SIZE", "512"))  # 512 ÷ seq_len(32) = 16 sequences per gradient update
 TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "20000000"))
-LEARNING_RATE = 1e-5
+LEARNING_RATE = 3e-4
 ENTROPY_COEF = 0.05
 EPOCHS = 1
 GAMMA = 0.99
@@ -290,8 +290,8 @@ def main():
     total_games = 0
 
     reward_running_mean = 0.0
-    reward_running_std = 1.0
-    reward_norm_steps = 0
+    reward_count = 0        # Jumlah reward yang sudah diproses
+    reward_M2 = 0.0         # Sum of squared deviations (Welford accumulator)
 
     num_updates = TOTAL_TIMESTEPS // (N_STEPS * NUM_ENVS)
     
@@ -413,15 +413,15 @@ def main():
             next_obs, rewards, dones, infos = env.step(logits_np)
             rewards = np.nan_to_num(rewards, nan=0.0, posinf=1.0, neginf=-1.0)
 
-            # Normalization
-            reward_norm_steps += NUM_ENVS
+            # ── Running reward normalization (Welford Online Algorithm) ──
             for r in rewards:
+                reward_count += 1
                 delta = r - reward_running_mean
-                reward_running_mean += delta / max(reward_norm_steps, 1)
+                reward_running_mean += delta / reward_count
                 delta2 = r - reward_running_mean
-                reward_running_std += delta * delta2
-            running_std = np.sqrt(reward_running_std / max(reward_norm_steps, 1))
-            running_std = max(running_std, 0.01)
+                reward_M2 += delta * delta2
+            # Variance = M2 / (n-1) untuk unbiased estimate, minimal 1e-4 agar tidak nol
+            running_std = max(np.sqrt(reward_M2 / max(reward_count - 1, 1)), 0.01)
             normalized_rewards = np.clip(rewards / running_std, -5.0, 5.0)
 
             episodic_returns += rewards
@@ -473,11 +473,13 @@ def main():
             actions_mask_np = np.stack([info["actions_mask"] for info in infos])
             glob_mask_np = np.stack([info["glob_mask"] for info in infos])
 
-            # Old log probabilities
-            masked_logits_np = logits_np - 1e9 * (1.0 - glob_mask_np)
-            logits_max = np.max(masked_logits_np, axis=-1, keepdims=True)
-            log_sum_exp = np.log(np.sum(np.exp(masked_logits_np - logits_max), axis=-1, keepdims=True))
-            log_probs_all_np = (masked_logits_np - logits_max) - log_sum_exp
+            # ── Old log-probabilities: gunakan logits P0 murni (bukan campuran P0+P1) ──
+            # Ini penting agar PPO ratio exp(log_pi_new - log_pi_old) konsisten:
+            # log_pi_old harus selalu dari distribusi P0, bukan P1.
+            masked_logits_p0_np = logits_np_p0 - 1e9 * (1.0 - glob_mask_np)
+            logits_max_p0 = np.max(masked_logits_p0_np, axis=-1, keepdims=True)
+            log_sum_exp_p0 = np.log(np.sum(np.exp(masked_logits_p0_np - logits_max_p0), axis=-1, keepdims=True) + 1e-10)
+            log_probs_all_np = (masked_logits_p0_np - logits_max_p0) - log_sum_exp_p0
 
             mask_count = np.maximum(1.0, np.sum(actions_mask_np, axis=-1))
             multi_log_probs = np.sum(log_probs_all_np * actions_mask_np, axis=-1) / mask_count
