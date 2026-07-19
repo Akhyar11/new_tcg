@@ -269,6 +269,8 @@ def main():
 
     # Sliding win rate window
     recent_wins = deque(maxlen=WIN_WINDOW)
+    recent_steps = deque(maxlen=WIN_WINDOW)
+    total_games = 0
 
     reward_running_mean = 0.0
     reward_running_std = 1.0
@@ -365,6 +367,9 @@ def main():
                     if is_win != -1:
                         ep_wins.append(is_win)
                         
+                    # Save the game length (steps)
+                    recent_steps.append(int(env_step_counts[i]))
+                    total_games += 1
                     env_step_counts[i] = 0
                     
                     # Reset Carry
@@ -453,10 +458,11 @@ def main():
         if update % 1 == 0:
             recent_wins.extend(ep_wins)
             avg_winrate = np.mean(recent_wins) * 100 if len(recent_wins) > 0 else 0.0
+            avg_steps = np.mean(recent_steps) if len(recent_steps) > 0 else 0.0
             fps = int((NUM_ENVS * N_STEPS) / (time.time() - start_time + 1e-8))
             start_time = time.time()
 
-            print(f"Update {update:04d}/{num_updates} | Loss: {mean_loss:.4f} | Window WR: {avg_winrate:.1f}% ({len(recent_wins)}/{WIN_WINDOW}) | FPS: {fps}")
+            print(f"Update {update:04d}/{num_updates} | Loss: {mean_loss:.4f} | Window WR: {avg_winrate:.1f}% ({len(recent_wins)}/{WIN_WINDOW}) | P1 Updates: {p1_update_count} | Games (Total): {total_games} | Avg Steps: {avg_steps:.1f} | FPS: {fps}")
             sys.stdout.flush()
 
             # Target checks
