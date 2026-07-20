@@ -40,10 +40,28 @@ class TrainerPPO:
         self.num_devices = self._auto_config_gpu()
         self.buffer = RolloutBuffer(n_steps=self.n_steps, num_envs=self.num_envs)
         
-        # PPO Optimizer
-        self.tx = optax.chain(
-            optax.clip_by_global_norm(0.5),
-            optax.adamw(learning_rate=self.learning_rate, eps=1e-5, weight_decay=1e-4)
+        # PPO Optimizer dengan pembekuan CardEmbedding (Teacher Distillation)
+        import flax.traverse_util as tu
+        
+        def partition_fn(path):
+            # Cek apakah 'CardEmbedding_0' ada di dalam path parameter
+            if 'CardEmbedding' in path:
+                return 'frozen'
+            return 'trainable'
+            
+        flat_params = tu.flatten_dict(self.agent_p0.params)
+        partition_dict = {k: partition_fn('/'.join(k)) for k in flat_params.keys()}
+        partition_tree = tu.unflatten_dict(partition_dict)
+        
+        self.tx = optax.multi_transform(
+            {
+                'trainable': optax.chain(
+                    optax.clip_by_global_norm(0.5),
+                    optax.adamw(learning_rate=self.learning_rate, eps=1e-5, weight_decay=1e-4)
+                ),
+                'frozen': optax.set_to_zero()
+            },
+            partition_tree
         )
         self.opt_state = self.tx.init(self.agent_p0.params)
         
