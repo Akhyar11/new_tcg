@@ -33,9 +33,9 @@ def main():
     agent_p1 = LSTMAgent("PTR_P1", PTRModel, action_mapping, checkpoint_path=path_ptr_final if os.path.exists(path_ptr_final) else None)
     
     config = {
-        "num_envs": 8,
+        "num_envs": 16,
         "n_steps": 128,
-        "batch_size": 64,
+        "batch_size": 128,
         "epochs": 1,
         "learning_rate": 3e-4,
         "entropy_coef": 0.05,
