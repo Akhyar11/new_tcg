@@ -147,8 +147,8 @@ def main():
     np.random.seed(seed)
     print(f"Using random seed: {seed}")
     
-    d0_path = os.path.join(deck_dir, "Miraidon Future Speed.csv")
-    d1_path = os.path.join(deck_dir, "Miraidon Future Speed.csv")
+    d0_path = os.path.join(deck_dir, "Mega Lucario Aura Strike.csv")
+    d1_path = os.path.join(deck_dir, "Mega Lucario Aura Strike.csv")
     d0 = load_deck(d0_path)
     d1 = load_deck(d1_path)
     
@@ -187,7 +187,7 @@ def main():
     with open(model_final_path, 'rb') as f:
         params_p0 = serialization.from_bytes(params_p0, f.read())
         
-    p1_path = model_final_path
+    p1_path = "/home/akhyar/Dokumen/Code/python/new_tcg/tcg_models/model_base.msgpack"
     print(f"Loading P1 from {p1_path}")
     with open(p1_path, 'rb') as f:
         params_p1 = serialization.from_bytes(params_p1, f.read())

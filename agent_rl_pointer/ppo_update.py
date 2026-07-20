@@ -43,8 +43,7 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio, entropy_
         # 3. Hitung Log Probabilities
         log_probs_all = jax.nn.log_softmax(masked_logits)
 
-        mask_count = jnp.maximum(1.0, jnp.sum(batch['actions_mask'], axis=-1))
-        log_probs = jnp.sum(log_probs_all * batch['actions_mask'], axis=-1) / mask_count
+        log_probs = jnp.sum(log_probs_all * batch['actions_mask'], axis=-1)
 
         # 4. PPO Actor Loss
         log_ratio = jnp.clip(log_probs - batch['old_log_probs'], -10.0, 10.0)

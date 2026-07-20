@@ -69,6 +69,7 @@ def ai_select_lstm(model_apply, params, carry, obs):
 
     # Call model with correct parameter ordering: (params, seq_input, glob_input, carry)
     # Output is (logits, value, new_carry)
+    # Shape: seq_input (B, 173, 31), glob_input (B, 266)
     logits_raw, value, new_carry = model_apply(params, seq_input, glob_input, carry)
     logits_np = np.array(logits_raw[0])
     value_np = float(np.array(value).flatten()[0])

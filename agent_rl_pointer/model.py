@@ -207,8 +207,9 @@ class PokemonAgent(nn.Module):
         keys = keys.at[:, 174, :].add(x[:, 86, :])
         keys = keys.at[:, 175:180, :].add(x[:, 87:92, :])
         
-        # d. Dot product untuk logit policy
+        # d. Dot product untuk logit policy (Scaled Dot-Product)
         logits = jnp.sum(query[:, jnp.newaxis, :] * keys, axis=-1)
+        logits = logits / jnp.sqrt(self.embed_dim)
         logits = jnp.clip(logits, -10.0, 10.0)
 
         # Critic Head (Value) - tetap sama
