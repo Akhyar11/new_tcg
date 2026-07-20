@@ -296,7 +296,7 @@ def main():
     num_updates = TOTAL_TIMESTEPS // (N_STEPS * NUM_ENVS)
     
     # Curriculum Phase Configuration
-    PHASE = int(os.environ.get("TRAIN_PHASE", "1"))
+    PHASE = int(os.environ.get("TRAIN_PHASE", "3"))
     assert PHASE in [1, 2, 3], "TRAIN_PHASE must be 1, 2, or 3"
     
     # Helper function to configure a Phase
