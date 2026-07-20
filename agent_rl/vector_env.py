@@ -76,8 +76,8 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
 
         possible_paths = [
             target_path,
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "deck_generated"),
-            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "agent_rl", "deck_generated"),
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "deck_generated"),
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "new_deck"),
         ]
         for p in possible_paths:
             if p not in deck_paths_checked:
@@ -448,15 +448,15 @@ class VectorEnv:
     P0 dan P1 selalu mendapat deck BERBEDA.
     Dilengkapi Shared Memory untuk eliminasi overhead Pipe.
     """
-    def __init__(self, num_envs, new_deck_path="new_deck", gen_deck_path="agent_rl/deck_generated"):
+    def __init__(self, num_envs, new_deck_path="new_deck", gen_deck_path="deck_generated"):
         self.num_envs = num_envs
         
         # Validasi path
         def validate_path(d_path):
             if not os.path.exists(d_path):
-                alt = os.path.join(os.path.dirname(os.path.abspath(__file__)), "deck_generated")
+                alt = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "deck_generated")
                 if os.path.exists(alt): return alt
-                alt2 = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "agent_rl", "deck_generated")
+                alt2 = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "new_deck")
                 if os.path.exists(alt2): return alt2
             return d_path
             

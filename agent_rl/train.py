@@ -76,7 +76,7 @@ CLIP_RATIO = 0.2       # Starting clip ratio (akan di-anneal)
 
 SAVE_DIR = os.environ.get("SAVE_DIR", "tcg_models")
 NEW_DECK_PATH = os.environ.get("NEW_DECK_PATH", "new_deck")
-GEN_DECK_PATH = os.environ.get("GEN_DECK_PATH", "agent_rl/deck_generated")
+GEN_DECK_PATH = os.environ.get("GEN_DECK_PATH", "deck_generated")
 KAGGLE_INPUT_DIR = os.environ.get("KAGGLE_INPUT_DIR", "")  # Contoh: /kaggle/input/tcg-models
 
 # Memory monitoring — cetak setiap N update

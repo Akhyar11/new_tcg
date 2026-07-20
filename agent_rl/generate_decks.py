@@ -128,5 +128,5 @@ if __name__ == "__main__":
         num = 100
         
     csv_path = "/home/akhyar/Dokumen/Code/python/new_tcg/agent_rl/EN_Card_Data.csv"
-    out_dir = "/home/akhyar/Dokumen/Code/python/new_tcg/agent_rl/deck_generated"
+    out_dir = "/home/akhyar/Dokumen/Code/python/new_tcg/deck_generated"
     generate_random_decks(csv_path, out_dir, num)
