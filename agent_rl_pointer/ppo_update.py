@@ -52,15 +52,8 @@ def ppo_update_step(params, opt_state, batch, apply_fn, tx, clip_ratio, entropy_
         active_mask = (batch['active_players'] == 0).astype(jnp.float32)
         valid_count = jnp.maximum(1.0, active_mask.sum())
 
-        # Normalize advantages
-        adv = batch['advantages']
-        mean_adv = (adv * active_mask).sum() / valid_count
-        var_adv = (((adv - mean_adv) ** 2) * active_mask).sum() / valid_count
-        std_adv = jnp.sqrt(var_adv)
-        norm_adv = (adv - mean_adv) / (std_adv + 1e-8)
-
-        surr1 = ratio * norm_adv * active_mask
-        surr2 = jnp.clip(ratio, 1.0 - clip_ratio, 1.0 + clip_ratio) * norm_adv * active_mask
+        surr1 = ratio * batch['advantages'] * active_mask
+        surr2 = jnp.clip(ratio, 1.0 - clip_ratio, 1.0 + clip_ratio) * batch['advantages'] * active_mask
         actor_loss = -jnp.minimum(surr1, surr2).sum() / valid_count
 
         # 5. PPO Critic Loss
