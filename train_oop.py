@@ -18,8 +18,12 @@ def main():
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    # Optional: Download latest from Kaggle before starting
-    # download_from_kaggle(save_dir)
+    # Download latest from Kaggle before starting
+    print("Mendownload checkpoint terbaru dari Kaggle...")
+    try:
+        download_from_kaggle(save_dir)
+    except Exception as e:
+        print(f"Gagal mendownload dari Kaggle: {e}")
 
     path_lstm_final = os.path.join(save_dir, "model_lstm_final.msgpack")
     
@@ -38,7 +42,9 @@ def main():
         "clip_ratio": 0.2,
         "new_deck_path": os.path.join(os.path.dirname(__file__), "new_deck"),
         "gen_deck_path": os.path.join(os.path.dirname(__file__), "deck_generated"),
-        "save_dir": save_dir
+        "save_dir": save_dir,
+        "save_name_base": "model_lstm_base.msgpack",
+        "save_name_final": "model_lstm_final.msgpack"
     }
 
     trainer = TrainerPPO(agent_p0, agent_p1, config)
