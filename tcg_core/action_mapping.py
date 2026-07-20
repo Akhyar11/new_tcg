@@ -8,24 +8,28 @@ import numpy as np
 NUM_ACTIONS = 250
 
 # Rentang Aksi Kartu (Sesuai dengan OptionType dari C++)
-PLAY_START, PLAY_END = 0, 59         # OptionType.PLAY (Mainkan kartu dari Hand)
-CARD_START, CARD_END = 60, 119       # OptionType.CARD (Pilih kartu spesifik)
-ATTACH_START, ATTACH_END = 120, 139  # OptionType.ATTACH
-EVOLVE_START, EVOLVE_END = 140, 159  # OptionType.EVOLVE
+PLAY_START, PLAY_END = 0, 19                 # OptionType.PLAY (Mainkan kartu dari Hand, max 20)
+CARD_BOARD_START, CARD_BOARD_END = 20, 31    # OptionType.CARD di Arena (12 slot)
+CARD_HAND_START, CARD_HAND_END = 32, 51      # OptionType.CARD di Hand (20 slot)
+CARD_DECK_START, CARD_DECK_END = 52, 111     # OptionType.CARD di Deck (60 slot)
+CARD_DISCARD_START, CARD_DISCARD_END = 112, 141 # OptionType.CARD di Discard sendiri (30 slot)
+CARD_OPP_DISCARD_START, CARD_OPP_DISCARD_END = 142, 171 # OptionType.CARD di Discard lawan (30 slot)
+
+ATTACH_START, ATTACH_END = 172, 183  # OptionType.ATTACH (12 slot board)
+EVOLVE_START, EVOLVE_END = 184, 195  # OptionType.EVOLVE (12 slot board)
 
 # Aksi Game Spesifik
-ACTION_END = 160                     # OptionType.END
-ACTION_RETREAT = 161                 # OptionType.RETREAT
-ATTACK_START, ATTACK_END = 162, 167  # OptionType.ATTACK
-ABILITY_START, ABILITY_END = 168, 179 # OptionType.ABILITY
-ACTION_YES = 180                     # OptionType.YES
-ACTION_NO = 181                      # OptionType.NO
-ENERGY_START, ENERGY_END = 182, 199  # OptionType.ENERGY, ENERGY_CARD
-SKILL_START, SKILL_END = 200, 219    # OptionType.SKILL
-NUMBER_START, NUMBER_END = 220, 239  # OptionType.NUMBER
+ACTION_END = 196                     # OptionType.END
+ACTION_RETREAT = 197                 # OptionType.RETREAT
+ATTACK_START, ATTACK_END = 198, 203  # OptionType.ATTACK (6 slot)
+ABILITY_START, ABILITY_END = 204, 215 # OptionType.ABILITY (12 slot)
+ACTION_YES = 216                     # OptionType.YES
+ACTION_NO = 217                      # OptionType.NO
 
-# Sisa 240-249 tersedia untuk tipe lain (misal: TOOL_CARD, DISCARD, SPECIAL_CONDITION)
-OTHER_START, OTHER_END = 240, 249
+ENERGY_START, ENERGY_END = 218, 227  # OptionType.ENERGY, ENERGY_CARD, TOOL_CARD (10 slot)
+SKILL_START, SKILL_END = 228, 237    # OptionType.SKILL (10 slot)
+NUMBER_START, NUMBER_END = 238, 243  # OptionType.NUMBER (6 slot)
+OTHER_START, OTHER_END = 244, 249    # OptionType.DISCARD, etc (6 slot)
 
 def get_action_index_for_option(option: dict, option_list_index: int = 0) -> int:
     """
@@ -39,29 +43,43 @@ def get_action_index_for_option(option: dict, option_list_index: int = 0) -> int
         return min(PLAY_START + opt_idx, PLAY_END)
         
     elif opt_type == "CARD":
-        # Untuk memilih CARD (misal dari deck, hand, atau di arena)
-        # Jika memilih di arena (ACTIVE/BENCH), bedakan berdasarkan slot target
         area = option.get("area")
         area_str = str(area).upper()
-        if area_str in ["ACTIVE", "BENCH", "4", "5", "AREATYPE.ACTIVE", "AREATYPE.BENCH"]:
-            player = int(option.get("playerIndex", 0))
-            # Slot: 0 = Opponent Active, 1-5 = Opponent Bench, 6 = My Active, 7-11 = My Bench
-            slot = (6 if player == 0 else 0) + (0 if area_str in ["ACTIVE", "4", "AREATYPE.ACTIVE"] else (1 + opt_idx))
-            return min(CARD_START + slot, CARD_END)
+        player = int(option.get("playerIndex", 0))
+        
+        if area_str in ["ACTIVE", "4", "AREATYPE.ACTIVE"]:
+            slot = 6 if player == 0 else 0
+            return min(CARD_BOARD_START + slot, CARD_BOARD_END)
+        elif area_str in ["BENCH", "5", "AREATYPE.BENCH"]:
+            slot = (7 if player == 0 else 1) + opt_idx
+            return min(CARD_BOARD_START + slot, CARD_BOARD_END)
+        elif area_str in ["DECK", "1", "AREATYPE.DECK"]:
+            return min(CARD_DECK_START + opt_idx, CARD_DECK_END)
+        elif area_str in ["HAND", "2", "AREATYPE.HAND"]:
+            return min(CARD_HAND_START + opt_idx, CARD_HAND_END)
+        elif area_str in ["DISCARD", "3", "AREATYPE.DISCARD"]:
+            if player == 0:
+                return min(CARD_DISCARD_START + opt_idx, CARD_DISCARD_END)
+            else:
+                return min(CARD_OPP_DISCARD_START + opt_idx, CARD_OPP_DISCARD_END)
         else:
-            # Dari Deck / Hand / Discard (maksimal 60)
-            return min(CARD_START + 12 + opt_idx, CARD_END)
+            # Fallback
+            return min(CARD_DECK_START + opt_idx, CARD_DECK_END)
             
     elif opt_type == "ATTACH" or opt_type == "EVOLVE":
-        # Target area dan target index
         area = option.get("inPlayArea")
         idx = int(option.get("inPlayIndex", 0) if option.get("inPlayIndex") is not None else 0)
         area_str = str(area).upper()
-        target_slot = 0
+        
+        # Format slot yang sama dengan CARD_BOARD
+        # (Opp Active = 0, Opp Bench = 1-5, My Active = 6, My Bench = 7-11)
+        # Tapi biasanya ATTACH/EVOLVE itu untuk My Board (player 0)
+        target_slot = 6 # Default My Active
         if area_str in ["ACTIVE", "4", "AREATYPE.ACTIVE"]:
-            target_slot = 0
+            target_slot = 6
         elif area_str in ["BENCH", "5", "AREATYPE.BENCH"]:
-            target_slot = 1 + idx
+            target_slot = 7 + idx
+            
         start = ATTACH_START if opt_type == "ATTACH" else EVOLVE_START
         end = ATTACH_END if opt_type == "ATTACH" else EVOLVE_END
         return min(start + target_slot, end)
@@ -73,18 +91,19 @@ def get_action_index_for_option(option: dict, option_list_index: int = 0) -> int
         return ACTION_RETREAT
         
     elif opt_type == "ATTACK":
-        # Gunakan urutan di dalam list option (0 = Serangan pertama, 1 = Serangan kedua)
         return min(ATTACK_START + option_list_index, ATTACK_END)
         
     elif opt_type == "ABILITY":
         area = option.get("area")
         idx = int(option.get("index", 0) if option.get("index") is not None else 0)
         area_str = str(area).upper()
-        target_slot = 0
+        
+        target_slot = 6
         if area_str in ["ACTIVE", "4", "AREATYPE.ACTIVE"]:
-            target_slot = 0
+            target_slot = 6
         elif area_str in ["BENCH", "5", "AREATYPE.BENCH"]:
-            target_slot = 1 + idx
+            target_slot = 7 + idx
+            
         return min(ABILITY_START + target_slot, ABILITY_END)
         
     elif opt_type == "YES":
@@ -94,15 +113,12 @@ def get_action_index_for_option(option: dict, option_list_index: int = 0) -> int
         return ACTION_NO
         
     elif opt_type in ["ENERGY", "ENERGY_CARD", "TOOL_CARD"]:
-        # Biasanya memilih energi/tool spesifik yang terpasang di pokemon
-        # Karena bisa ada banyak, kita pakai energyIndex / toolIndex
         energy_idx = int(option.get("energyIndex", 0) if option.get("energyIndex") is not None else 0)
         tool_idx = int(option.get("toolIndex", 0) if option.get("toolIndex") is not None else 0)
         item_idx = energy_idx if opt_type in ["ENERGY", "ENERGY_CARD"] else tool_idx
         return min(ENERGY_START + item_idx, ENERGY_END)
         
     elif opt_type == "DISCARD":
-        # Discard kartu di arena (misal stadium)
         return min(OTHER_START + opt_idx, OTHER_END)
         
     elif opt_type == "SKILL":

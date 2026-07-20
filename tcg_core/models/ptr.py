@@ -178,34 +178,47 @@ class PokemonAgent(nn.Module):
         # PLAY (0-19) -> My Hand (0-19)
         keys = keys.at[:, 0:20, :].add(x[:, 0:20, :])
         
-        # CARD (60-71) -> My/Opp Active & Bench
-        keys = keys.at[:, 60, :].add(x[:, 86, :])       # Opp Active (86)
-        keys = keys.at[:, 61:66, :].add(x[:, 87:92, :])   # Opp Bench (87-91)
-        keys = keys.at[:, 66, :].add(x[:, 80, :])       # My Active (80)
-        keys = keys.at[:, 67:72, :].add(x[:, 81:86, :])   # My Bench (81-85)
+        # CARD_BOARD (20-31) -> My/Opp Active & Bench
+        keys = keys.at[:, 20, :].add(x[:, 86, :])       # Opp Active (86)
+        keys = keys.at[:, 21:26, :].add(x[:, 87:92, :]) # Opp Bench (87-91)
+        keys = keys.at[:, 26, :].add(x[:, 80, :])       # My Active (80)
+        keys = keys.at[:, 27:32, :].add(x[:, 81:86, :]) # My Bench (81-85)
         
-        # CARD (72-119) -> Deck Search cards (slots 113-160)
-        keys = keys.at[:, 72:120, :].add(x[:, 113:161, :])
+        # CARD_HAND (32-51) -> My Hand (0-19)
+        keys = keys.at[:, 32:52, :].add(x[:, 0:20, :])
         
-        # ATTACH (120-125) -> My Active (80) & My Bench (81-85)
-        keys = keys.at[:, 120, :].add(x[:, 80, :])
-        keys = keys.at[:, 121:126, :].add(x[:, 81:86, :])
+        # CARD_DECK (52-111) -> My Deck (113-172)
+        keys = keys.at[:, 52:112, :].add(x[:, 113:173, :])
         
-        # EVOLVE (140-145) -> My Active (80) & My Bench (81-85)
-        keys = keys.at[:, 140, :].add(x[:, 80, :])
-        keys = keys.at[:, 141:146, :].add(x[:, 81:86, :])
+        # CARD_DISCARD (112-141) -> My Discard (20-49)
+        keys = keys.at[:, 112:142, :].add(x[:, 20:50, :])
         
-        # RETREAT (161) -> My Active (80)
-        keys = keys.at[:, 161, :].add(x[:, 80, :])
+        # CARD_OPP_DISCARD (142-171) -> Opp Discard (50-79)
+        keys = keys.at[:, 142:172, :].add(x[:, 50:80, :])
         
-        # ATTACK (162-167) -> My Active (80)
-        keys = keys.at[:, 162:168, :].add(x[:, 80, jnp.newaxis, :])
+        # ATTACH (172-183) -> Board
+        keys = keys.at[:, 172, :].add(x[:, 86, :])      # Opp Active
+        keys = keys.at[:, 173:178, :].add(x[:, 87:92, :]) # Opp Bench
+        keys = keys.at[:, 178, :].add(x[:, 80, :])      # My Active
+        keys = keys.at[:, 179:184, :].add(x[:, 81:86, :]) # My Bench
         
-        # ABILITY (168-179) -> My/Opp Active & Bench
-        keys = keys.at[:, 168, :].add(x[:, 80, :])
-        keys = keys.at[:, 169:174, :].add(x[:, 81:86, :])
-        keys = keys.at[:, 174, :].add(x[:, 86, :])
-        keys = keys.at[:, 175:180, :].add(x[:, 87:92, :])
+        # EVOLVE (184-195) -> Board
+        keys = keys.at[:, 184, :].add(x[:, 86, :])      # Opp Active
+        keys = keys.at[:, 185:190, :].add(x[:, 87:92, :]) # Opp Bench
+        keys = keys.at[:, 190, :].add(x[:, 80, :])      # My Active
+        keys = keys.at[:, 191:196, :].add(x[:, 81:86, :]) # My Bench
+        
+        # RETREAT (197) -> My Active (80)
+        keys = keys.at[:, 197, :].add(x[:, 80, :])
+        
+        # ATTACK (198-203) -> My Active (80)
+        keys = keys.at[:, 198:204, :].add(x[:, 80, jnp.newaxis, :])
+        
+        # ABILITY (204-215) -> Board
+        keys = keys.at[:, 204, :].add(x[:, 86, :])      # Opp Active
+        keys = keys.at[:, 205:210, :].add(x[:, 87:92, :]) # Opp Bench
+        keys = keys.at[:, 210, :].add(x[:, 80, :])      # My Active
+        keys = keys.at[:, 211:216, :].add(x[:, 81:86, :]) # My Bench
         
         # d. Dot product untuk logit policy (Scaled Dot-Product)
         logits = jnp.sum(query[:, jnp.newaxis, :] * keys, axis=-1)
