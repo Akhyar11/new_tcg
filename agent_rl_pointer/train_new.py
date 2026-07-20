@@ -60,7 +60,7 @@ N_STEPS = 128
 BATCH_SIZE = int(os.environ.get("RL_BATCH_SIZE", "512"))  # 512 ÷ seq_len(32) = 16 sequences per gradient update
 TOTAL_TIMESTEPS = int(os.environ.get("TOTAL_TIMESTEPS", "20000000"))
 LEARNING_RATE = 1e-4
-ENTROPY_COEF = 0.01
+ENTROPY_COEF = 0.02
 EPOCHS = 1
 GAMMA = 0.99
 GAE_LAMBDA = 0.95
@@ -72,7 +72,7 @@ GEN_DECK_PATH = os.environ.get("GEN_DECK_PATH", "deck_generated")
 
 # Window & Target settings
 WIN_WINDOW = 150
-WIN_TARGET = 0.65
+WIN_TARGET = 0.60
 
 # --- Custom JAX pmap runners ---
 @partial(jax.pmap, static_broadcasted_argnums=(1,), axis_name='gpu')
