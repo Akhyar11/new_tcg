@@ -141,7 +141,13 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                     if isinstance(d1, np.ndarray): d1 = d1.tolist()
                     type0, type1 = 0, 0
                 else:
-                    d0, type0 = sample_deck()
+                    # P0 100% Meta Deck
+                    if len(loaded_new_decks) > 0:
+                        d0, type0 = random.choice(loaded_new_decks), 0
+                    else:
+                        d0, type0 = sample_deck()
+                    
+                    # P1 campuran (70% Meta, 30% Random)
                     d1, type1 = sample_deck()
 
                 obs_dict, _ = battle_start(d0, d1)
