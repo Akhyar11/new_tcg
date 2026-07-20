@@ -57,9 +57,9 @@ from flax import serialization
 import dataclasses
 
 from cg.api import Observation, to_observation_class, OptionType
+from tcg_core.models.lstm import PokemonAgent
 from agent_rl.feature_extractor import extract_features
 from agent_rl.action_mapping import get_action_index_for_option, create_action_mask
-from agent_rl.model import PokemonAgent
 
 # Variabel Global untuk menyimpan model (agar tidak perlu dimuat ulang setiap turn)
 GLOBAL_MODEL_APPLY = None
