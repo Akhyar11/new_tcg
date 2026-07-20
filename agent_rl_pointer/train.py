@@ -550,8 +550,7 @@ def train():
             log_sum_exp = np.log(np.sum(np.exp(masked_logits_np - logits_max), axis=-1, keepdims=True))
             log_probs_all_np = (masked_logits_np - logits_max) - log_sum_exp
 
-            mask_count = np.maximum(1.0, np.sum(actions_mask_np, axis=-1))
-            multi_log_probs = np.sum(log_probs_all_np * actions_mask_np, axis=-1) / mask_count
+            multi_log_probs = np.sum(log_probs_all_np * actions_mask_np, axis=-1)
             
             turn_changed_np = np.stack([info["turn_changed"] for info in infos])
 

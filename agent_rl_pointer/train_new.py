@@ -481,8 +481,7 @@ def main():
             log_sum_exp_p0 = np.log(np.sum(np.exp(masked_logits_p0_np - logits_max_p0), axis=-1, keepdims=True) + 1e-10)
             log_probs_all_np = (masked_logits_p0_np - logits_max_p0) - log_sum_exp_p0
 
-            mask_count = np.maximum(1.0, np.sum(actions_mask_np, axis=-1))
-            multi_log_probs = np.sum(log_probs_all_np * actions_mask_np, axis=-1) / mask_count
+            multi_log_probs = np.sum(log_probs_all_np * actions_mask_np, axis=-1)
             
             turn_changed_np = np.stack([info["turn_changed"] for info in infos])
 
