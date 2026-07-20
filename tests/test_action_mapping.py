@@ -1,6 +1,6 @@
 import numpy as np
 from cg.api import OptionType
-from agent_rl.action_mapping import (
+from tcg_core.action_mapping import (
     create_action_mask, decode_action, get_action_index_for_option,
     PLAY_START, CARD_START, ATTACK_START, ACTION_END
 )

@@ -1,5 +1,5 @@
 import numpy as np
-from agent_rl.buffer import RolloutBuffer
+from tcg_core.buffer import RolloutBuffer
 
 def test_buffer():
     # Simulasi parameter lingkungan

@@ -1,6 +1,6 @@
 import time
 import numpy as np
-from agent_rl.vector_env import VectorEnv
+from tcg_core.vector_env import VectorEnv
 
 def test_vector_env():
     num_envs = 4

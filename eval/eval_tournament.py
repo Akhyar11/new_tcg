@@ -18,7 +18,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""
 os.environ["JAX_PLATFORMS"] = "cpu"
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT)
 
 from tcg_core.environment import TCGEnvironment
@@ -113,8 +113,18 @@ def main():
     print("\n==============================")
     print("TOURNAMENT FINAL SCORES")
     print("==============================")
-    for k, v in sorted(scores.items(), key=lambda item: item[1], reverse=True):
-        print(f"{k}: {v} wins")
+    
+    output_dir = os.path.join(ROOT, "output")
+    os.makedirs(output_dir, exist_ok=True)
+    out_file = os.path.join(output_dir, "tournament_results.txt")
+    
+    with open(out_file, "w") as f:
+        f.write("=== TCG AI TOURNAMENT FINAL SCORES ===\n")
+        for k, v in sorted(scores.items(), key=lambda item: item[1], reverse=True):
+            line = f"{k}: {v} wins"
+            print(line)
+            f.write(line + "\n")
+    print(f"\nResults saved to {out_file}")
 
 if __name__ == "__main__":
     main()

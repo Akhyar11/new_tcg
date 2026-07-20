@@ -22,11 +22,11 @@ from flax import serialization
 
 from cg.game import battle_start, battle_finish, battle_select
 from cg.api import to_dataclass, Observation, OptionType
-from agent_rl.feature_extractor import extract_features
-from agent_rl.action_mapping import get_action_index_for_option, create_action_mask
-from agent_rl.model import PokemonAgent
+from tcg_core.feature_extractor import extract_features
+from tcg_core.action_mapping import get_action_index_for_option, create_action_mask
+from tcg_core.models.ff import PokemonAgent
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def load_deck(filepath):
     deck = []
@@ -163,7 +163,7 @@ def init_worker():
     global G_MODEL_APPLY, G_PARAMS, G_ALL_DECKS
     import jax
     import jax.numpy as jnp
-    from agent_rl.model import PokemonAgent
+    from tcg_core.models.ff import PokemonAgent
     from flax import serialization
     
     deck_dir = os.path.join(ROOT, "new_deck")
@@ -260,10 +260,24 @@ def main():
     
     print(f"{'Deck Name':<35} | {'WR%':<6} | {'W/L/D':<10} | {'Avg Turns (std)':<20} | {'Win Reasons (Prize/NoActv/DeckOut/Unk)'}")
     print("-" * 115)
-    for name, data in ranked:
-        reasons = data.get('win_reasons', {})
-        reason_str = f"{reasons.get('prize',0)} / {reasons.get('no_active',0)} / {reasons.get('deck_out',0)} / {reasons.get('unknown',0)}"
-        print(f"{name:<35} | {data['win_rate']:>5.1f}% | {data['wins']}/{data['losses']}/{data['draws']:<6} | {data['avg_turns']:5.1f} (±{data['std_turns']:4.1f}) | {reason_str}")
+    
+    output_dir = os.path.join(ROOT, "output")
+    os.makedirs(output_dir, exist_ok=True)
+    out_file = os.path.join(output_dir, "benchmark_results.txt")
+    
+    with open(out_file, "w") as f:
+        header = f"{'Deck Name':<35} | {'WR%':<6} | {'W/L/D':<10} | {'Avg Turns (std)':<20} | {'Win Reasons (Prize/NoActv/DeckOut/Unk)'}"
+        f.write(header + "\n")
+        f.write("-" * 115 + "\n")
+        
+        for name, data in ranked:
+            reasons = data.get('win_reasons', {})
+            reason_str = f"{reasons.get('prize',0)} / {reasons.get('no_active',0)} / {reasons.get('deck_out',0)} / {reasons.get('unknown',0)}"
+            line = f"{name:<35} | {data['win_rate']:>5.1f}% | {data['wins']}/{data['losses']}/{data['draws']:<6} | {data['avg_turns']:5.1f} (±{data['std_turns']:4.1f}) | {reason_str}"
+            print(line)
+            f.write(line + "\n")
+            
+    print(f"\nBenchmark results saved to {out_file}")
 
 if __name__ == "__main__":
     main()

@@ -17,12 +17,12 @@ def run_full_game():
     import os
     import glob
     print("Memuat deck...")
-    deck_path = "agent_rl/deck.csv"
+    deck_path = "tcg_core/deck.csv"
     if not os.path.exists(deck_path):
         new_decks = glob.glob("new_deck/*.csv")
         if new_decks:
             deck_path = new_decks[0]
-            print(f"agent_rl/deck.csv tidak ditemukan. Menggunakan fallback: {deck_path}")
+            print(f"tcg_core/deck.csv tidak ditemukan. Menggunakan fallback: {deck_path}")
         else:
             print("Tidak ada deck CSV ditemukan!")
             return
@@ -46,7 +46,7 @@ def run_full_game():
             
         obs = to_dataclass(obs_dict, Observation)
         
-        from agent_rl.reward import calculate_step_reward, detect_events, reset_trackers
+        from tcg_core.reward import calculate_step_reward, detect_events, reset_trackers
         reset_trackers()
         
         def get_end_reason(obs_data) -> int:
@@ -66,7 +66,7 @@ def run_full_game():
                 
                 # Ekstrak Fitur pada saat Game Over untuk diperlihatkan ke user
                 print("\nMenjalankan extract_features() pada state terakhir...")
-                from agent_rl.feature_extractor import extract_features
+                from tcg_core.feature_extractor import extract_features
                 import numpy as np
                 features = extract_features(obs.current, obs.select, 0)
                 seq = features["seq_input"]

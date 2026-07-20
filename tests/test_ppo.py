@@ -4,8 +4,8 @@ import optax
 import numpy as np
 import time
 
-from agent_rl.model import PokemonAgent
-from agent_rl.ppo_update import ppo_update_step, get_action_and_value
+from tcg_core.models.ff import PokemonAgent
+from tcg_core.ppo_update import ppo_update_step, get_action_and_value
 
 def test_ppo():
     print("1. Menginisiasi Model JAX dan Optimizer...")
