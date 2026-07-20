@@ -5,17 +5,17 @@ PPO Training script with 3-Phase Curriculum for Pointer LSTM Agent:
 Phase 1:
   - Agent (P0): Pointer LSTM Model (initialized from FF model_final + Xenova 32D)
   - Opponent (P1): FeedForward Model (from model_final.msgpack)
-  - Objective: P0 achieves >= 65% winrate over a 150-game window to transition.
+  - Objective: P0 achieves >= 60% winrate over a 150-game window to transition.
 
 Phase 2:
   - Agent (P0): Pointer LSTM Model (retains trained weights from Phase 1)
   - Opponent (P1): Classic LSTM Model (from model_lstm_final.msgpack)
-  - Objective: P0 achieves >= 65% winrate over a 150-game window to transition.
+  - Objective: P0 achieves >= 60% winrate over a 150-game window to transition.
 
 Phase 3:
   - Agent (P0): Pointer LSTM Model (retains trained weights from Phase 2)
   - Opponent (P1): Pointer LSTM Model (initially copies P0's weights, frozen)
-  - Objective: P0 achieves >= 65% winrate over a 150-game window.
+  - Objective: P0 achieves >= 60% winrate over a 150-game window.
   - Transition: On success, update P1 weights with P0, save checkpoints, upload to Kaggle, and reset window.
 """
 import os
@@ -547,7 +547,6 @@ def main():
             print(f"Update {update:04d}/{num_updates} | Loss: {mean_loss:.4f} | Window WR: {avg_winrate:.1f}% ({len(recent_wins)}/{WIN_WINDOW}) | Phase: {PHASE} | P1 Updates: {p1_update_count} | Games (Total): {total_games} | Avg Steps: {avg_steps:.1f} | FPS: {fps}")
             sys.stdout.flush()
 
-            # Target checks (Objective >= 65% winrate)
             if len(recent_wins) >= WIN_WINDOW:
                 if avg_winrate >= (WIN_TARGET * 100):
                     print(f"\n🎉 WINRATE TARGET DICAPAI DI PHASE {PHASE}! Window WR: {avg_winrate:.1f}% >= {WIN_TARGET*100}%!")
@@ -556,14 +555,14 @@ def main():
                     if PHASE == 1:
                         # Transition Phase 1 -> Phase 2
                         save_checkpoint(unreplicate(params_repl_p0), "model_lstm_pointer_final.msgpack")
-                        upload_to_kaggle(SAVE_DIR, message="Phase 1 complete (Pointer LSTM vs FF). Winrate >= 65%.")
+                        upload_to_kaggle(SAVE_DIR, message="Phase 1 complete (Pointer LSTM vs FF). Winrate >= 60%.")
                         PHASE = 2
                         configure_phase(PHASE)
                         
                     elif PHASE == 2:
                         # Transition Phase 2 -> Phase 3
                         save_checkpoint(unreplicate(params_repl_p0), "model_lstm_pointer_final.msgpack")
-                        upload_to_kaggle(SAVE_DIR, message="Phase 2 complete (Pointer LSTM vs Classic LSTM). Winrate >= 65%.")
+                        upload_to_kaggle(SAVE_DIR, message="Phase 2 complete (Pointer LSTM vs Classic LSTM). Winrate >= 60%.")
                         PHASE = 3
                         configure_phase(PHASE)
                         
