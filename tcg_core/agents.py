@@ -135,8 +135,9 @@ class LSTMAgent(BaseAgent):
         seq_input = np.expand_dims(features["seq_input"], axis=0)
         glob_input = np.expand_dims(features["glob_input"], axis=0)
 
-        logits_raw, _, new_carry = self.apply_fn(self.params, seq_input, glob_input, self.carry)
+        logits_raw, values, new_carry = self.apply_fn(self.params, seq_input, glob_input, self.carry)
         self.carry = new_carry
+        self.last_value = float(values[0][0])
         logits_np = np.array(logits_raw[0])
         
         return self.get_choices_from_logits(logits_np, obs)

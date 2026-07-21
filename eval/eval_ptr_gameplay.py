@@ -101,10 +101,13 @@ def decode_action_log(obs, choices, active_player):
                         card_info = f" [-> {get_card_name(card_id)}]"
                 elif tipe == "ATTACK":
                     card_info = f" [Move Slot: {opt.index + 1}]"
+                elif tipe == "NUMBER":
+                    card_info = f" [Value: {getattr(opt, 'number', '?')}]"
             except Exception as e:
                 pass
                 
-            actions.append(f"{tipe} (idx:{opt.index}){card_info}")
+            idx_str = f" (idx:{opt.index})" if getattr(opt, 'index', None) is not None else ""
+            actions.append(f"{tipe}{idx_str}{card_info}")
     
     if not actions:
         actions.append("PASS/END")
@@ -118,8 +121,9 @@ def print_game_state(obs, active_player):
     
     def format_pokemon(p):
         if not p or getattr(p, 'id', 0) == 0: return "Kosong"
-        dmg = getattr(p, 'damage', 0)
-        return f"{get_card_name(p.id)} (Dmg: {dmg})"
+        hp = getattr(p, 'hp', '?')
+        max_hp = getattr(p, 'maxHp', '?')
+        return f"{get_card_name(p.id)} (HP: {hp}/{max_hp})"
     
     my_active_list = getattr(my_state, 'active', [])
     my_active = format_pokemon(my_active_list[0] if my_active_list else None)
@@ -142,7 +146,7 @@ def main():
     d1 = load_deck(deck_path)
     
     print("=== TCG PTR GAMEPLAY ANALYSIS ===")
-    print(f"Deck: Mega Charizard Y Sniper (1v1 PTR vs LSTM)")
+    print(f"Deck: Mega Charizard Y Sniper (1v1 PTR vs PTR)")
     
     checkpoints_dir = os.path.join(ROOT, "checkpoints")
     model_path = os.path.join(checkpoints_dir, "model_lstm_pointer_final.msgpack")
@@ -158,7 +162,7 @@ def main():
     from tcg_core.models.lstm import PokemonAgent as LSTMModel
     
     agent_p0 = PointerAgent("PTR_P0", PTRModel, action_mapping, model_path if os.path.exists(model_path) else None)
-    agent_p1 = LSTMAgent("LSTM_P1", LSTMModel, action_mapping, lstm_model_path if os.path.exists(lstm_model_path) else None)
+    agent_p1 = PointerAgent("PTR_P1", PTRModel, action_mapping, model_path if os.path.exists(model_path) else None)
     
     agent_p0.reset()
     agent_p1.reset()
@@ -183,10 +187,11 @@ def main():
             player_name = "P0 (PTR)"
         else:
             choices = agent_p1.select_action(obs)
-            player_name = "P1 (LSTM)"
+            player_name = "P1 (PTR)"
             
         action_desc = decode_action_log(obs, choices, active_player)
-        print(f"  [ACTION] {player_name} memilih: {action_desc}")
+        critic_val = agent_p0.last_value if active_player == 0 else agent_p1.last_value
+        print(f"  [ACTION] {player_name} memilih: {action_desc} | (Critic: {critic_val:+.3f})")
         
         # Eksekusi di C++
         obs, _, done, info = env.step(choices)
@@ -220,7 +225,7 @@ def main():
     if result == 0:
         print("PEMENANG: P0 (PTR)")
     elif result == 1:
-        print("PEMENANG: P1 (LSTM)")
+        print("PEMENANG: P1 (PTR)")
     else:
         print("HASIL: SERI / TIMEOUT")
         
