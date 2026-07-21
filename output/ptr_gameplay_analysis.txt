@@ -1,0 +1,646 @@
+=== TCG PTR GAMEPLAY ANALYSIS ===
+Deck: Phantom Dive Sweep (1v1 PTR vs LSTM)
+
+[INFO]: Menggunakan model terlatih dari checkpoint!
+
+--- MULAI PERTANDINGAN ---
+
+--- [Turn 0 | Step 1] ---
+  [STATE P0] Active: Kosong | Bench: 0 | Prizes: ? | Hand (0): 
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: YES (idx:None)
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 0 | Step 2] ---
+  [STATE P0] Active: Kosong | Bench: 0 | Prizes: ? | Hand (7): Dreepy, Kieran, Drakloak, Energy Retrieval, Dragapult ex, Dunsparce, Neo Upper Energy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:5) [-> Dunsparce]
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 0 | Step 3] ---
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ? | Hand (7): Drakloak, Rare Candy, Rare Candy, Neo Upper Energy, Mystery Garden, Dunsparce, Cyrano
+  [STATE P0] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: CARD (idx:5) [-> Dunsparce]
+
+--- [Turn 0 | Step 4] ---
+  [STATE P0] Active: Kosong | Bench: 0 | Prizes: ? | Hand (6): Dreepy, Kieran, Drakloak, Energy Retrieval, Dragapult ex, Neo Upper Energy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0) [-> Dreepy]
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 1 | Step 5] ---
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ? | Hand (6): Kieran, Drakloak, Energy Retrieval, Dragapult ex, Neo Upper Energy, Dudunsparce
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:4) [Neo Upper Energy]
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 1 | Step 6] ---
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ? | Hand (5): Kieran, Drakloak, Energy Retrieval, Dragapult ex, Dudunsparce
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: END (idx:None)
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 2 | Step 7] ---
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ? | Hand (7): Drakloak, Rare Candy, Rare Candy, Neo Upper Energy, Mystery Garden, Cyrano, Pokégear 3.0
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: PLAY (idx:5) [Cyrano]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 2 | Step 8] ---
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ? | Hand (6): Drakloak, Rare Candy, Rare Candy, Neo Upper Energy, Mystery Garden, Pokégear 3.0
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: CARD (idx:5) [-> Dragapult ex] | CARD (idx:13) [-> Dragapult ex]
+
+--- [Turn 2 | Step 9] ---
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ? | Hand (8): Drakloak, Rare Candy, Rare Candy, Neo Upper Energy, Mystery Garden, Pokégear 3.0, Dragapult ex, Dragapult ex
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: PLAY (idx:4) [Mystery Garden]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 2 | Step 10] ---
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ? | Hand (7): Drakloak, Rare Candy, Rare Candy, Neo Upper Energy, Pokégear 3.0, Dragapult ex, Dragapult ex
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: PLAY (idx:4) [Pokégear 3.0]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 2 | Step 11] ---
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ? | Hand (6): Drakloak, Rare Candy, Rare Candy, Neo Upper Energy, Dragapult ex, Dragapult ex
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: PASS/END
+
+--- [Turn 2 | Step 12] ---
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ? | Hand (6): Drakloak, Rare Candy, Rare Candy, Neo Upper Energy, Dragapult ex, Dragapult ex
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: ATTACH (idx:3) [Neo Upper Energy]
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 2 | Step 13] ---
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ? | Hand (5): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Dragapult ex
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: ATTACK (idx:None)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 3 | Step 14] ---
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ? | Hand (6): Kieran, Drakloak, Energy Retrieval, Dragapult ex, Dudunsparce, Dreepy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:5) [Dreepy]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 3 | Step 15] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (5): Kieran, Drakloak, Energy Retrieval, Dragapult ex, Dudunsparce
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: EVOLVE (idx:1) [Drakloak]
+  >>> ENGINE: Evolusi Pokemon
+
+--- [Turn 3 | Step 16] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (4): Kieran, Energy Retrieval, Dragapult ex, Dudunsparce
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ABILITY (idx:0)
+
+--- [Turn 3 | Step 17] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (4): Kieran, Energy Retrieval, Dragapult ex, Dudunsparce
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:1)
+
+--- [Turn 3 | Step 18] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (5): Kieran, Energy Retrieval, Dragapult ex, Dudunsparce, Buddy-Buddy Poffin
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: EVOLVE (idx:3) [Dudunsparce]
+  >>> ENGINE: Evolusi Pokemon
+
+--- [Turn 3 | Step 19] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (4): Kieran, Energy Retrieval, Dragapult ex, Buddy-Buddy Poffin
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ABILITY (idx:0)
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 3 | Step 20] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (7): Kieran, Energy Retrieval, Dragapult ex, Buddy-Buddy Poffin, Dunsparce, Rare Candy, Air Balloon
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0)
+
+--- [Turn 3 | Step 21] ---
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ? | Hand (7): Kieran, Energy Retrieval, Dragapult ex, Buddy-Buddy Poffin, Dunsparce, Rare Candy, Air Balloon
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:6) [Air Balloon]
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 3 | Step 22] ---
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ? | Hand (6): Kieran, Energy Retrieval, Dragapult ex, Buddy-Buddy Poffin, Dunsparce, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: RETREAT (idx:None)
+
+--- [Turn 3 | Step 23] ---
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ? | Hand (6): Kieran, Energy Retrieval, Dragapult ex, Buddy-Buddy Poffin, Dunsparce, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0)
+
+--- [Turn 3 | Step 24] ---
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ? | Hand (6): Kieran, Energy Retrieval, Dragapult ex, Buddy-Buddy Poffin, Dunsparce, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:4) [Dunsparce]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 3 | Step 25] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (5): Kieran, Energy Retrieval, Dragapult ex, Buddy-Buddy Poffin, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:0) [Kieran]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 3 | Step 26] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (4): Energy Retrieval, Dragapult ex, Buddy-Buddy Poffin, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: NO (idx:None)
+
+--- [Turn 3 | Step 27] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (4): Energy Retrieval, Dragapult ex, Buddy-Buddy Poffin, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: END (idx:None)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Evolusi Pokemon
+  >>> ENGINE: Evolusi Pokemon
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 4 | Step 28] ---
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ? | Hand (6): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Dragapult ex, Energy Retrieval
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: END (idx:None)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 5 | Step 29] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (5): Energy Retrieval, Dragapult ex, Buddy-Buddy Poffin, Rare Candy, Dudunsparce
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: EVOLVE (idx:1) [Dragapult ex]
+  >>> ENGINE: Evolusi Pokemon
+
+--- [Turn 5 | Step 30] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (4): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Dudunsparce
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: EVOLVE (idx:3) [Dudunsparce]
+  >>> ENGINE: Evolusi Pokemon
+
+--- [Turn 5 | Step 31] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (3): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ABILITY (idx:1)
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 5 | Step 32] ---
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ? | Hand (6): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Drakloak, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: EVOLVE (idx:4) [Drakloak]
+  >>> ENGINE: Evolusi Pokemon
+
+--- [Turn 5 | Step 33] ---
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ? | Hand (5): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ABILITY (idx:0)
+
+--- [Turn 5 | Step 34] ---
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ? | Hand (5): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0)
+
+--- [Turn 5 | Step 35] ---
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ? | Hand (6): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Dunsparce
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:5) [Dunsparce]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 5 | Step 36] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (5): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: END (idx:None)
+  >>> ENGINE: Evolusi Pokemon
+  >>> ENGINE: Evolusi Pokemon
+  >>> ENGINE: Evolusi Pokemon
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 6 | Step 37] ---
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ? | Hand (7): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Dragapult ex, Energy Retrieval, Dunsparce
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: PLAY (idx:6) [Dunsparce]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 6 | Step 38] ---
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ? | Hand (6): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Dragapult ex, Energy Retrieval
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: RETREAT (idx:None)
+
+--- [Turn 6 | Step 39] ---
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ? | Hand (6): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Dragapult ex, Energy Retrieval
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: CARD (idx:0)
+
+--- [Turn 6 | Step 40] ---
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ? | Hand (6): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Dragapult ex, Energy Retrieval
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: END (idx:None)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 7 | Step 41] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (6): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ABILITY (idx:0)
+
+--- [Turn 7 | Step 42] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (6): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0)
+
+--- [Turn 7 | Step 43] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (7): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Basic {R} Energy
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:6) [Basic {R} Energy]
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 7 | Step 44] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (6): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: END (idx:None)
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 8 | Step 45] ---
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ? | Hand (7): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Dragapult ex, Energy Retrieval, Rare Candy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: RETREAT (idx:None)
+
+--- [Turn 8 | Step 46] ---
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ? | Hand (7): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Dragapult ex, Energy Retrieval, Rare Candy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: CARD (idx:0)
+
+--- [Turn 8 | Step 47] ---
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ? | Hand (7): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Dragapult ex, Energy Retrieval, Rare Candy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: ATTACK (idx:None)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 9 | Step 48] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (7): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ABILITY (idx:0)
+
+--- [Turn 9 | Step 49] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (7): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0)
+
+--- [Turn 9 | Step 50] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (8): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: END (idx:None)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 10 | Step 51] ---
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ? | Hand (8): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Dragapult ex, Energy Retrieval, Rare Candy, Dreepy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: PLAY (idx:7) [Dreepy]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 10 | Step 52] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (7): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Dragapult ex, Energy Retrieval, Rare Candy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: ATTACK (idx:None)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 11 | Step 53] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (9): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Neo Upper Energy
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:8) [Neo Upper Energy]
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 11 | Step 54] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (8): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ABILITY (idx:0)
+
+--- [Turn 11 | Step 55] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (8): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0)
+
+--- [Turn 11 | Step 56] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (9): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Basic {P} Energy
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: RETREAT (idx:None)
+
+--- [Turn 11 | Step 57] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (9): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Basic {P} Energy
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ENERGY (idx:0)
+
+--- [Turn 11 | Step 58] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (9): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Basic {P} Energy
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0)
+
+--- [Turn 11 | Step 59] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (9): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Basic {P} Energy
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: END (idx:None)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 12 | Step 60] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (8): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Dragapult ex, Energy Retrieval, Rare Candy, Dreepy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: PLAY (idx:6) [Rare Candy]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 12 | Step 61] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (7): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Dragapult ex, Energy Retrieval, Dreepy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: EVOLVE (idx:3) [Dragapult ex]
+  >>> ENGINE: Evolusi Pokemon
+
+--- [Turn 12 | Step 62] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (6): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Energy Retrieval, Dreepy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: PLAY (idx:5) [Dreepy]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 12 | Step 63] ---
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ? | Hand (5): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Energy Retrieval
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: ATTACK (idx:None)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Evolusi Pokemon
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 13 | Step 64] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (10): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Basic {P} Energy, Carmine
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:8) [Basic {P} Energy]
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 13 | Step 65] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (9): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Carmine
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACK (idx:None)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+
+--- [Turn 13 | Step 66] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (9): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Carmine
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:4)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+
+--- [Turn 13 | Step 67] ---
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ? | Hand (5): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Energy Retrieval
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: CARD (idx:0)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 14 | Step 68] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (6): Drakloak, Rare Candy, Rare Candy, Dragapult ex, Energy Retrieval, Basic {R} Energy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: PLAY (idx:2) [Rare Candy]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 14 | Step 69] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (5): Drakloak, Rare Candy, Dragapult ex, Energy Retrieval, Basic {R} Energy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: EVOLVE (idx:2) [Dragapult ex]
+  >>> ENGINE: Evolusi Pokemon
+
+--- [Turn 14 | Step 70] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (4): Drakloak, Rare Candy, Energy Retrieval, Basic {R} Energy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: ATTACH (idx:3) [Basic {R} Energy]
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 14 | Step 71] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (3): Drakloak, Rare Candy, Energy Retrieval
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: RETREAT (idx:None)
+
+--- [Turn 14 | Step 72] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (3): Drakloak, Rare Candy, Energy Retrieval
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: CARD (idx:0)
+
+--- [Turn 14 | Step 73] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (3): Drakloak, Rare Candy, Energy Retrieval
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: END (idx:None)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Evolusi Pokemon
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 15 | Step 74] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (11): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Carmine, Dragapult ex, Basic {P} Energy
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:10) [Basic {P} Energy]
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 15 | Step 75] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (10): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Carmine, Dragapult ex
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACK (idx:None)
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 16 | Step 76] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (4): Drakloak, Rare Candy, Energy Retrieval, Ultra Ball
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: PLAY (idx:3) [Ultra Ball]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 16 | Step 77] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (3): Drakloak, Rare Candy, Energy Retrieval
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: CARD (idx:1) [-> Rare Candy] | CARD (idx:0) [-> Drakloak]
+
+--- [Turn 16 | Step 78] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (1): Energy Retrieval
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: CARD (idx:9) [-> Drakloak]
+
+--- [Turn 16 | Step 79] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (2): Energy Retrieval, Drakloak
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: END (idx:None)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 17 | Step 80] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (11): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Carmine, Dragapult ex, Ultra Ball
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ABILITY (idx:0)
+
+--- [Turn 17 | Step 81] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (11): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Carmine, Dragapult ex, Ultra Ball
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0)
+
+--- [Turn 17 | Step 82] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (12): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Carmine, Dragapult ex, Ultra Ball, Lacey
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACK (idx:None)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 18 | Step 83] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (3): Energy Retrieval, Drakloak, Dreepy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: END (idx:None)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 19 | Step 84] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (13): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Carmine, Dragapult ex, Ultra Ball, Lacey, Dragapult ex
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACK (idx:None)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 20 | Step 85] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (4): Energy Retrieval, Drakloak, Dreepy, Ultra Ball
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: PLAY (idx:2) [Dreepy]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 20 | Step 86] ---
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ? | Hand (3): Energy Retrieval, Drakloak, Ultra Ball
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: PLAY (idx:2) [Ultra Ball]
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 20 | Step 87] ---
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ? | Hand (2): Energy Retrieval, Drakloak
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: CARD (idx:0) [-> Energy Retrieval] | CARD (idx:1) [-> Drakloak]
+
+--- [Turn 20 | Step 88] ---
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ? | Hand (0): 
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: CARD (idx:21) [-> Dragapult ex]
+
+--- [Turn 20 | Step 89] ---
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ? | Hand (1): Dragapult ex
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: END (idx:None)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 21 | Step 90] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (14): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Carmine, Dragapult ex, Ultra Ball, Lacey, Dragapult ex, Pokégear 3.0
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: EVOLVE (idx:9) [Dragapult ex]
+  >>> ENGINE: Evolusi Pokemon
+
+--- [Turn 21 | Step 91] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (13): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Carmine, Ultra Ball, Lacey, Dragapult ex, Pokégear 3.0
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACK (idx:None)
+  >>> ENGINE: Evolusi Pokemon
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 22 | Step 92] ---
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ? | Hand (2): Dragapult ex, Drakloak
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: EVOLVE (idx:1) [Drakloak]
+  >>> ENGINE: Evolusi Pokemon
+
+--- [Turn 22 | Step 93] ---
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ? | Hand (1): Dragapult ex
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: END (idx:None)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+  >>> ENGINE: Evolusi Pokemon
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 23 | Step 94] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (14): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Carmine, Ultra Ball, Lacey, Dragapult ex, Pokégear 3.0, Ultra Ball
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACK (idx:None)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+
+--- [Turn 23 | Step 95] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (14): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Carmine, Ultra Ball, Lacey, Dragapult ex, Pokégear 3.0, Ultra Ball
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:4) | CARD (idx:0)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+
+--- [Turn 23 | Step 96] ---
+  [STATE P1] Active: Kosong | Bench: 3 | Prizes: ? | Hand (1): Dragapult ex
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: CARD (idx:0)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 24 | Step 97] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (2): Dragapult ex, Basic {P} Energy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: ATTACH (idx:1) [Basic {P} Energy]
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 24 | Step 98] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (1): Dragapult ex
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: ABILITY (idx:1)
+
+--- [Turn 24 | Step 99] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (1): Dragapult ex
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: CARD (idx:0)
+
+--- [Turn 24 | Step 100] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (2): Dragapult ex, Rare Candy
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (LSTM) memilih: END (idx:None)
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 25 | Step 101] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (17): Energy Retrieval, Buddy-Buddy Poffin, Rare Candy, Hilda, Rare Candy, Cyrano, Buddy-Buddy Poffin, Rare Candy, Carmine, Ultra Ball, Lacey, Dragapult ex, Pokégear 3.0, Ultra Ball, Dudunsparce, Basic {R} Energy, Dreepy
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACK (idx:None)
+  >>> ENGINE: Serangan Terjadi! (Damage = 0)
+
+--- PERTANDINGAN SELESAI ---
+HASIL: SERI / TIMEOUT

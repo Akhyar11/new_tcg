@@ -82,7 +82,7 @@ def main():
     matchups = [("FF", "LSTM"), ("FF", "LSTM_PTR"), ("LSTM", "LSTM_PTR")]
     scores = {"FF": 0, "LSTM": 0, "LSTM_PTR": 0}
     
-    NUM_GAMES = 4 # per configuration (2 as P0, 2 as P1) -> total 4 games per matchup
+    NUM_GAMES = 20 # per configuration (10 as P0, 10 as P1) -> total 20 games per matchup
     
     for m1, m2 in matchups:
         print(f"\n--- MATCHUP: {m1} vs {m2} ---")

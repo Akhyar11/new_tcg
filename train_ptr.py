@@ -37,14 +37,15 @@ def main():
         "n_steps": 128,
         "batch_size": 128,
         "epochs": 1,
-        "learning_rate": 3e-4,
-        "entropy_coef": 0.05,
+        "learning_rate": 1e-4,
+        "entropy_coef": 0.01,
         "clip_ratio": 0.2,
         "new_deck_path": os.path.join(os.path.dirname(__file__), "new_deck"),
         "gen_deck_path": os.path.join(os.path.dirname(__file__), "deck_generated"),
         "save_dir": save_dir,
         "save_name_base": "model_lstm_pointer_base.msgpack",
-        "save_name_final": "model_lstm_pointer_final.msgpack"
+        "save_name_final": "model_lstm_pointer_final.msgpack",
+        "use_wandb": True
     }
 
     trainer = TrainerPPO(agent_p0, agent_p1, config)

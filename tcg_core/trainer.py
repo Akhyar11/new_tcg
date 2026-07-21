@@ -36,6 +36,7 @@ class TrainerPPO:
         self.new_deck_path = config.get("new_deck_path", "new_deck")
         self.gen_deck_path = config.get("gen_deck_path", "deck_generated")
         self.save_dir = config.get("save_dir", "tcg_models")
+        self.use_wandb = config.get("use_wandb", False)
         
         self.num_devices = self._auto_config_gpu()
         self.buffer = RolloutBuffer(n_steps=self.n_steps, num_envs=self.num_envs)
@@ -84,6 +85,11 @@ class TrainerPPO:
 
     def train(self, total_timesteps: int, finetune_mode: bool = False):
         print(f"=== OOP PPO TRAINING (Timesteps: {total_timesteps:,}) ===")
+        
+        if self.use_wandb:
+            import wandb
+            wandb.init(project="tcg-pointer-network", config=self.config)
+            
         env = VectorEnv(num_envs=self.num_envs, new_deck_path=self.new_deck_path, gen_deck_path=self.gen_deck_path)
         
         num_updates = total_timesteps // (self.n_steps * self.num_envs)
@@ -243,6 +249,18 @@ class TrainerPPO:
             
             print(f"Update {update:04d}/{num_updates} (Steps: {global_step:,}) | Loss: {mean_loss:.4f} | Win P0: {win_p0:.1f}% | Rolling: {rolling_win_p0:.1f}% | FPS: {fps}")
 
+            if self.use_wandb:
+                import wandb
+                wandb.log({
+                    "train/global_step": global_step,
+                    "train/loss": mean_loss,
+                    "metrics/win_rate_p0": win_p0,
+                    "metrics/rolling_win_rate_p0": rolling_win_p0,
+                    "system/fps": fps,
+                    "hyperparams/entropy_coef": current_entropy_coef,
+                    "hyperparams/clip_ratio": current_clip_ratio
+                })
+
             # Self-play target threshold
             if rolling_win_p0 >= 60.0 and len(recent_wins_p0) == recent_wins_p0.maxlen:
                 print(f"  🔥 Rolling Winrate {recent_wins_p0.maxlen} games P0 reached {rolling_win_p0:.1f}%! Updating P1 weights.")
@@ -261,4 +279,9 @@ class TrainerPPO:
         env.close()
         self._save_checkpoint(unreplicate(params_repl_p0), self.config.get("save_name_base", "model_base.msgpack"))
         self._save_checkpoint(unreplicate(params_repl_p0), self.config.get("save_name_final", "model_final.msgpack"))
+        
+        if self.use_wandb:
+            import wandb
+            wandb.finish()
+            
         print("Training complete!")

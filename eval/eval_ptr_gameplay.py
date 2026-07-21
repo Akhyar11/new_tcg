@@ -110,6 +110,28 @@ def decode_action_log(obs, choices, active_player):
         actions.append("PASS/END")
     return " | ".join(actions)
 
+def print_game_state(obs, active_player):
+    """Mencetak kondisi arena dan tangan pemain secara detail."""
+    if not obs or not getattr(obs, 'current', None): return
+    my_state = obs.current.players[active_player]
+    opp_state = obs.current.players[1 - active_player]
+    
+    def format_pokemon(p):
+        if not p or getattr(p, 'id', 0) == 0: return "Kosong"
+        dmg = getattr(p, 'damage', 0)
+        return f"{get_card_name(p.id)} (Dmg: {dmg})"
+    
+    my_active = format_pokemon(getattr(my_state, 'active', None))
+    opp_active = format_pokemon(getattr(opp_state, 'active', None))
+    
+    my_hand = [get_card_name(c.id) for c in getattr(my_state, 'hand', [])]
+    my_bench = len([p for p in getattr(my_state, 'bench', []) if getattr(p, 'id', 0) != 0])
+    opp_bench = len([p for p in getattr(opp_state, 'bench', []) if getattr(p, 'id', 0) != 0])
+    
+    print(f"  [STATE P{active_player}] Active: {my_active} | Bench: {my_bench} | Prizes: {getattr(my_state, 'prizes', '?')} | Hand ({len(my_hand)}): {', '.join(my_hand)}")
+    print(f"  [STATE P{1 - active_player}] Active: {opp_active} | Bench: {opp_bench} | Prizes: {getattr(opp_state, 'prizes', '?')}")
+
+
 def main():
     deck_dir = os.path.join(ROOT, "new_deck")
     deck_path = os.path.join(deck_dir, "Phantom Dive Sweep.csv")
@@ -148,6 +170,10 @@ def main():
         active_player = obs.current.yourIndex if obs.current else 0
         turn = obs.current.turn if obs.current else 0
         
+        # Cetak state sebelum action
+        print(f"\n--- [Turn {turn} | Step {step_count}] ---")
+        print_game_state(obs, active_player)
+        
         # Ekstrak fitur & pilih aksi
         if active_player == 0:
             choices = agent_p0.select_action(obs)
@@ -157,20 +183,28 @@ def main():
             player_name = "P1 (LSTM)"
             
         action_desc = decode_action_log(obs, choices, active_player)
-        print(f"[Turn {turn} | Step {step_count}] {player_name} memilih aksi: {action_desc}")
+        print(f"  [ACTION] {player_name} memilih: {action_desc}")
         
         # Eksekusi di C++
         obs, _, done, info = env.step(choices)
         
         # Cetak log dari engine C++ untuk mengonfirmasi apa yang terjadi
-        if obs and obs.logs:
+        if obs and getattr(obs, 'logs', None):
             for log in obs.logs:
-                if getattr(log, 'type', 0) == LogType.ATTACK:
-                    print(f"  >>> SERANGAN TERJADI! Damage = {getattr(log, 'damage', 0)}")
-                elif getattr(log, 'type', 0) == LogType.DRAW:
-                    print(f"  >>> DRAW KARTU")
-                elif getattr(log, 'type', 0) == LogType.PLAY:
-                    print(f"  >>> MEMAINKAN KARTU")
+                log_type = getattr(log, 'type', 0)
+                if log_type == LogType.ATTACK:
+                    print(f"  >>> ENGINE: Serangan Terjadi! (Damage = {getattr(log, 'damage', 0)})")
+                elif log_type == LogType.DRAW:
+                    print(f"  >>> ENGINE: Draw Kartu")
+                elif log_type == LogType.PLAY:
+                    card_id = getattr(log, 'card', 0)
+                    card_name = f" [{get_card_name(card_id)}]" if card_id else ""
+                    print(f"  >>> ENGINE: Memainkan Kartu{card_name}")
+                elif log_type == LogType.EVOLVE:
+                    print(f"  >>> ENGINE: Evolusi Pokemon")
+                elif log_type == LogType.ATTACH:
+                    print(f"  >>> ENGINE: Pasang Energi")
+
                     
     result = info.get("result", -1) if done else -1
     print("\n--- PERTANDINGAN SELESAI ---")
