@@ -87,6 +87,7 @@ class TrainerPPO:
         print(f"=== OOP PPO TRAINING (Timesteps: {total_timesteps:,}) ===")
         
         if self.use_wandb:
+            # pyrefly: ignore [missing-import]
             import wandb
             wandb.init(project="tcg-pointer-network", config=self.config)
             
@@ -250,6 +251,7 @@ class TrainerPPO:
             print(f"Update {update:04d}/{num_updates} (Steps: {global_step:,}) | Loss: {mean_loss:.4f} | Win P0: {win_p0:.1f}% | Rolling: {rolling_win_p0:.1f}% | FPS: {fps}")
 
             if self.use_wandb:
+                # pyrefly: ignore [missing-import]
                 import wandb
                 wandb.log({
                     "train/global_step": global_step,
@@ -281,6 +283,7 @@ class TrainerPPO:
         self._save_checkpoint(unreplicate(params_repl_p0), self.config.get("save_name_final", "model_final.msgpack"))
         
         if self.use_wandb:
+            # pyrefly: ignore [missing-import]
             import wandb
             wandb.finish()
             
