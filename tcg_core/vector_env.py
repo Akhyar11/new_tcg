@@ -46,7 +46,7 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
     from cg.game import battle_start, battle_finish, battle_select
     from cg.api import to_dataclass, Observation, LogType, OptionType
     from tcg_core.feature_extractor import extract_features
-    from tcg_core.reward import detect_events, calculate_step_reward, reset_trackers
+    from tcg_core.reward_sparse import detect_events, calculate_step_reward, reset_trackers
     from tcg_core.action_mapping import get_action_index_for_option
 
     # Attach to Shared Memories

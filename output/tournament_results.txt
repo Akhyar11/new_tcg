@@ -1,4 +1,0 @@
-=== TCG AI TOURNAMENT FINAL SCORES ===
-LSTM_PTR: 32 wins
-LSTM: 18 wins
-FF: 8 wins

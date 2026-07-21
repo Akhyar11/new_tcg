@@ -46,7 +46,7 @@ def run_full_game():
             
         obs = to_dataclass(obs_dict, Observation)
         
-        from tcg_core.reward import calculate_step_reward, detect_events, reset_trackers
+        from tcg_core.reward_sparse import calculate_step_reward, detect_events, reset_trackers
         reset_trackers()
         
         def get_end_reason(obs_data) -> int:

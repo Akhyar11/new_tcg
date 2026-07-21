@@ -121,8 +121,11 @@ def print_game_state(obs, active_player):
         dmg = getattr(p, 'damage', 0)
         return f"{get_card_name(p.id)} (Dmg: {dmg})"
     
-    my_active = format_pokemon(getattr(my_state, 'active', None))
-    opp_active = format_pokemon(getattr(opp_state, 'active', None))
+    my_active_list = getattr(my_state, 'active', [])
+    my_active = format_pokemon(my_active_list[0] if my_active_list else None)
+    
+    opp_active_list = getattr(opp_state, 'active', [])
+    opp_active = format_pokemon(opp_active_list[0] if opp_active_list else None)
     
     my_hand = [get_card_name(c.id) for c in getattr(my_state, 'hand', [])]
     my_bench = len([p for p in getattr(my_state, 'bench', []) if getattr(p, 'id', 0) != 0])
@@ -134,12 +137,12 @@ def print_game_state(obs, active_player):
 
 def main():
     deck_dir = os.path.join(ROOT, "new_deck")
-    deck_path = os.path.join(deck_dir, "Phantom Dive Sweep.csv")
+    deck_path = os.path.join(deck_dir, "Mega Charizard Y Sniper.csv")
     d0 = load_deck(deck_path)
     d1 = load_deck(deck_path)
     
     print("=== TCG PTR GAMEPLAY ANALYSIS ===")
-    print(f"Deck: Phantom Dive Sweep (1v1 PTR vs LSTM)")
+    print(f"Deck: Mega Charizard Y Sniper (1v1 PTR vs LSTM)")
     
     checkpoints_dir = os.path.join(ROOT, "checkpoints")
     model_path = os.path.join(checkpoints_dir, "model_lstm_pointer_final.msgpack")
@@ -165,7 +168,7 @@ def main():
     
     step_count = 0
     print("--- MULAI PERTANDINGAN ---")
-    while not done and step_count <= 100:  # Batasi 100 step agar log tidak penuh
+    while not done and step_count <= 300:  # Batasi 300 step agar log tidak penuh
         step_count += 1
         active_player = obs.current.yourIndex if obs.current else 0
         turn = obs.current.turn if obs.current else 0
@@ -193,7 +196,13 @@ def main():
             for log in obs.logs:
                 log_type = getattr(log, 'type', 0)
                 if log_type == LogType.ATTACK:
-                    print(f"  >>> ENGINE: Serangan Terjadi! (Damage = {getattr(log, 'damage', 0)})")
+                    print(f"  >>> ENGINE: Serangan Terjadi!")
+                elif log_type == LogType.HP_CHANGE:
+                    val = getattr(log, 'value', 0)
+                    if val < 0:
+                        print(f"  >>> ENGINE: Menerima Damage {-val} HP")
+                    elif val > 0:
+                        print(f"  >>> ENGINE: Heal {val} HP")
                 elif log_type == LogType.DRAW:
                     print(f"  >>> ENGINE: Draw Kartu")
                 elif log_type == LogType.PLAY:

@@ -34,11 +34,11 @@ def main():
     
     config = {
         "num_envs": 16,
-        "n_steps": 128,
+        "n_steps": 256,
         "batch_size": 128,
         "epochs": 1,
-        "learning_rate": 1e-4,
-        "entropy_coef": 0.01,
+        "learning_rate": 5e-5,
+        "entropy_coef": 0.005,
         "clip_ratio": 0.2,
         "new_deck_path": os.path.join(os.path.dirname(__file__), "new_deck"),
         "gen_deck_path": os.path.join(os.path.dirname(__file__), "deck_generated"),
