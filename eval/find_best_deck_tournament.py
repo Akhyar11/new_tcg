@@ -132,18 +132,21 @@ def main():
     top_8 = stage2_results[:8]
     print(f"Top 8 decks selected! Cutoff wins: {top_8[-1][0]}/20")
     
-    # STAGE 3: Round Robin Finals (3 matches vs each finalist)
-    print("\n--- STAGE 3: ROUND ROBIN FINALS (3 matches vs all finalists) ---")
+    # STAGE 3: Round Robin Finals (6 matches vs each finalist)
+    print("\n--- STAGE 3: ROUND ROBIN FINALS (6 matches vs all finalists) ---")
     final_scores = {name: 0 for _, name, _ in top_8}
     
     for i in range(len(top_8)):
-        for j in range(len(top_8)):
-            if i == j: continue
+        for j in range(i + 1, len(top_8)):
             name1, deck1 = top_8[i][1], top_8[i][2]
             name2, deck2 = top_8[j][1], top_8[j][2]
-            for _ in range(3): # 3 games per pair
-                if simulate_game(agent, deck1, deck2) == 0:
+            for match_idx in range(6): # 6 games per pair
+                swap = (match_idx % 2 == 1)
+                result = simulate_game(agent, deck1, deck2, swap_players=swap)
+                if result == 0:
                     final_scores[name1] += 1
+                elif result == 1:
+                    final_scores[name2] += 1
                     
     print("\n==================================================")
     print("🏆 GRAND CHAMPION FINAL RESULTS 🏆")
