@@ -26,7 +26,10 @@ def download_episode(ep_id, save_dir):
     try:
         res = requests.post(url, json=payload, headers=headers, timeout=15)
         if res.status_code == 200:
-            data = res.json()
+            try:
+                data = res.json()
+            except json.JSONDecodeError:
+                return ep_id, False, "API mengembalikan HTML (Kemungkinan ID tidak valid/404)"
             
             # Mendukung berbagai format respon dari Kaggle API
             replay_data = data.get("replay")
