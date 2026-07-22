@@ -21,9 +21,6 @@ from flax import serialization
 
 from cg.game import battle_start, battle_finish, battle_select
 from cg.api import to_dataclass, Observation, OptionType
-from tcg_core.feature_extractor import extract_features
-from tcg_core.action_mapping import get_action_index_for_option, create_action_mask
-from tcg_core.models.ff import PokemonAgent
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -37,80 +34,8 @@ def load_deck(filepath):
     if len(deck) != 60: return None
     return deck
 
-def softmax(x):
-    x_shifted = x - np.max(x)
-    exp_x = np.exp(x_shifted)
-    return exp_x / (exp_x.sum() + 1e-10)
-
-def ai_select(model_apply, params, obs):
-    if not obs.select or not obs.select.option:
-        return []
-
-    your_index = obs.current.yourIndex
-    features = extract_features(obs.current, obs.select, your_index)
-    seq_input = np.expand_dims(features["seq_input"], axis=0)
-    glob_input = np.expand_dims(features["glob_input"], axis=0)
-
-    logits_raw, _ = model_apply(params, seq_input, glob_input)
-    logits_np = np.array(logits_raw[0])
-
-    options = obs.select.option
-    min_c = obs.select.minCount
-    max_c = obs.select.maxCount
-    
-    mock_options = []
-    for o in options:
-        d = dataclasses.asdict(o)
-        d["type"] = OptionType(o.type).name
-        mock_options.append(d)
-    mock_select = {"options": mock_options}
-
-    mask_array = create_action_mask(mock_select, min_c, max_c)
-    masked = logits_np - 1e9 * (1.0 - mask_array)
-    probs = softmax(masked)
-
-    sampled_indices = []
-    if probs.sum() > 0:
-        remaining = probs.copy()
-        for _ in range(max_c):
-            if remaining.sum() <= 0:
-                break
-            p = remaining / remaining.sum()
-            idx = int(np.random.choice(len(p), p=p))
-            if idx == 160:
-                has_end_option = any(get_action_index_for_option(opt, i) == 160 for i, opt in enumerate(mock_select["options"]))
-                if has_end_option:
-                    sampled_indices.append(idx)
-                    remaining[idx] = 0.0
-                elif len(sampled_indices) >= min_c:
-                    break
-                else:
-                    remaining[idx] = 0.0
-                    continue
-            else:
-                sampled_indices.append(idx)
-                remaining[idx] = 0.0
-    else:
-        sampled_indices = [160]
-
-    choices = []
-    for jax_idx in sampled_indices:
-        for cpp_idx, opt in enumerate(mock_select["options"]):
-            mapped_idx = get_action_index_for_option(opt, cpp_idx)
-            if mapped_idx == jax_idx and cpp_idx not in choices:
-                choices.append(cpp_idx)
-                break
-
-    if len(choices) < min_c:
-        for cpp_idx in range(len(options)):
-            if cpp_idx not in choices:
-                choices.append(cpp_idx)
-            if len(choices) >= min_c:
-                break
-
-    return choices
-
-def simulate_game(model_apply, params, d0, d1):
+def simulate_game(agent, d0, d1):
+    agent.reset()
     obs_dict, _ = battle_start(d0, d1)
     obs = to_dataclass(obs_dict, Observation)
     
@@ -120,7 +45,7 @@ def simulate_game(model_apply, params, d0, d1):
         if step_count > 200:
             break
             
-        choices = ai_select(model_apply, params, obs)
+        choices = agent.select_action(obs)
         
         try:
             obs_dict = battle_select(choices)
@@ -154,42 +79,27 @@ def simulate_game(model_apply, params, d0, d1):
     return result, turns, step_count, reason
 
 # Global references for multiprocessing
-G_MODEL_APPLY = None
-G_PARAMS = None
+G_AGENT = None
 G_ALL_DECKS = []
 
 def init_worker():
-    global G_MODEL_APPLY, G_PARAMS, G_ALL_DECKS
+    global G_AGENT, G_ALL_DECKS
     import os
     # os.environ["CUDA_VISIBLE_DEVICES"] = ""
     # os.environ["JAX_PLATFORMS"] = "cpu"
     os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
     
-    import jax
-    import jax.numpy as jnp
-    from tcg_core.models.ff import PokemonAgent
-    from flax import serialization
+    import tcg_core.action_mapping as action_mapping
+    from tcg_core.agents import LSTMAgent
+    from tcg_core.models.ptr import PokemonAgent as PTRModel
     
     deck_dir = os.path.join(ROOT, "new_deck")
     deck_files = sorted(glob.glob(os.path.join(deck_dir, "*.csv")))
     G_ALL_DECKS = [load_deck(f) for f in deck_files]
     
-    model = PokemonAgent(num_actions=250)
-    rng = jax.random.PRNGKey(42)
-    _, init_rng = jax.random.split(rng)
-    dummy_seq = jnp.zeros((1, 173, 31))
-    dummy_glob = jnp.zeros((1, 266))
+    checkpoint_path = os.path.join(ROOT, "checkpoints", "model_lstm_pointer_final.msgpack")
     
-    params = model.init(init_rng, dummy_seq, dummy_glob)
-    model_final_path = os.path.join(ROOT, "checkpoints", "model_final.msgpack")
-    
-    with open(model_final_path, 'rb') as f:
-        params = serialization.from_bytes(params, f.read())
-        
-    G_MODEL_APPLY = jax.jit(model.apply)
-    # Warmup
-    _ = G_MODEL_APPLY(params, dummy_seq, dummy_glob)
-    G_PARAMS = params
+    G_AGENT = LSTMAgent("PTR_Agent", PTRModel, action_mapping, checkpoint_path=checkpoint_path)
 
 def evaluate_deck(task):
     deck_idx, deck_name, matches = task
@@ -207,7 +117,7 @@ def evaluate_deck(task):
         d1 = random.choice(G_ALL_DECKS)
         if not d1: continue
         
-        res, turns, steps, reason = simulate_game(G_MODEL_APPLY, G_PARAMS, d0, d1)
+        res, turns, steps, reason = simulate_game(G_AGENT, d0, d1)
         if res == 0:
             wins += 1
             turn_counts.append(turns)
@@ -225,7 +135,7 @@ def main():
     deck_files = sorted(glob.glob(os.path.join(deck_dir, "*.csv")))
     
     MATCHES_PER_DECK = 10  # Diubah menjadi 10 agar lebih cepat saat pengetesan
-    print(f"Benchmarking {len(deck_files)} decks... Each will play {MATCHES_PER_DECK} matches as Player 0.")
+    print(f"Benchmarking {len(deck_files)} decks with PTR Model... Each will play {MATCHES_PER_DECK} matches as Player 0.")
     print("Using multiprocessing to speed up evaluation...")
     
     tasks = []
@@ -256,7 +166,7 @@ def main():
     elapsed = time.time() - start_time
     print(f"\nCompleted in {elapsed:.1f} seconds.")
     
-    print("\n--- FINAL BENCHMARK RANKING (100 MATCHES/DECK) ---")
+    print("\n--- FINAL BENCHMARK RANKING (10 MATCHES/DECK) ---")
     # Sort by Win Rate (desc), then by Lowest Std Dev Turns (Consistency), then by Lowest Avg Turns (Speed)
     ranked = sorted(stats.items(), key=lambda x: (-x[1]["win_rate"], x[1]["std_turns"], x[1]["avg_turns"]))
     
@@ -265,7 +175,7 @@ def main():
     
     output_dir = os.path.join(ROOT, "output")
     os.makedirs(output_dir, exist_ok=True)
-    out_file = os.path.join(output_dir, "benchmark_results.txt")
+    out_file = os.path.join(output_dir, "benchmark_results_ptr.txt")
     
     with open(out_file, "w") as f:
         header = f"{'Deck Name':<35} | {'WR%':<6} | {'W/L/D':<10} | {'Avg Turns (std)':<20} | {'Win Reasons (Prize/NoActv/DeckOut/Unk)'}"
