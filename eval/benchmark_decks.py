@@ -7,9 +7,9 @@ import numpy as np
 import dataclasses
 from multiprocessing import Pool
 
-# Force CPU
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
-os.environ["JAX_PLATFORMS"] = "cpu"
+# Force CPU (Commented out to use GPU)
+# os.environ["CUDA_VISIBLE_DEVICES"] = ""
+# os.environ["JAX_PLATFORMS"] = "cpu"
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
@@ -161,8 +161,8 @@ G_ALL_DECKS = []
 def init_worker():
     global G_MODEL_APPLY, G_PARAMS, G_ALL_DECKS
     import os
-    os.environ["CUDA_VISIBLE_DEVICES"] = ""
-    os.environ["JAX_PLATFORMS"] = "cpu"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    # os.environ["JAX_PLATFORMS"] = "cpu"
     os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
     
     import jax
