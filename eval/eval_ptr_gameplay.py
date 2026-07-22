@@ -184,10 +184,10 @@ def main():
         
         # Ekstrak fitur & pilih aksi
         if active_player == 0:
-            choices = agent_p0.select_action(obs)
+            choices = agent_p0.select_action(obs, deterministic=True)
             player_name = "P0 (PTR)"
         else:
-            choices = agent_p1.select_action(obs)
+            choices = agent_p1.select_action(obs, deterministic=True)
             player_name = "P1 (PTR)"
             
         action_desc = decode_action_log(obs, choices, active_player)

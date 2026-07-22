@@ -46,7 +46,7 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
     from cg.game import battle_start, battle_finish, battle_select
     from cg.api import to_dataclass, Observation, LogType, OptionType
     from tcg_core.feature_extractor import extract_features
-    from tcg_core.reward import detect_events, calculate_step_reward, reset_trackers
+    from tcg_core.reward import calculate_step_reward
     from tcg_core.action_mapping import get_action_index_for_option
 
     # Attach to Shared Memories
@@ -127,7 +127,7 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
     def start_new_battle():
         nonlocal obs, old_state, game_step_counter, opp_known_hand
         game_step_counter = 0
-        reset_trackers()
+        # Tracker removed for v4 Potential Based Reward
         opp_known_hand.clear()
         battle_finish()
         
@@ -354,17 +354,13 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
 
                 if obs.current:
                     end_reason = get_end_reason(obs)
-                    events = detect_events(old_state, obs.current, prev_player, obs.logs)
                     
                     done = (obs.current.result != -1)
                     active_p = prev_player
                     next_p = obs.current.yourIndex if obs.current else prev_player
                     turn_changed = (active_p != next_p) and not done
-                    
-                    if premature_end_turn:
-                        events['premature_end_turn'] = True
                         
-                    reward = calculate_step_reward(obs.current, prev_player, events, end_reason, turn_changed=turn_changed)
+                    reward = calculate_step_reward(old_state, obs.current, prev_player, end_reason, premature_end=premature_end_turn)
                     old_state = obs.current
                     turn_changed_buf[worker_id] = turn_changed
                     

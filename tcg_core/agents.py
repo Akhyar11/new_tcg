@@ -37,7 +37,7 @@ class BaseAgent:
         exp_x = np.exp(x_shifted)
         return exp_x / (exp_x.sum() + 1e-10)
 
-    def get_choices_from_logits(self, logits_np, obs):
+    def get_choices_from_logits(self, logits_np, obs, deterministic=False):
         options = obs.select.option
         min_c = obs.select.minCount
         max_c = obs.select.maxCount
@@ -58,8 +58,11 @@ class BaseAgent:
             remaining = probs.copy()
             for _ in range(max_c):
                 if remaining.sum() <= 0: break
-                p = remaining / remaining.sum()
-                idx = int(np.random.choice(len(p), p=p))
+                if deterministic:
+                    idx = int(np.argmax(remaining))
+                else:
+                    p = remaining / remaining.sum()
+                    idx = int(np.random.choice(len(p), p=p))
                 if idx == 196: # END Action
                     has_end_option = any(self.get_action_idx(opt, i) == 196 for i, opt in enumerate(mock_select["options"]))
                     if has_end_option:
@@ -91,7 +94,7 @@ class BaseAgent:
 
         return choices
         
-    def select_action(self, obs):
+    def select_action(self, obs, deterministic=False):
         raise NotImplementedError
 
 
@@ -101,7 +104,7 @@ class FFAgent(BaseAgent):
         dummy_glob = jnp.zeros((1, 266))
         return self.model.init(self.rng, dummy_seq, dummy_glob)
 
-    def select_action(self, obs):
+    def select_action(self, obs, deterministic=False):
         if not obs.select or not obs.select.option:
             return []
             
@@ -112,7 +115,7 @@ class FFAgent(BaseAgent):
         logits_raw, _ = self.apply_fn(self.params, seq_input, glob_input)
         logits_np = np.array(logits_raw[0])
         
-        return self.get_choices_from_logits(logits_np, obs)
+        return self.get_choices_from_logits(logits_np, obs, deterministic=deterministic)
 
 
 class LSTMAgent(BaseAgent):
@@ -127,7 +130,7 @@ class LSTMAgent(BaseAgent):
         """Reset the LSTM hidden state (carry) at the start of a new game."""
         self.carry = (jnp.zeros((1, 256)), jnp.zeros((1, 256)))
 
-    def select_action(self, obs):
+    def select_action(self, obs, deterministic=False):
         if not obs.select or not obs.select.option:
             return []
             
@@ -140,4 +143,4 @@ class LSTMAgent(BaseAgent):
         self.last_value = float(values[0][0])
         logits_np = np.array(logits_raw[0])
         
-        return self.get_choices_from_logits(logits_np, obs)
+        return self.get_choices_from_logits(logits_np, obs, deterministic=deterministic)

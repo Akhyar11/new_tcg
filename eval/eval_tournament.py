@@ -58,7 +58,7 @@ def simulate_game(agent_p0, agent_p1, deck0, deck1):
         step_count += 1
         your_idx = obs.current.yourIndex
         
-        choices = agent_p0.select_action(obs) if your_idx == 0 else agent_p1.select_action(obs)
+        choices = agent_p0.select_action(obs, deterministic=True) if your_idx == 0 else agent_p1.select_action(obs, deterministic=True)
         obs, _, done, info = env.step(choices)
                 
     result = info.get("result", -1) if done else -1
