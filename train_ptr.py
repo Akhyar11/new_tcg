@@ -35,7 +35,7 @@ def main():
     config = {
         "num_envs": 16,
         "n_steps": 256,
-        "batch_size": 128,
+        "batch_size": 512,
         "epochs": 1,
         "learning_rate": 5e-5,
         "entropy_coef": 0.005,
