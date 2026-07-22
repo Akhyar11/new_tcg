@@ -4,8 +4,16 @@ import tarfile
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SUBMISSION_DIR = os.path.join(ROOT, "submission")
-DECK_PATH = os.path.join(ROOT, "new_deck", "Excadrill Drill Smash.csv")
-MODEL_PATH = os.path.join(ROOT, "tcg_models", "model_final.msgpack")
+
+best_deck_file = os.path.join(ROOT, "best_deck.txt")
+if os.path.exists(best_deck_file):
+    with open(best_deck_file, "r") as f:
+        best_deck_name = f.read().strip()
+    DECK_PATH = os.path.join(ROOT, "new_deck", f"{best_deck_name}.csv")
+else:
+    DECK_PATH = os.path.join(ROOT, "new_deck", "Excadrill Drill Smash.csv")
+
+MODEL_PATH = os.path.join(ROOT, "checkpoints", "model_lstm_pointer_final.msgpack")
 
 # Buat folder submission
 if os.path.exists(SUBMISSION_DIR):
