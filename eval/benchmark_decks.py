@@ -136,7 +136,7 @@ def main():
     
     MATCHES_PER_DECK = 10  # Diubah menjadi 10 agar lebih cepat saat pengetesan
     print(f"Benchmarking {len(deck_files)} decks with PTR Model... Each will play {MATCHES_PER_DECK} matches as Player 0.")
-    print("Using multiprocessing to speed up evaluation...")
+    print("Running sequentially on GPU to avoid JAX memory locks...")
     
     tasks = []
     for i, f in enumerate(deck_files):
@@ -145,23 +145,25 @@ def main():
         
     start_time = time.time()
     
-    # Run in parallel
+    # Run sequentially (Multiprocessing with JAX on single GPU causes locks/OOM)
     stats = {}
-    with Pool(processes=8, initializer=init_worker) as pool:
-        for name, wins, losses, draws, turn_counts, win_reasons in pool.imap_unordered(evaluate_deck, tasks):
-            wr = (wins / MATCHES_PER_DECK) * 100
-            avg_turns = np.mean(turn_counts) if turn_counts else 0
-            std_turns = np.std(turn_counts) if turn_counts else 0
-            stats[name] = {
-                "win_rate": wr,
-                "wins": wins,
-                "losses": losses,
-                "draws": draws,
-                "avg_turns": avg_turns,
-                "std_turns": std_turns,
-                "win_reasons": win_reasons
-            }
-            print(f"[{name}] WR: {wr:5.1f}% | W/L/D: {wins}/{losses}/{draws} | Avg Turns: {avg_turns:.1f} (±{std_turns:.1f})")
+    init_worker() # Initialize agent on main process
+    
+    for i, task in enumerate(tasks):
+        name, wins, losses, draws, turn_counts, win_reasons = evaluate_deck(task)
+        wr = (wins / MATCHES_PER_DECK) * 100
+        avg_turns = np.mean(turn_counts) if turn_counts else 0
+        std_turns = np.std(turn_counts) if turn_counts else 0
+        stats[name] = {
+            "win_rate": wr,
+            "wins": wins,
+            "losses": losses,
+            "draws": draws,
+            "avg_turns": avg_turns,
+            "std_turns": std_turns,
+            "win_reasons": win_reasons
+        }
+        print(f"[{i+1}/{len(tasks)}] [{name}] WR: {wr:5.1f}% | W/L/D: {wins}/{losses}/{draws} | Avg Turns: {avg_turns:.1f} (±{std_turns:.1f})")
 
     elapsed = time.time() - start_time
     print(f"\nCompleted in {elapsed:.1f} seconds.")
