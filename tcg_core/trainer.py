@@ -72,8 +72,11 @@ class TrainerPPO:
         num_devices = jax.device_count()
         if self.num_envs % num_devices != 0:
             self.num_envs = max((self.num_envs // num_devices) * num_devices, num_devices)
-        if self.batch_size % num_devices != 0:
-            self.batch_size = max((self.batch_size // num_devices) * num_devices, num_devices)
+        # Pastikan batch_size bisa dibagi rata oleh (seq_len * num_devices) agar sharding TPU tidak crash
+        required_multiple = 32 * num_devices
+        if self.batch_size % required_multiple != 0:
+            self.batch_size = max((self.batch_size // required_multiple) * required_multiple, required_multiple)
+            print(f"[*] Menyesuaikan batch_size menjadi {self.batch_size} agar kompatibel dengan {num_devices} TPU cores dan seq_len 32.")
         return num_devices
 
     def _save_checkpoint(self, params, filename):
