@@ -40,7 +40,7 @@ def simulate_game(agent, d0, d1):
     obs = to_dataclass(obs_dict, Observation)
     
     step_count = 0
-    while obs.current is not None and obs.current.result == -1:
+    while obs is not None and obs.current is not None and obs.current.result == -1:
         step_count += 1
         if step_count > 200:
             break
@@ -52,18 +52,18 @@ def simulate_game(agent, d0, d1):
             obs = to_dataclass(obs_dict, Observation)
         except:
             try:
-                opt_count = len(obs.select.option) if obs.select and obs.select.option else 0
-                min_c = obs.select.minCount if obs.select else 0
+                opt_count = len(obs.select.option) if obs is not None and obs.select and obs.select.option else 0
+                min_c = obs.select.minCount if obs is not None and obs.select else 0
                 obs_dict = battle_select(list(range(min(opt_count, min_c))))
                 obs = to_dataclass(obs_dict, Observation)
             except:
                 break
                 
-    result = obs.current.result if obs.current else -1
-    turns = obs.current.turn if obs.current else 0
+    result = obs.current.result if obs is not None and obs.current is not None else -1
+    turns = obs.current.turn if obs is not None and obs.current is not None else 0
     
     reason = "unknown"
-    if result in [0, 1] and obs.current:
+    if result in [0, 1] and obs is not None and obs.current is not None:
         winner_p = obs.current.players[result]
         loser_p = obs.current.players[1 - result]
         
