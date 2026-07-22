@@ -238,9 +238,7 @@ def main():
     # Run in parallel
     stats = {}
     with Pool(processes=8, initializer=init_worker) as pool:
-        results = pool.map(evaluate_deck, tasks)
-        
-        for name, wins, losses, draws, turn_counts, win_reasons in results:
+        for name, wins, losses, draws, turn_counts, win_reasons in pool.imap_unordered(evaluate_deck, tasks):
             wr = (wins / MATCHES_PER_DECK) * 100
             avg_turns = np.mean(turn_counts) if turn_counts else 0
             std_turns = np.std(turn_counts) if turn_counts else 0
