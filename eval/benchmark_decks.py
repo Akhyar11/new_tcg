@@ -224,7 +224,7 @@ def main():
     deck_dir = os.path.join(ROOT, "new_deck")
     deck_files = sorted(glob.glob(os.path.join(deck_dir, "*.csv")))
     
-    MATCHES_PER_DECK = 100
+    MATCHES_PER_DECK = 10  # Diubah menjadi 10 agar lebih cepat saat pengetesan
     print(f"Benchmarking {len(deck_files)} decks... Each will play {MATCHES_PER_DECK} matches as Player 0.")
     print("Using multiprocessing to speed up evaluation...")
     
