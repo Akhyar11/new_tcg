@@ -60,8 +60,8 @@ class BaseAgent:
                 if remaining.sum() <= 0: break
                 p = remaining / remaining.sum()
                 idx = int(np.random.choice(len(p), p=p))
-                if idx == 160: # END Action
-                    has_end_option = any(self.get_action_idx(opt, i) == 160 for i, opt in enumerate(mock_select["options"]))
+                if idx == 196: # END Action
+                    has_end_option = any(self.get_action_idx(opt, i) == 196 for i, opt in enumerate(mock_select["options"]))
                     if has_end_option:
                         sampled_indices.append(idx)
                         remaining[idx] = 0.0
@@ -74,7 +74,7 @@ class BaseAgent:
                     sampled_indices.append(idx)
                     remaining[idx] = 0.0
         else:
-            sampled_indices = [160]
+            sampled_indices = [196]
 
         choices = []
         for jax_idx in sampled_indices:
