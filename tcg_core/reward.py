@@ -322,26 +322,26 @@ def calculate_step_reward(new_state, player_index: int, events: dict = None, end
         # Evolution (active)
         if events.get('evolved'):
             n = _increment_counter('evolve', player_index)
-            decay = 0.50 ** n
-            r_event += 0.05 * decay
+            decay = 0.85 ** n
+            r_event += 0.30 * decay
 
         # Evolution (bench)
         if events.get('bench_evolved'):
             n = _increment_counter('bench_evolve', player_index)
-            decay = 0.50 ** n
-            r_event += 0.03 * decay
+            decay = 0.85 ** n
+            r_event += 0.20 * decay
 
         # Supporter
         if events.get('supporter_played'):
             n = _increment_counter('supporter', player_index)
-            decay = 0.50 ** n
-            r_event += 0.02 * decay
+            decay = 0.75 ** n
+            r_event += 0.05 * decay
 
         # Item
         if events.get('item_played'):
             n = _increment_counter('item', player_index)
-            decay = 0.50 ** n
-            r_event += 0.02 * decay
+            decay = 0.75 ** n
+            r_event += 0.05 * decay
 
         # Battle Ready Milestone (Kesiapan Tempur)
         if events.get('battle_ready', 0) > 0:
