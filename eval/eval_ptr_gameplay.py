@@ -141,12 +141,13 @@ def print_game_state(obs, active_player):
 
 def main():
     deck_dir = os.path.join(ROOT, "new_deck")
-    deck_path = os.path.join(deck_dir, "Mega Charizard Y Sniper.csv")
-    d0 = load_deck(deck_path)
-    d1 = load_deck(deck_path)
+    deck_path_0 = os.path.join(deck_dir, "Mega Gardevoir's Symphonia.csv")
+    deck_path_1 = os.path.join(deck_dir, "Dachsbun ex Time to Chow Down.csv")
+    d0 = load_deck(deck_path_0)
+    d1 = load_deck(deck_path_1)
     
     print("=== TCG PTR GAMEPLAY ANALYSIS ===")
-    print(f"Deck: Mega Charizard Y Sniper (1v1 PTR vs PTR)")
+    print(f"Deck: Mega Gardevoir's Symphonia (P0) vs Dachsbun ex Time to Chow Down (P1)")
     
     checkpoints_dir = os.path.join(ROOT, "checkpoints")
     model_path = os.path.join(checkpoints_dir, "model_lstm_pointer_final.msgpack")
