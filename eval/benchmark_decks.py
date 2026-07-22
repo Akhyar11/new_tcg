@@ -13,8 +13,7 @@ os.environ["JAX_PLATFORMS"] = "cpu"
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import jax
 import jax.numpy as jnp
@@ -177,7 +176,7 @@ def init_worker():
     dummy_glob = jnp.zeros((1, 266))
     
     params = model.init(init_rng, dummy_seq, dummy_glob)
-    model_final_path = os.path.join(ROOT, "tcg_models", "model_final.msgpack")
+    model_final_path = os.path.join(ROOT, "checkpoints", "model_final.msgpack")
     
     with open(model_final_path, 'rb') as f:
         params = serialization.from_bytes(params, f.read())
