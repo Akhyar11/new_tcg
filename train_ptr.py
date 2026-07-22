@@ -38,7 +38,7 @@ def main():
         "batch_size": 512,
         "epochs": 1,
         "learning_rate": 5e-5,
-        "entropy_coef": 0.005,
+        "entropy_coef": 0.05,
         "clip_ratio": 0.2,
         "new_deck_path": os.path.join(os.path.dirname(__file__), "new_deck"),
         "gen_deck_path": os.path.join(os.path.dirname(__file__), "deck_generated"),
