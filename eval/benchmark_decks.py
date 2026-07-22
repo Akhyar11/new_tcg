@@ -160,6 +160,11 @@ G_ALL_DECKS = []
 
 def init_worker():
     global G_MODEL_APPLY, G_PARAMS, G_ALL_DECKS
+    import os
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    os.environ["JAX_PLATFORMS"] = "cpu"
+    os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+    
     import jax
     import jax.numpy as jnp
     from tcg_core.models.ff import PokemonAgent
