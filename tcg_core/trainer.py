@@ -126,7 +126,7 @@ class TrainerPPO:
         start_time = time.time()
         
         episodic_returns = np.zeros(self.num_envs, dtype=np.float32)
-        recent_wins_p0 = deque(maxlen=400)
+        recent_wins_p0 = deque(maxlen=600)
         
         reward_running_mean, reward_running_std, reward_norm_steps = 0.0, 1.0, 0
         
