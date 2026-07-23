@@ -26,14 +26,11 @@ shutil.copy(DECK_PATH, os.path.join(SUBMISSION_DIR, "deck.csv"))
 # 2. Salin model terbaik
 shutil.copy(MODEL_PATH, os.path.join(SUBMISSION_DIR, "model_final.msgpack"))
 
-# 3. Salin modul agent_rl (feature_extractor, action_mapping, model)
-agent_rl_dest = os.path.join(SUBMISSION_DIR, "agent_rl")
-os.makedirs(agent_rl_dest)
-shutil.copy(os.path.join(ROOT, "agent_rl", "model.py"), agent_rl_dest)
-shutil.copy(os.path.join(ROOT, "agent_rl", "feature_extractor.py"), agent_rl_dest)
-shutil.copy(os.path.join(ROOT, "agent_rl", "action_mapping.py"), agent_rl_dest)
-# Buat __init__.py kosong agar dikenali sebagai module
-open(os.path.join(agent_rl_dest, "__init__.py"), 'w').close()
+# 3. Salin modul tcg_core
+tcg_core_dest = os.path.join(SUBMISSION_DIR, "tcg_core")
+if os.path.exists(tcg_core_dest):
+    shutil.rmtree(tcg_core_dest)
+shutil.copytree(os.path.join(ROOT, "tcg_core"), tcg_core_dest)
 
 # 3.5 Salin modul cg (engine & api definitions)
 cg_dest = os.path.join(SUBMISSION_DIR, "cg")
@@ -65,26 +62,29 @@ from flax import serialization
 import dataclasses
 
 from cg.api import Observation, to_observation_class, OptionType
-from tcg_core.models.lstm import PokemonAgent
-from agent_rl.feature_extractor import extract_features
-from agent_rl.action_mapping import get_action_index_for_option, create_action_mask
+from tcg_core.models.ptr import PokemonAgent
+from tcg_core.feature_extractor import extract_features
+from tcg_core.action_mapping import get_action_index_for_option, create_action_mask
 
 # Variabel Global untuk menyimpan model (agar tidak perlu dimuat ulang setiap turn)
 GLOBAL_MODEL_APPLY = None
 GLOBAL_PARAMS = None
+GLOBAL_CARRY = None
 
 def init_model():
-    global GLOBAL_MODEL_APPLY, GLOBAL_PARAMS
+    global GLOBAL_MODEL_APPLY, GLOBAL_PARAMS, GLOBAL_CARRY
     if GLOBAL_MODEL_APPLY is not None:
         return
     
+    import flax.linen as nn
     model = PokemonAgent(num_actions=250)
     rng = jax.random.PRNGKey(42)
     _, init_rng = jax.random.split(rng)
     dummy_seq = jnp.zeros((1, 173, 31))
     dummy_glob = jnp.zeros((1, 266))
+    dummy_carry = nn.LSTMCell(features=256).initialize_carry(rng, (1,))
     
-    params = model.init(init_rng, dummy_seq, dummy_glob)
+    params = model.init(init_rng, dummy_seq, dummy_glob, dummy_carry)
     
     # Lokasi file saat di-extract oleh server evaluasi Kaggle
     model_path = "model_final.msgpack"
@@ -96,8 +96,9 @@ def init_model():
         
     GLOBAL_MODEL_APPLY = jax.jit(model.apply)
     # Warmup
-    _ = GLOBAL_MODEL_APPLY(params, dummy_seq, dummy_glob)
+    _ = GLOBAL_MODEL_APPLY(params, dummy_seq, dummy_glob, dummy_carry)
     GLOBAL_PARAMS = params
+    GLOBAL_CARRY = dummy_carry
 
 def softmax(x):
     x_shifted = x - np.max(x)
@@ -126,6 +127,13 @@ def agent(obs_dict: dict) -> list[int]:
     # Inisialisasi model pada turn pertama
     init_model()
     
+    global GLOBAL_CARRY
+    if getattr(obs.current, "turn", 0) <= 1:
+        # Reset carry pada awal game (asumsi turn <= 1 adalah langkah awal)
+        import flax.linen as nn
+        rng = jax.random.PRNGKey(42)
+        GLOBAL_CARRY = nn.LSTMCell(features=256).initialize_carry(rng, (1,))
+    
     if not obs.select.option:
         return []
 
@@ -134,7 +142,8 @@ def agent(obs_dict: dict) -> list[int]:
     seq_input = np.expand_dims(features["seq_input"], axis=0)
     glob_input = np.expand_dims(features["glob_input"], axis=0)
 
-    logits_raw, _ = GLOBAL_MODEL_APPLY(GLOBAL_PARAMS, seq_input, glob_input)
+    logits_raw, _, new_carry = GLOBAL_MODEL_APPLY(GLOBAL_PARAMS, seq_input, glob_input, GLOBAL_CARRY)
+    GLOBAL_CARRY = new_carry
     logits_np = np.array(logits_raw[0])
 
     options = obs.select.option
@@ -160,8 +169,8 @@ def agent(obs_dict: dict) -> list[int]:
                 break
             p = remaining / remaining.sum()
             idx = int(np.random.choice(len(p), p=p))
-            if idx == 160:
-                has_end_option = any(get_action_index_for_option(opt, i) == 160 for i, opt in enumerate(mock_select["options"]))
+            if idx == 196:
+                has_end_option = any(get_action_index_for_option(opt, i) == 196 for i, opt in enumerate(mock_select["options"]))
                 if has_end_option:
                     sampled_indices.append(idx)
                     remaining[idx] = 0.0
@@ -174,7 +183,7 @@ def agent(obs_dict: dict) -> list[int]:
                 sampled_indices.append(idx)
                 remaining[idx] = 0.0
     else:
-        sampled_indices = [160] # Fallback (Pass)
+        sampled_indices = [196] # Fallback (Pass)
 
     choices = []
     for jax_idx in sampled_indices:
