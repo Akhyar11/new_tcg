@@ -50,8 +50,8 @@ def main():
 
     trainer = TrainerPPO(agent_p0, agent_p1, config)
     
-    # Training Loop (20M Timesteps)
-    total_timesteps = int(os.environ.get("TOTAL_TIMESTEPS", 20000000))
+    # Training Loop (30M Timesteps)
+    total_timesteps = int(os.environ.get("TOTAL_TIMESTEPS", 30000000))
     try:
         trainer.train(total_timesteps=total_timesteps, finetune_mode=False)
         print("Uploading final model to Kaggle...")
