@@ -267,7 +267,7 @@ class TrainerPPO:
                 })
 
             # Self-play target threshold
-            if rolling_win_p0 >= 57.0 and len(recent_wins_p0) == recent_wins_p0.maxlen:
+            if rolling_win_p0 >= 60.0 and len(recent_wins_p0) == recent_wins_p0.maxlen:
                 print(f"  🔥 Rolling Winrate {recent_wins_p0.maxlen} games P0 reached {rolling_win_p0:.1f}%! Updating P1 weights.")
                 params_repl_p1 = params_repl_p0
                 self._save_checkpoint(unreplicate(params_repl_p0), self.config.get("save_name_final", "model_final.msgpack"))
