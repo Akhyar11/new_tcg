@@ -49,30 +49,11 @@ class KaggleReplayDataset(Dataset):
         self._load_all_files()
 
     def _load_all_files(self):
-        print(f"Memuat daftar dari {len(self.files)} file JSON...")
-        for filepath in tqdm(self.files, desc="Scanning Replays"):
-            try:
-                with open(filepath, 'r') as f:
-                    data = json.load(f)
-                    
-                rewards = data.get("rewards", [])
-                if not rewards or len(rewards) < 2 or any(r is None for r in rewards):
-                    continue
-                    
-                steps = data.get("steps", [])
-                if not steps:
-                    continue
-                
-                # Simpan metadata untuk Lazy Loading
-                for player_idx in range(len(rewards)):
-                    self.samples.append({
-                        "filepath": filepath,
-                        "player_idx": player_idx,
-                    })
-            except Exception:
-                pass
-                
-        print(f"Berhasil mengumpulkan {len(self.samples)} sample metadata untuk Lazy Loading.")
+        print(f"Mendaftarkan {len(self.files)} file untuk Lazy Loading (tanpa membacanya ke RAM)...")
+        for filepath in self.files:
+            self.samples.append({"filepath": filepath, "player_idx": 0})
+            self.samples.append({"filepath": filepath, "player_idx": 1})
+        print(f"Tercatat {len(self.samples)} kombinasi file & player_idx.")
 
     def __len__(self):
         return len(self.samples)
@@ -82,12 +63,21 @@ class KaggleReplayDataset(Dataset):
         filepath = meta["filepath"]
         player_idx = meta["player_idx"]
         
-        with open(filepath, 'r') as f:
-            data = json.load(f)
+        try:
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+        except Exception:
+            return None
             
         rewards = data.get("rewards", [])
+        if not rewards or len(rewards) < 2 or any(r is None for r in rewards):
+            return None
+            
         final_reward = float(rewards[player_idx])
         steps = data.get("steps", [])
+        if not steps:
+            return None
+            
         total_turns = len(steps)
         
         seq_inputs = np.zeros((self.max_steps, 173, 31), dtype=np.float32)
@@ -152,6 +142,9 @@ class KaggleReplayDataset(Dataset):
             valid_masks[time_step] = 1.0
             
             time_step += 1
+            
+        if time_step == 0:
+            return None
             
         return (
             torch.tensor(seq_inputs, dtype=torch.float32),

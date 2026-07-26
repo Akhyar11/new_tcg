@@ -7,11 +7,19 @@ from flax.training import train_state
 from flax import serialization
 import torch
 from torch.utils.data import DataLoader
+from torch.utils.data.dataloader import default_collate
 from tqdm import tqdm
 
 from knowledge_distillation.dataset_loader import KaggleReplayDataset
 from tcg_core.models.ptr import PokemonAgent as PTRModel
 from tcg_core.kaggle_sync import download_from_kaggle, upload_to_kaggle
+import tcg_core.action_mapping as action_mapping
+
+def collate_fn_filter_none(batch):
+    batch = [b for b in batch if b is not None]
+    if len(batch) == 0:
+        return None
+    return default_collate(batch)
 
 def create_train_state(rng, learning_rate):
     model = PTRModel(num_actions=250)
@@ -150,7 +158,14 @@ def main(args):
     print(f"Syncing initial weights from Kaggle...")
     download_from_kaggle(args.save_dir)
         
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True, num_workers=4)
+    dataloader = DataLoader(
+        dataset, 
+        batch_size=args.batch_size, 
+        shuffle=True, 
+        drop_last=True, 
+        num_workers=4,
+        collate_fn=collate_fn_filter_none
+    )
     
     rng = jax.random.PRNGKey(42)
     state = create_train_state(rng, args.learning_rate)
@@ -178,7 +193,10 @@ def main(args):
             batches = 0
             
             pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{args.epochs}")
-            for seq_input, glob_input, target_action, target_value, action_mask, valid_mask in pbar:
+            for batch_data in pbar:
+                if batch_data is None:
+                    continue
+                seq_input, glob_input, target_action, target_value, action_mask, valid_mask = batch_data
                 seq_jax = jnp.array(seq_input.numpy())
                 glob_jax = jnp.array(glob_input.numpy())
                 target_a_jax = jnp.array(target_action.numpy())
