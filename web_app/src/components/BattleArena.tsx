@@ -52,7 +52,8 @@ export default function BattleArena({
     if (!card || card.isFacedown) return;
 
     const cardId = card['Card ID'] || card.engineId || card.id;
-    const fullCardInfo = card['Card Name'] ? card : { ...getCardInfo(cardId), ...card };
+    const baseInfo: any = getCardInfo(cardId);
+    const fullCardInfo = { ...baseInfo, ...card, moves: (baseInfo && baseInfo.moves && baseInfo.moves.length > 0) ? baseInfo.moves : (card.moves || []) };
 
     setPreviewCard({
       card: fullCardInfo,
@@ -830,35 +831,64 @@ export default function BattleArena({
                 </div>
               )}
 
+              {/* Moves & Attacks / Ability Effects for Pokémon */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {(() => {
                   const attackOptions = obs?.select?.option?.map((opt: any, idx: number) => ({ opt, idx })).filter((x: any) => x.opt.type === 13) || [];
                   let attackCounter = 0;
-                  return previewCard.card.moves && previewCard.card.moves.map((move: any, moveIdx: number) => {
-                    const isAbility = move.name?.startsWith('[Ability]');
-                    let btnOptIdx = -1;
-                    if (!isSpectator && !isAbility && playerActive && previewCard.card.engineSerial === playerActive.engineSerial) {
-                      if (attackCounter < attackOptions.length) {
-                        btnOptIdx = attackOptions[attackCounter].idx;
+                  const moves = previewCard.card.moves || [];
+                  
+                  if (moves.length > 0) {
+                    return moves.map((move: any, moveIdx: number) => {
+                      const isAbility = move.name?.startsWith('[Ability]');
+                      let btnOptIdx = -1;
+                      if (!isSpectator && !isAbility && playerActive && previewCard.card.engineSerial === playerActive.engineSerial) {
+                        if (attackCounter < attackOptions.length) {
+                          btnOptIdx = attackOptions[attackCounter].idx;
+                        }
+                        attackCounter++;
                       }
-                      attackCounter++;
-                    }
+                      return (
+                        <div key={moveIdx} style={{ background: isAbility ? 'rgba(139, 92, 246, 0.12)' : 'rgba(15, 23, 42, 0.75)', border: isAbility ? '1px solid rgba(168, 85, 247, 0.4)' : '1px solid rgba(56, 189, 248, 0.25)', padding: '1.2rem', borderRadius: '12px', boxShadow: isAbility ? '0 4px 20px rgba(168, 85, 247, 0.15)' : '0 4px 20px rgba(0,0,0,0.4)' }}>
+                          {move.name && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: '900', marginBottom: '0.6rem', fontSize: '1.15rem' }}>
+                              <span style={{ color: isAbility ? '#c4b5fd' : '#38bdf8', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                {isAbility ? '🔮' : '⚔️'} {move.name}
+                              </span>
+                              {move.damage && <span style={{ background: '#ef4444', color: 'white', padding: '0.2rem 0.7rem', borderRadius: '20px', fontSize: '0.95rem', fontWeight: 'bold' }}>{move.damage} DMG</span>}
+                            </div>
+                          )}
+                          {move.cost && <div style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '0.6rem', fontWeight: '600' }}>Cost: {move.cost}</div>}
+                          {move.effect && (
+                            <div style={{ background: 'rgba(5, 11, 20, 0.7)', borderLeft: isAbility ? '3px solid #a855f7' : '3px solid #0ea5e9', padding: '0.7rem 0.9rem', borderRadius: '6px', marginTop: '0.5rem' }}>
+                              <div style={{ fontSize: '0.7rem', fontWeight: 'bold', color: isAbility ? '#c4b5fd' : '#38bdf8', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                {isAbility ? '✨ Efek Ability' : '📜 Efek Serangan'}
+                              </div>
+                              <div style={{ fontSize: '0.9rem', color: '#e2e8f0', lineHeight: '1.5' }}>{move.effect}</div>
+                            </div>
+                          )}
+                          {btnOptIdx !== -1 && onSelectOption && (
+                            <button onClick={() => { onSelectOption(btnOptIdx); setPreviewCard(null); }} style={{ marginTop: '1rem', width: '100%', padding: '0.8rem', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem', boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}>⚔️ GUNAKAN SERANGAN INI</button>
+                          )}
+                        </div>
+                      );
+                    });
+                  }
+
+                  // Non-Pokémon card effect explanation (Trainer, Item, Supporter, Stadium, Energy)
+                  const effectText = previewCard.card['Effect Explanation'] || previewCard.card['Effect'];
+                  if (effectText) {
                     return (
-                      <div key={moveIdx} style={{ background: isAbility ? 'rgba(139, 92, 246, 0.1)' : 'rgba(0,0,0,0.3)', border: isAbility ? '1px solid rgba(139, 92, 246, 0.3)' : 'none', padding: '1rem', borderRadius: '8px' }}>
-                        {move.name && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '0.5rem', fontSize: '1.1rem' }}>
-                            <span style={{ color: isAbility ? '#c4b5fd' : 'white' }}>{move.name}</span>
-                            {move.damage && <span>{move.damage}</span>}
-                          </div>
-                        )}
-                        {move.cost && <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '0.5rem' }}>Cost: {move.cost}</div>}
-                        {move.effect && <div style={{ fontSize: '0.9rem', fontStyle: 'italic', color: '#cbd5e1', lineHeight: '1.5' }}>{move.effect}</div>}
-                        {btnOptIdx !== -1 && onSelectOption && (
-                          <button onClick={() => { onSelectOption(btnOptIdx); setPreviewCard(null); }} style={{ marginTop: '1rem', width: '100%', padding: '0.8rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem', boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}>GUNAKAN SERANGAN</button>
-                        )}
+                      <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(52, 211, 153, 0.4)', padding: '1.2rem', borderRadius: '12px', boxShadow: '0 4px 20px rgba(52, 211, 153, 0.15)' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#34d399', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                          📜 Efek & Deskripsi Kartu
+                        </div>
+                        <div style={{ fontSize: '0.95rem', color: '#f1f5f9', lineHeight: '1.6' }}>{effectText}</div>
                       </div>
                     );
-                  });
+                  }
+
+                  return <div style={{ color: '#64748b', fontStyle: 'italic', fontSize: '0.9rem' }}>Tidak ada efek tambahan pada kartu ini.</div>;
                 })()}
               </div>
               <div style={{ marginTop: '2rem', display: 'flex', gap: '2rem', fontSize: '0.9rem', color: '#94a3b8', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
