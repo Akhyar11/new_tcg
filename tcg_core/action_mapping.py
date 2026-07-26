@@ -129,22 +129,39 @@ def get_action_index_for_option(option: dict, option_list_index: int = 0) -> int
     
     return min(OTHER_START + opt_idx, OTHER_END)
 
-def create_action_mask(select_data: dict, min_count: int = 1, max_count: int = 1) -> np.ndarray:
+def create_action_mask(select_data: dict, min_count: int = 1, max_count: int = 1, enable_guidance: bool = True) -> np.ndarray:
     """
     Menerima list Option C++ (select_data) dan mengembalikan 
     Numpy Float32 Array berukuran 250 (1.0 = Legal, 0.0 = Ilegal).
+    Mendukung Early-Turn Action Masking Guidance untuk mencegah AI menekan END_TURN/PASS secara konyol.
     """
     mask = np.zeros(NUM_ACTIONS, dtype=np.float32)
     options = select_data.get("options", [])
     
+    productive_option_found = False
+    
     for i, option in enumerate(options):
         idx = get_action_index_for_option(option, i)
         mask[idx] = 1.0
+
+        opt_type = option.get("type", "") if isinstance(option, dict) else getattr(option, "type", "")
+        opt_str = str(opt_type)
+        if opt_str in ["PLAY", "ATTACH", "EVOLVE", "ATTACK", "SKILL", "USE_ABILITY", "1", "3", "7", "8", "9", "10", "13"]:
+            if idx != ACTION_END:
+                productive_option_found = True
         
     # Izinkan aksi END (berhenti memilih) jika batas minimum pemilihan kurang dari maksimum
     if min_count < max_count:
         mask[ACTION_END] = 1.0
-        
+
+    # === EARLY-TURN ACTION MASKING GUIDANCE ===
+    # Jika ada aksi produktif (seperti Attach Energy, Play Supporter/Item, Evolve, Attack),
+    # cegah AI menekan END_TURN/PASS secara konyol di awal giliran.
+    if enable_guidance and productive_option_found:
+        other_actions_sum = np.sum(mask) - mask[ACTION_END]
+        if other_actions_sum > 0:
+            mask[ACTION_END] = 0.0
+
     # Perlindungan Failsafe: Jika C++ tidak mereturn opsi legal apapun,
     # kita paksa End Turn menjadi legal agar JAX tidak mengalami error/NaN pada softmax.
     if np.sum(mask) == 0:
