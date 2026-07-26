@@ -188,12 +188,7 @@ def calculate_potential(state, player_index: int) -> float:
     poke_count_diff = my_poke_count - opp_poke_count
     energy_diff = my_energy_count - opp_energy_count
     
-    # 4. Hand Count Difference (Card Advantage)
-    my_hand = len(getattr(my_state, 'hand', []))
-    opp_hand = len(getattr(opp_state, 'hand', []))
-    hand_diff = min(2.0, (my_hand - opp_hand) / 5.0)
-    
-    # 5. Deck Count (Prevent deck-out)
+    # 4. Deck Count (Prevent deck-out)
     deck_diff = my_state.deckCount - opp_state.deckCount
     
     # Combine potentials dengan pembobotan seimbang (tanpa clip buatan agar PBRS linear)
@@ -202,7 +197,6 @@ def calculate_potential(state, player_index: int) -> float:
                 (hp_ratio_diff * 0.08) + \
                 (poke_count_diff * 0.05) + \
                 (energy_diff * 0.04) + \
-                (hand_diff * 0.03) + \
                 (deck_diff * 0.0002)
     
     return float(potential)
