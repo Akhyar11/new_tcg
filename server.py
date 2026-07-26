@@ -18,7 +18,7 @@ from flax import serialization
 AI_MODEL_PARAMS = None
 AI_MODEL_APPLY = None
 try:
-    from agent_rl.model import PokemonAgent
+    from tcg_core.models.ptr import PokemonAgent
     print("Memuat JAX AI Model...")
     model = PokemonAgent(num_actions=250)
     rng = jax.random.PRNGKey(42)
@@ -174,8 +174,8 @@ async def websocket_endpoint(websocket: WebSocket):
         import cg.game
         import numpy as np
         from cg.api import to_dataclass, Observation, OptionType
-        from agent_rl.feature_extractor import extract_features
-        from agent_rl.action_mapping import get_action_index_for_option, create_action_mask
+        from tcg_core.feature_extractor import extract_features
+        from tcg_core.action_mapping import get_action_index_for_option, create_action_mask
 
         while obs and obs.get("current", {}).get("yourIndex") == 1:
             await manager.send_personal_message({"type": "update", "obs": obs}, websocket)
@@ -258,19 +258,19 @@ async def websocket_endpoint(websocket: WebSocket):
                 import asyncio
                 import numpy as np
                 from cg.api import to_dataclass, Observation, OptionType
-                from agent_rl.feature_extractor import extract_features
-                from agent_rl.action_mapping import get_action_index_for_option, create_action_mask
+                from tcg_core.feature_extractor import extract_features
+                from tcg_core.action_mapping import get_action_index_for_option, create_action_mask
 
                 print("Starting AI vs AI battle...")
-                deck_files = glob.glob("agent_rl/deck_generated/*.csv")
+                deck_files = glob.glob("deck_generated/*.csv")
                 
                 # Pick deck for Player 0
-                deck0_file = random.choice(deck_files) if deck_files else "agent_rl/deck_generated/gen_deck_100.csv"
+                deck0_file = random.choice(deck_files) if deck_files else "deck_generated/gen_deck_100.csv"
                 with open(deck0_file, "r") as f:
                     deck0 = [int(line.strip()) for line in f if line.strip().isdigit()]
                 
                 # Pick deck for Player 1
-                deck1_file = random.choice(deck_files) if deck_files else "agent_rl/deck_generated/gen_deck_200.csv"
+                deck1_file = random.choice(deck_files) if deck_files else "deck_generated/gen_deck_200.csv"
                 with open(deck1_file, "r") as f:
                     deck1 = [int(line.strip()) for line in f if line.strip().isdigit()]
 
@@ -364,7 +364,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 
                 if not player_deck or len(player_deck) != 60:
                     print("Deck is not 60 cards! Falling back to gen_deck_000.csv")
-                    with open("agent_rl/deck/gen_deck_000.csv", "r") as f:
+                    with open("deck_generated/gen_deck_000.csv", "r") as f:
                         player_deck = [int(line.strip()) for line in f]
                 
                 try:
@@ -372,7 +372,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     
                     import glob
                     import random
-                    deck_files = glob.glob("agent_rl/deck/*.csv")
+                    deck_files = glob.glob("deck_generated/*.csv")
                     if deck_files:
                         chosen_deck = random.choice(deck_files)
                         print(f"Loading AI deck from: {chosen_deck}")
@@ -382,7 +382,7 @@ async def websocket_endpoint(websocket: WebSocket):
                             print("AI deck length is not 60, fallback to player deck.")
                             ai_deck = player_deck.copy()
                     else:
-                        print("No decks found in agent_rl/deck/, fallback to player deck.")
+                        print("No decks found in deck_generated/, fallback to player deck.")
                         ai_deck = player_deck.copy()
                     
                     print(f"Deck first 10 cards: {player_deck[:10]}")
@@ -391,7 +391,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     
                     if obs is None:
                         print("ERROR: User deck is invalid (obs is None)! Trying fallback deck...")
-                        with open("agent_rl/deck/gen_deck_000.csv", "r") as f:
+                        with open("deck_generated/gen_deck_000.csv", "r") as f:
                             fallback_deck = [int(line.strip()) for line in f]
                         obs, start_data = cg.game.battle_start(fallback_deck, fallback_deck)
                         
