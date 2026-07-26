@@ -172,7 +172,7 @@ def decode_action(sorted_action_indices: list, select_data: dict, min_count: int
     choices = []
     # 1. Telusuri pilihan AI dari probabilitas terbesar ke terkecil
     for jax_idx in sorted_action_indices:
-        if jax_idx == 160: # ACTION_END
+        if jax_idx == 196: # ACTION_END
             if len(choices) >= min_count:
                 break # Model memilih berhenti dan kuota minimum sudah terpenuhi
             else:

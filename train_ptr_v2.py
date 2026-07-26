@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 
 # Setup environment for training
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -17,6 +18,19 @@ def main():
     save_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "checkpoints"))
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
+
+    repo_root = os.path.dirname(__file__)
+    replay_deck_dir = os.environ.get(
+        "REPLAY_DECK_DIR",
+        os.path.join(repo_root, "scraper", "replay_decks"),
+    )
+    replay_deck_dir_path = Path(replay_deck_dir)
+    has_replay_decks = replay_deck_dir_path.is_dir() and any(replay_deck_dir_path.glob("*.csv"))
+    primary_deck_path = replay_deck_dir if has_replay_decks else os.path.join(repo_root, "new_deck")
+    if has_replay_decks:
+        print(f"Menggunakan deck hasil ekstraksi replay: {primary_deck_path}")
+    else:
+        print(f"Deck hasil ekstraksi replay tidak ditemukan, fallback ke: {primary_deck_path}")
 
     # Download latest from Kaggle before starting
     print("Mendownload checkpoint terbaru dari Kaggle...")
@@ -40,7 +54,7 @@ def main():
         "learning_rate": 5e-5,
         "entropy_coef": 0.05,
         "clip_ratio": 0.2,
-        "new_deck_path": os.path.join(os.path.dirname(__file__), "new_deck"),
+        "new_deck_path": primary_deck_path,
         "gen_deck_path": os.path.join(os.path.dirname(__file__), "deck_generated"),
         "save_dir": save_dir,
         "save_name_base": "model_lstm_pointer_v2_base.msgpack",

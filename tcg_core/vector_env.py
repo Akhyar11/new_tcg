@@ -250,7 +250,7 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                         legal_mask[idx] = 1.0
 
                 if min_c < max_c:
-                    legal_mask[160] = 1.0
+                    legal_mask[196] = 1.0
 
                 masked_logits = logits - 1e9 * (1.0 - legal_mask)
                 probs = softmax(masked_logits)
@@ -263,8 +263,8 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                             break
                         p = remaining / remaining.sum()
                         idx = np.random.choice(len(p), p=p)
-                        if idx == 160:
-                            has_end_option = any(get_action_index_for_option(opt, i) == 160 for i, opt in enumerate(options))
+                        if idx == 196:
+                            has_end_option = any(get_action_index_for_option(opt, i) == 196 for i, opt in enumerate(options))
                             if has_end_option:
                                 sampled_jax_indices.append(int(idx))
                                 remaining[idx] = 0.0
@@ -277,7 +277,7 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                             sampled_jax_indices.append(int(idx))
                             remaining[idx] = 0.0
                 else:
-                    sampled_jax_indices = [160]
+                    sampled_jax_indices = [196]
 
                 choices = []
                 for jax_idx in sampled_jax_indices:
@@ -302,7 +302,7 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                             actions_mask[idx] = True
 
                 if not np.any(actions_mask):
-                    actions_mask[160] = True
+                    actions_mask[196] = True
                     choices = [0]
 
                 prev_player = obs.current.yourIndex if obs.current else 0
@@ -315,7 +315,7 @@ def worker(remote, parent_remote, worker_id, new_deck_path, gen_deck_path, num_e
                     end_reason = 9
                     
                     actions_mask = np.zeros(250, dtype=np.bool_)
-                    actions_mask[160] = True
+                    actions_mask[196] = True
 
                     start_new_battle()
 
