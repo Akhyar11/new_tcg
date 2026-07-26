@@ -171,74 +171,74 @@ def main(args):
     
     try:
         for epoch in range(args.epochs):
-        epoch_loss = 0.0
-        epoch_p_loss = 0.0
-        epoch_v_loss = 0.0
-        epoch_ent_loss = 0.0
-        batches = 0
-        
-        pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{args.epochs}")
-        for seq_input, glob_input, target_action, target_value, action_mask, valid_mask in pbar:
-            seq_jax = jnp.array(seq_input.numpy())
-            glob_jax = jnp.array(glob_input.numpy())
-            target_a_jax = jnp.array(target_action.numpy())
-            target_v_jax = jnp.array(target_value.numpy())
-            mask_jax = jnp.array(action_mask.numpy())
-            valid_jax = jnp.array(valid_mask.numpy())
+            epoch_loss = 0.0
+            epoch_p_loss = 0.0
+            epoch_v_loss = 0.0
+            epoch_ent_loss = 0.0
+            batches = 0
             
-            batch_size = seq_jax.shape[0]
-            # Carry state selalu direset ke 0 di awal setiap ronde/episode game
-            carry_init = (jnp.zeros((batch_size, 256)), jnp.zeros((batch_size, 256)))
-            
-            # Step 1: Hitung old_log_probs secara sequence (unrolled over time)
-            old_log_probs, _ = compute_old_log_probs_and_values_seq(
-                state, seq_jax, glob_jax, carry_init, target_a_jax, mask_jax
-            )
-            
-            # Normalisasi keuntungan di level batch untuk kestabilan pelatihan
-            # Ini dilakukan di dalam lax.scan di atas secara implisit atau bisa dipindahkan ke sini jika mau lebih presisi.
-            
-            # Step 2: Lakukan PPO Update di sepanjang sequence
-            for _ in range(args.ppo_epochs):
-                state, total_loss, p_loss, v_loss, ent_loss = ppo_train_step_seq(
-                    state, seq_jax, glob_jax, carry_init, target_a_jax, mask_jax, 
-                    target_v_jax, valid_jax, old_log_probs, 
-                    clip_eps=args.clip_eps, 
-                    value_coef=args.value_coef, 
-                    entropy_coef=args.entropy_coef
+            pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{args.epochs}")
+            for seq_input, glob_input, target_action, target_value, action_mask, valid_mask in pbar:
+                seq_jax = jnp.array(seq_input.numpy())
+                glob_jax = jnp.array(glob_input.numpy())
+                target_a_jax = jnp.array(target_action.numpy())
+                target_v_jax = jnp.array(target_value.numpy())
+                mask_jax = jnp.array(action_mask.numpy())
+                valid_jax = jnp.array(valid_mask.numpy())
+                
+                batch_size = seq_jax.shape[0]
+                # Carry state selalu direset ke 0 di awal setiap ronde/episode game
+                carry_init = (jnp.zeros((batch_size, 256)), jnp.zeros((batch_size, 256)))
+                
+                # Step 1: Hitung old_log_probs secara sequence (unrolled over time)
+                old_log_probs, _ = compute_old_log_probs_and_values_seq(
+                    state, seq_jax, glob_jax, carry_init, target_a_jax, mask_jax
                 )
+                
+                # Normalisasi keuntungan di level batch untuk kestabilan pelatihan
+                # Ini dilakukan di dalam lax.scan di atas secara implisit atau bisa dipindahkan ke sini jika mau lebih presisi.
+                
+                # Step 2: Lakukan PPO Update di sepanjang sequence
+                for _ in range(args.ppo_epochs):
+                    state, total_loss, p_loss, v_loss, ent_loss = ppo_train_step_seq(
+                        state, seq_jax, glob_jax, carry_init, target_a_jax, mask_jax, 
+                        target_v_jax, valid_jax, old_log_probs, 
+                        clip_eps=args.clip_eps, 
+                        value_coef=args.value_coef, 
+                        entropy_coef=args.entropy_coef
+                    )
+                
+                epoch_loss += total_loss.item()
+                epoch_p_loss += p_loss.item()
+                epoch_v_loss += v_loss.item()
+                epoch_ent_loss += ent_loss.item()
+                batches += 1
+                pbar.set_postfix(
+                    L=f"{epoch_loss/batches:.3f}", 
+                    P=f"{epoch_p_loss/batches:.3f}", 
+                    V=f"{epoch_v_loss/batches:.3f}"
+                )
+                
+            avg_epoch_loss = epoch_loss / batches
+            print(f"Epoch {epoch+1} Loss: {avg_epoch_loss:.4f} (Pol: {epoch_p_loss/batches:.4f}, Val: {epoch_v_loss/batches:.4f}, Ent: {epoch_ent_loss/batches:.4f})")
             
-            epoch_loss += total_loss.item()
-            epoch_p_loss += p_loss.item()
-            epoch_v_loss += v_loss.item()
-            epoch_ent_loss += ent_loss.item()
-            batches += 1
-            pbar.set_postfix(
-                L=f"{epoch_loss/batches:.3f}", 
-                P=f"{epoch_p_loss/batches:.3f}", 
-                V=f"{epoch_v_loss/batches:.3f}"
-            )
-            
-        avg_epoch_loss = epoch_loss / batches
-        print(f"Epoch {epoch+1} Loss: {avg_epoch_loss:.4f} (Pol: {epoch_p_loss/batches:.4f}, Val: {epoch_v_loss/batches:.4f}, Ent: {epoch_ent_loss/batches:.4f})")
-        
-        if avg_epoch_loss < best_loss:
-            print(f"Loss improved from {best_loss:.4f} to {avg_epoch_loss:.4f}. Saving best model...")
-            best_loss = avg_epoch_loss
-            if args.save_dir:
-                os.makedirs(args.save_dir, exist_ok=True)
-                with open(model_path, 'wb') as f:
-                    f.write(serialization.to_bytes(state.params))
-                print(f"Saved best checkpoint to {model_path}")
-        else:
-            print(f"Loss did not improve from {best_loss:.4f}.")
-            
-    print("\nUploading final best model to Kaggle...")
-    upload_to_kaggle(args.save_dir, message="Sync best model_ptr_v3 from Offline PPO")
-    print("Done.")
-            
-except KeyboardInterrupt:
-    print("\nTraining interrupted by user. Saved current progress.")
+            if avg_epoch_loss < best_loss:
+                print(f"Loss improved from {best_loss:.4f} to {avg_epoch_loss:.4f}. Saving best model...")
+                best_loss = avg_epoch_loss
+                if args.save_dir:
+                    os.makedirs(args.save_dir, exist_ok=True)
+                    with open(model_path, 'wb') as f:
+                        f.write(serialization.to_bytes(state.params))
+                    print(f"Saved best checkpoint to {model_path}")
+            else:
+                print(f"Loss did not improve from {best_loss:.4f}.")
+                
+        print("\nUploading final best model to Kaggle...")
+        upload_to_kaggle(args.save_dir, message="Sync best model_ptr_v3 from Offline PPO")
+        print("Done.")
+                
+    except KeyboardInterrupt:
+        print("\nTraining interrupted by user. Saved current progress.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train PTRModel using Sequence-Based Offline PPO")
