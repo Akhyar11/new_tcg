@@ -201,16 +201,25 @@ def calculate_potential(state, player_index: int) -> float:
     
     hp_ratio_diff = my_hp_ratio - opp_hp_ratio
     energy_diff = my_energy_count - opp_energy_count
-    deck_diff = my_state.deckCount - opp_state.deckCount
     
-    # Combine potentials dengan pembobotan seimbang (PBRS Linear)
+    # 6. Deck Count Potential with Two-Zone Critical Penalty Protection
+    deck_diff = my_state.deckCount - opp_state.deckCount
+    deck_potential = deck_diff * 0.002
+
+    my_deck_count = getattr(my_state, 'deckCount', 60)
+    if my_deck_count < 15:
+        # Penalti bahaya eksponensial saat dek < 15 kartu (mencegah Deck-Out)
+        critical_deck_penalty = -0.40 * ((15 - my_deck_count) / 15.0) ** 2
+        deck_potential += critical_deck_penalty
+
+    # Combine potentials dengan pembobotan seimbang (PBRS Linear + Critical Deck Threshold)
     potential = (prize_diff * 0.25) + \
                 (board_quality_diff * 0.15) + \
                 (hand_diff * 0.12) + \
                 (evo_diff * 0.10) + \
                 (hp_ratio_diff * 0.08) + \
                 (energy_diff * 0.05) + \
-                (deck_diff * 0.0002)
+                deck_potential
     
     return float(potential)
 
