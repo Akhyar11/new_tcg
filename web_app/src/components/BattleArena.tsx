@@ -60,6 +60,93 @@ export default function BattleArena({
     });
   };
 
+  // Helper untuk mendapatkan simbol, warna, dan nama tipe Energy berdasarkan data kartu
+  const getEnergySymbolAndColor = (typeStr: string = '', nameStr: string = '') => {
+    const combined = (typeStr || '') + ' ' + (nameStr || '');
+    if (combined.includes('{G}') || combined.toLowerCase().includes('grass')) {
+      return { symbol: '🌿', name: 'Grass', color: '#34d399', border: 'rgba(52, 211, 153, 0.8)' };
+    }
+    if (combined.includes('{L}') || combined.toLowerCase().includes('lightning') || combined.toLowerCase().includes('electric')) {
+      return { symbol: '⚡', name: 'Lightning', color: '#fbbf24', border: 'rgba(251, 191, 36, 0.8)' };
+    }
+    if (combined.includes('{R}') || combined.toLowerCase().includes('fire')) {
+      return { symbol: '🔥', name: 'Fire', color: '#f43f5e', border: 'rgba(244, 63, 94, 0.8)' };
+    }
+    if (combined.includes('{W}') || combined.toLowerCase().includes('water')) {
+      return { symbol: '💧', name: 'Water', color: '#38bdf8', border: 'rgba(56, 189, 248, 0.8)' };
+    }
+    if (combined.includes('{P}') || combined.toLowerCase().includes('psychic')) {
+      return { symbol: '🔮', name: 'Psychic', color: '#c084fc', border: 'rgba(192, 132, 252, 0.8)' };
+    }
+    if (combined.includes('{F}') || combined.toLowerCase().includes('fighting')) {
+      return { symbol: '🥊', name: 'Fighting', color: '#fb923c', border: 'rgba(251, 146, 60, 0.8)' };
+    }
+    if (combined.includes('{D}') || combined.toLowerCase().includes('darkness') || combined.toLowerCase().includes('dark')) {
+      return { symbol: '👁️', name: 'Darkness', color: '#94a3b8', border: 'rgba(148, 163, 184, 0.8)' };
+    }
+    if (combined.includes('{M}') || combined.toLowerCase().includes('metal')) {
+      return { symbol: '⚙️', name: 'Metal', color: '#cbd5e1', border: 'rgba(203, 213, 225, 0.8)' };
+    }
+    return { symbol: '⭐', name: 'Colorless', color: '#e2e8f0', border: 'rgba(226, 232, 240, 0.8)' };
+  };
+
+  // Helper untuk merender Badges Energi yang terpasang secara dinamis per tipe
+  const renderEnergyBadges = (energyCards: any[], isBench: boolean = false) => {
+    if (!energyCards || energyCards.length === 0) return null;
+
+    const groups: { [key: string]: { symbol: string; count: number; color: string; border: string } } = {};
+
+    energyCards.forEach((en) => {
+      const typeStr = en['Type'] || '';
+      const nameStr = en['Card Name'] || '';
+      const info = getEnergySymbolAndColor(typeStr, nameStr);
+
+      if (!groups[info.symbol]) {
+        groups[info.symbol] = { symbol: info.symbol, count: 0, color: info.color, border: info.border };
+      }
+      groups[info.symbol].count += 1;
+    });
+
+    const badgeList = Object.values(groups);
+
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          top: isBench ? '-6px' : '-8px',
+          left: isBench ? '4px' : '8px',
+          zIndex: 30,
+          display: 'flex',
+          gap: '3px',
+          flexWrap: 'wrap',
+        }}
+      >
+        {badgeList.map((b, i) => (
+          <div
+            key={i}
+            style={{
+              background: 'rgba(15, 23, 42, 0.95)',
+              border: `1px solid ${b.border}`,
+              borderRadius: isBench ? '10px' : '12px',
+              padding: isBench ? '1px 5px' : '2px 7px',
+              fontSize: isBench ? '0.6rem' : '0.7rem',
+              fontWeight: '800',
+              color: b.color,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '3px',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.8)',
+              backdropFilter: 'blur(8px)',
+            }}
+          >
+            <span>{b.symbol}</span>
+            <span>{b.count}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   // Helper untuk merender HP Progress Bar Badge
   const renderHPBadge = (card: any) => {
     if (!card || card.isFacedown || card.hp === undefined || !card.maxHp) return null;
@@ -438,13 +525,8 @@ export default function BattleArena({
               {aiActive && !aiActive.isFacedown ? (
                 <>
                   <img src={`/assets/cards/${aiActive['Card ID'] || aiActive.engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, aiActive, aiActive.energyCards)} />
-                  {/* Energy Badge Pill HUD */}
-                  {aiActive.energyCards && aiActive.energyCards.length > 0 && (
-                    <div style={{ position: 'absolute', top: '-8px', left: '8px', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.7)', borderRadius: '12px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
-                      <span>⚡</span>
-                      <span>{aiActive.energyCards.length}</span>
-                    </div>
-                  )}
+                  {/* Dynamic Energy Badges HUD */}
+                  {renderEnergyBadges(aiActive.energyCards)}
                   {renderHPBadge(aiActive)}
                 </>
               ) : aiActive && aiActive.isFacedown ? (
@@ -463,13 +545,8 @@ export default function BattleArena({
                   {aiBench[i] && !aiBench[i].isFacedown ? (
                     <>
                       <img src={`/assets/cards/${aiBench[i]['Card ID'] || aiBench[i].engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, aiBench[i], aiBench[i].energyCards)} />
-                      {/* Energy Badge Pill HUD */}
-                      {aiBench[i].energyCards && aiBench[i].energyCards.length > 0 && (
-                        <div style={{ position: 'absolute', top: '-6px', left: '4px', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.7)', borderRadius: '10px', padding: '1px 6px', fontSize: '0.6rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 4px 10px rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
-                          <span>⚡</span>
-                          <span>{aiBench[i].energyCards.length}</span>
-                        </div>
-                      )}
+                      {/* Dynamic Energy Badges HUD */}
+                      {renderEnergyBadges(aiBench[i].energyCards, true)}
                       {renderHPBadge(aiBench[i])}
                     </>
                   ) : aiBench[i] && aiBench[i].isFacedown ? (
@@ -613,13 +690,8 @@ export default function BattleArena({
               {playerActive && !playerActive.isFacedown ? (
                 <>
                   <img src={`/assets/cards/${playerActive['Card ID'] || playerActive.engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, playerActive, playerActive?.energyCards)} />
-                  {/* Energy Badge Pill HUD */}
-                  {playerActive.energyCards && playerActive.energyCards.length > 0 && (
-                    <div style={{ position: 'absolute', top: '-8px', left: '8px', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.7)', borderRadius: '12px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
-                      <span>⚡</span>
-                      <span>{playerActive.energyCards.length}</span>
-                    </div>
-                  )}
+                  {/* Dynamic Energy Badges HUD */}
+                  {renderEnergyBadges(playerActive?.energyCards)}
                   {renderHPBadge(playerActive)}
                 </>
               ) : playerActive && playerActive.isFacedown ? (
@@ -640,13 +712,8 @@ export default function BattleArena({
                   {benchCard && !benchCard.isFacedown ? (
                     <>
                       <img src={`/assets/cards/${benchCard['Card ID'] || benchCard.engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, benchCard, benchCard?.energyCards)} />
-                      {/* Energy Badge Pill HUD */}
-                      {benchCard.energyCards && benchCard.energyCards.length > 0 && (
-                        <div style={{ position: 'absolute', top: '-6px', left: '4px', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.7)', borderRadius: '10px', padding: '1px 6px', fontSize: '0.6rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 4px 10px rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
-                          <span>⚡</span>
-                          <span>{benchCard.energyCards.length}</span>
-                        </div>
-                      )}
+                      {/* Dynamic Energy Badges HUD */}
+                      {renderEnergyBadges(benchCard?.energyCards, true)}
                       {renderHPBadge(benchCard)}
                     </>
                   ) : benchCard && benchCard.isFacedown ? (
