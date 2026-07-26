@@ -456,10 +456,13 @@ export default function PlayAIVsAIPage() {
               {aiActive && !aiActive.isFacedown ? (
                 <>
                   <img src={`/assets/cards/${aiActive['Card ID']}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: aiActive, energies: aiActive.energyCards || [] }); }} />
-                  {/* Energy Underneath */}
-                  {aiActive.energyCards && aiActive.energyCards.map((en: any, i: number) => (
-                    <img key={i} src={`/assets/cards/${en['Card ID']}.png`} style={{ position: 'absolute', width: '100%', height: '100%', top: `${(i + 1) * 15}px`, left: 0, zIndex: 1, borderRadius: '8px' }} />
-                  ))}
+                  {/* Energy Badge Pill HUD */}
+                  {aiActive.energyCards && aiActive.energyCards.length > 0 && (
+                    <div style={{ position: 'absolute', top: '-8px', left: '8px', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.7)', borderRadius: '12px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
+                      <span>⚡</span>
+                      <span>{aiActive.energyCards.length}</span>
+                    </div>
+                  )}
                   {aiActive.hp !== undefined && aiActive.hp < aiActive.maxHp && (
                     <div style={{ position: 'absolute', bottom: '-10px', right: '-10px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', zIndex: 20 }}>{aiActive.maxHp - aiActive.hp}</div>
                   )}
@@ -476,9 +479,13 @@ export default function PlayAIVsAIPage() {
                   {aiBench[i] && !aiBench[i].isFacedown ? (
                     <>
                       <img src={`/assets/cards/${aiBench[i]['Card ID']}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: aiBench[i], energies: aiBench[i].energyCards || [] }); }} />
-                      {aiBench[i].energyCards && aiBench[i].energyCards.map((en: any, ei: number) => (
-                        <img key={ei} src={`/assets/cards/${en['Card ID']}.png`} style={{ position: 'absolute', width: '100%', height: '100%', top: `${(ei + 1) * 10}px`, left: 0, zIndex: 1, borderRadius: '6px' }} />
-                      ))}
+                      {/* Energy Badge Pill HUD */}
+                      {aiBench[i].energyCards && aiBench[i].energyCards.length > 0 && (
+                        <div style={{ position: 'absolute', top: '-6px', left: '4px', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.7)', borderRadius: '10px', padding: '1px 6px', fontSize: '0.6rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 4px 10px rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
+                          <span>⚡</span>
+                          <span>{aiBench[i].energyCards.length}</span>
+                        </div>
+                      )}
                     </>
                   ) : aiBench[i] && aiBench[i].isFacedown ? (
                     <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '6px' }} />
@@ -551,9 +558,13 @@ export default function PlayAIVsAIPage() {
               {playerActive && !playerActive.isFacedown ? (
                 <>
                   <img src={`/assets/cards/${playerActive['Card ID']}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: playerActive, energies: playerActive.energyCards || [] }); }} />
-                  {playerActive.energyCards && playerActive.energyCards.map((en: any, i: number) => (
-                    <img key={i} src={`/assets/cards/${en['Card ID']}.png`} style={{ position: 'absolute', width: '100%', height: '100%', top: `${(i + 1) * 15}px`, left: 0, zIndex: 1, borderRadius: '8px' }} />
-                  ))}
+                  {/* Energy Badge Pill HUD */}
+                  {playerActive.energyCards && playerActive.energyCards.length > 0 && (
+                    <div style={{ position: 'absolute', top: '-8px', left: '8px', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.7)', borderRadius: '12px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
+                      <span>⚡</span>
+                      <span>{playerActive.energyCards.length}</span>
+                    </div>
+                  )}
                   {playerActive.hp !== undefined && playerActive.hp < playerActive.maxHp && (
                     <div style={{ position: 'absolute', top: '-10px', right: '-10px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', zIndex: 20 }}>{playerActive.maxHp - playerActive.hp}</div>
                   )}
@@ -575,9 +586,13 @@ export default function PlayAIVsAIPage() {
                   {benchCard && !benchCard.isFacedown ? (
                     <>
                       <img src={`/assets/cards/${benchCard['Card ID']}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: benchCard, energies: benchCard.energyCards || [] }); }} />
-                      {benchCard.energyCards && benchCard.energyCards.map((en: any, ei: number) => (
-                        <img key={ei} src={`/assets/cards/${en['Card ID']}.png`} style={{ position: 'absolute', width: '100%', height: '100%', top: `${(ei + 1) * 10}px`, left: 0, zIndex: 1, borderRadius: '6px' }} />
-                      ))}
+                      {/* Energy Badge Pill HUD */}
+                      {benchCard.energyCards && benchCard.energyCards.length > 0 && (
+                        <div style={{ position: 'absolute', top: '-6px', left: '4px', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.7)', borderRadius: '10px', padding: '1px 6px', fontSize: '0.6rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 4px 10px rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
+                          <span>⚡</span>
+                          <span>{benchCard.energyCards.length}</span>
+                        </div>
+                      )}
                     </>
                   ) : benchCard && benchCard.isFacedown ? (
                     <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '6px' }} />
