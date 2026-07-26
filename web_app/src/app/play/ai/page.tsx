@@ -200,6 +200,8 @@ export default function PlayAIPage() {
   let aiDeckCountVal: number = 60 - aiHandCount;
   let aiPrizeCards: any[] = [...Array(6)];
 
+  let stadiumCard: any = null;
+
   const deckOrDiscardOptions = useMemo(() => {
     if (!obs?.select?.option) return [];
     return obs.select.option
@@ -282,8 +284,11 @@ export default function PlayAIPage() {
         }
       });
     }
-    if (p1.discard) {
-      aiDiscard = p1.discard.map((c: any) => ({ ...getCardInfo(c.id), engineSerial: c.serial, engineId: c.id }));
+    // Stadium Card (Global Field)
+    if (p0.stadium && p0.stadium.length > 0 && p0.stadium[0]) {
+      stadiumCard = { ...getCardInfo(p0.stadium[0].id), engineSerial: p0.stadium[0].serial, engineId: p0.stadium[0].id };
+    } else if (p1.stadium && p1.stadium.length > 0 && p1.stadium[0]) {
+      stadiumCard = { ...getCardInfo(p1.stadium[0].id), engineSerial: p1.stadium[0].serial, engineId: p1.stadium[0].id };
     }
   }
 
@@ -591,8 +596,51 @@ export default function PlayAIPage() {
           </div>
         )}
 
-        {/* Divider */}
-        <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '0 4rem' }} />
+        {/* CENTRAL STADIUM SLOT */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', margin: '-0.5rem 0' }}>
+          <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', flex: 1 }} />
+          
+          <div 
+            onClick={() => { if (stadiumCard) setPreviewCard({ card: stadiumCard, energies: [] }); }}
+            style={{ 
+              width: '90px', 
+              height: '126px', 
+              border: stadiumCard ? '2px solid #34d399' : '2px dashed rgba(52, 211, 153, 0.3)', 
+              borderRadius: '8px', 
+              background: stadiumCard ? 'rgba(52, 211, 153, 0.1)' : 'rgba(15, 23, 42, 0.7)', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              position: 'relative', 
+              cursor: stadiumCard ? 'pointer' : 'default',
+              boxShadow: stadiumCard ? '0 0 20px rgba(52, 211, 153, 0.4)' : 'none',
+              transition: 'all 0.3s ease',
+              zIndex: 50,
+              margin: '0 2rem'
+            }}
+          >
+            {stadiumCard ? (
+              <>
+                <img 
+                  src={`/assets/cards/${stadiumCard['Card ID']}.png`} 
+                  style={{ width: '100%', height: '100%', borderRadius: '6px', objectFit: 'contain' }} 
+                  alt={stadiumCard['Card Name'] || 'Stadium'} 
+                />
+                <div style={{ position: 'absolute', bottom: '-8px', background: '#34d399', color: '#0f172a', padding: '0.1rem 0.5rem', borderRadius: '10px', fontSize: '0.65rem', fontWeight: '900', letterSpacing: '0.5px' }}>
+                  STADIUM
+                </div>
+              </>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: 'rgba(52, 211, 153, 0.5)' }}>
+                <span style={{ fontSize: '1.2rem' }}>🏟️</span>
+                <span style={{ fontSize: '0.65rem', fontWeight: 'bold', letterSpacing: '1px' }}>STADIUM</span>
+              </div>
+            )}
+          </div>
+
+          <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', flex: 1 }} />
+        </div>
 
         {/* ================= PLAYER HALF ================= */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, 'generic', 0)}>
