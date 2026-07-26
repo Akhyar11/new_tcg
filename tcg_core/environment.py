@@ -5,11 +5,13 @@ class TCGEnvironment:
     """
     A Gym-like wrapper for the C++ TCG Engine.
     """
-    def __init__(self):
+    def __init__(self, critic_fn=None):
         self.obs = None
         self.done = True
         self.deck0 = None
         self.deck1 = None
+        self.critic_fn = critic_fn
+        self.last_value = 0.0
 
     def reset(self, deck0, deck1):
         """
@@ -21,6 +23,12 @@ class TCGEnvironment:
         obs_dict, _ = battle_start(self.deck0, self.deck1)
         self.obs = to_dataclass(obs_dict, Observation)
         self.done = False
+        
+        if self.critic_fn:
+            self.last_value = self.critic_fn(self.obs)
+        else:
+            self.last_value = 0.0
+            
         return self.obs, self.done
 
     def step(self, choices):
@@ -47,12 +55,18 @@ class TCGEnvironment:
 
         self.done = (self.obs.current is None) or (self.obs.current.result != -1)
         
+        step_reward = 0.0
+        if self.critic_fn and not self.done:
+            current_value = self.critic_fn(self.obs)
+            step_reward = current_value - self.last_value
+            self.last_value = current_value
+            
         info = {
             "turn": self.obs.current.turn if self.obs.current else 0,
             "result": self.obs.current.result if self.obs.current else -1
         }
         
-        return self.obs, 0, self.done, info
+        return self.obs, step_reward, self.done, info
 
     def close(self):
         """
