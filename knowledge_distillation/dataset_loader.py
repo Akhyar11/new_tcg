@@ -129,15 +129,19 @@ class KaggleReplayDataset(Dataset):
                 
                 if len(seq_list) > 0:
                     self.samples.append({
-                        "seq": np.stack(seq_list).astype(np.float32),
-                        "glob": np.stack(glob_list).astype(np.float32),
-                        "ta": np.array(target_a_list, dtype=np.int64),
-                        "tv": np.array(target_v_list, dtype=np.float32),
-                        "mask": np.stack(mask_list).astype(np.float32)
+                        "seq": np.stack(seq_list).astype(np.int16),
+                        "glob": np.stack(glob_list).astype(np.int16),
+                        "ta": np.array(target_a_list, dtype=np.int16),
+                        "tv": np.array(target_v_list, dtype=np.float16),
+                        "mask": np.stack(mask_list).astype(np.bool_)
                     })
             
             # Hapus data mentah json agar RAM efisien
             del data, steps
+            
+            # Paksa Garbage Collector berjalan secara periodik untuk menghindari penumpukan memori
+            if len(self.samples) % 500 == 0:
+                gc.collect()
             
         print(f"Selesai! Tercatat {len(self.samples)} kombinasi game player yang valid tersimpan di RAM.")
 
