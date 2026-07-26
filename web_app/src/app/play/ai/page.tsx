@@ -505,10 +505,30 @@ export default function PlayAIPage() {
               {aiActive && !aiActive.isFacedown ? (
                 <>
                   <img src={`/assets/cards/${aiActive['Card ID']}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: aiActive, energies: aiActive.energyCards || [] }); }} />
-                  {/* Energy Underneath */}
+                  {/* Compact Energy Fan Underneath */}
                   {aiActive.energyCards && aiActive.energyCards.map((en: any, i: number) => (
-                    <img key={i} src={`/assets/cards/${en['Card ID']}.png`} style={{ position: 'absolute', width: '100%', height: '100%', top: `${(i + 1) * 15}px`, left: 0, zIndex: 1, borderRadius: '8px' }} />
+                    <img 
+                      key={i} 
+                      src={`/assets/cards/${en['Card ID']}.png`} 
+                      style={{ 
+                        position: 'absolute', 
+                        width: '100%', 
+                        height: '100%', 
+                        top: `${Math.min((i + 1) * 4, 12)}px`, 
+                        left: `-${Math.min((i + 1) * 8, 24)}px`, 
+                        zIndex: 1, 
+                        borderRadius: '8px',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.5)'
+                      }} 
+                    />
                   ))}
+                  {/* Energy Badge Pill */}
+                  {aiActive.energyCards && aiActive.energyCards.length > 0 && (
+                    <div style={{ position: 'absolute', bottom: '-8px', left: '30%', transform: 'translateX(-50%)', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.6)', borderRadius: '12px', padding: '1px 6px', fontSize: '0.65rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+                      <span>⚡</span>
+                      <span>{aiActive.energyCards.length}</span>
+                    </div>
+                  )}
                   {renderHPBadge(aiActive)}
                 </>
               ) : aiActive && aiActive.isFacedown ? (
@@ -524,8 +544,27 @@ export default function PlayAIPage() {
                     <>
                       <img src={`/assets/cards/${aiBench[i]['Card ID']}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: aiBench[i], energies: aiBench[i].energyCards || [] }); }} />
                       {aiBench[i].energyCards && aiBench[i].energyCards.map((en: any, ei: number) => (
-                        <img key={ei} src={`/assets/cards/${en['Card ID']}.png`} style={{ position: 'absolute', width: '100%', height: '100%', top: `${(ei + 1) * 10}px`, left: 0, zIndex: 1, borderRadius: '6px' }} />
+                        <img 
+                          key={ei} 
+                          src={`/assets/cards/${en['Card ID']}.png`} 
+                          style={{ 
+                            position: 'absolute', 
+                            width: '100%', 
+                            height: '100%', 
+                            top: `${Math.min((ei + 1) * 3, 9)}px`, 
+                            left: `-${Math.min((ei + 1) * 6, 18)}px`, 
+                            zIndex: 1, 
+                            borderRadius: '6px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                          }} 
+                        />
                       ))}
+                      {aiBench[i].energyCards && aiBench[i].energyCards.length > 0 && (
+                        <div style={{ position: 'absolute', bottom: '-6px', left: '30%', transform: 'translateX(-50%)', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.6)', borderRadius: '10px', padding: '1px 4px', fontSize: '0.6rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.8)' }}>
+                          <span>⚡</span>
+                          <span>{aiBench[i].energyCards.length}</span>
+                        </div>
+                      )}
                       {renderHPBadge(aiBench[i])}
                     </>
                   ) : aiBench[i] && aiBench[i].isFacedown ? (
@@ -661,9 +700,30 @@ export default function PlayAIPage() {
               {playerActive && !playerActive.isFacedown ? (
                 <>
                   <img src={`/assets/cards/${playerActive['Card ID']}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: playerActive, energies: playerActive.energyCards || [] }); }} />
+                  {/* Compact Energy Fan Underneath */}
                   {playerActive.energyCards && playerActive.energyCards.map((en: any, i: number) => (
-                    <img key={i} src={`/assets/cards/${en['Card ID']}.png`} style={{ position: 'absolute', width: '100%', height: '100%', top: `${(i + 1) * 15}px`, left: 0, zIndex: 1, borderRadius: '8px' }} />
+                    <img 
+                      key={i} 
+                      src={`/assets/cards/${en['Card ID']}.png`} 
+                      style={{ 
+                        position: 'absolute', 
+                        width: '100%', 
+                        height: '100%', 
+                        top: `${Math.min((i + 1) * 4, 12)}px`, 
+                        left: `-${Math.min((i + 1) * 8, 24)}px`, 
+                        zIndex: 1, 
+                        borderRadius: '8px',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.5)'
+                      }} 
+                    />
                   ))}
+                  {/* Energy Badge Pill */}
+                  {playerActive.energyCards && playerActive.energyCards.length > 0 && (
+                    <div style={{ position: 'absolute', bottom: '-8px', left: '30%', transform: 'translateX(-50%)', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.6)', borderRadius: '12px', padding: '1px 6px', fontSize: '0.65rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+                      <span>⚡</span>
+                      <span>{playerActive.energyCards.length}</span>
+                    </div>
+                  )}
                   {renderHPBadge(playerActive)}
                 </>
               ) : playerActive && playerActive.isFacedown ? (
@@ -684,8 +744,27 @@ export default function PlayAIPage() {
                     <>
                       <img src={`/assets/cards/${benchCard['Card ID']}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: benchCard, energies: benchCard.energyCards || [] }); }} />
                       {benchCard.energyCards && benchCard.energyCards.map((en: any, ei: number) => (
-                        <img key={ei} src={`/assets/cards/${en['Card ID']}.png`} style={{ position: 'absolute', width: '100%', height: '100%', top: `${(ei + 1) * 10}px`, left: 0, zIndex: 1, borderRadius: '6px' }} />
+                        <img 
+                          key={ei} 
+                          src={`/assets/cards/${en['Card ID']}.png`} 
+                          style={{ 
+                            position: 'absolute', 
+                            width: '100%', 
+                            height: '100%', 
+                            top: `${Math.min((ei + 1) * 3, 9)}px`, 
+                            left: `-${Math.min((ei + 1) * 6, 18)}px`, 
+                            zIndex: 1, 
+                            borderRadius: '6px',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                          }} 
+                        />
                       ))}
+                      {benchCard.energyCards && benchCard.energyCards.length > 0 && (
+                        <div style={{ position: 'absolute', bottom: '-6px', left: '30%', transform: 'translateX(-50%)', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.6)', borderRadius: '10px', padding: '1px 4px', fontSize: '0.6rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.8)' }}>
+                          <span>⚡</span>
+                          <span>{benchCard.energyCards.length}</span>
+                        </div>
+                      )}
                       {renderHPBadge(benchCard)}
                     </>
                   ) : benchCard && benchCard.isFacedown ? (
