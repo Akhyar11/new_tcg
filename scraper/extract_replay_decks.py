@@ -129,6 +129,10 @@ def write_deck_csv(path: Path, deck: Sequence[int]) -> None:
             writer.writerow([card_id])
 
 
+def log(message: str) -> None:
+    print(f"[extract_replay_decks] {message}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Extract 60-card decks from Kaggle replay JSON files.")
     parser.add_argument(
@@ -161,17 +165,24 @@ def main() -> None:
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    log(f"Mulai ekstraksi dari {input_dir}")
+    log(f"Output deck CSV ke {output_dir}")
+    log(f"Ditemukan {len(replay_files)} replay JSON")
+
     manifest = []
     seen_signatures = set()
     extracted_count = 0
     skipped_count = 0
+    processed_count = 0
 
     for replay_path in replay_files:
+        processed_count += 1
+        log(f"[{processed_count}/{len(replay_files)}] Memproses {replay_path.name}")
         try:
             replay_data = load_json(replay_path)
         except Exception as exc:
             skipped_count += 1
-            print(f"[SKIP] {replay_path.name}: gagal membaca JSON ({exc})")
+            log(f"[SKIP] {replay_path.name}: gagal membaca JSON ({exc})")
             continue
 
         episode_id = None
@@ -183,7 +194,7 @@ def main() -> None:
         extracted_decks = extract_initial_decks(replay_data if isinstance(replay_data, dict) else {})
         if not extracted_decks:
             skipped_count += 1
-            print(f"[SKIP] {replay_path.name}: tidak menemukan deck 60 kartu")
+            log(f"[SKIP] {replay_path.name}: tidak menemukan deck 60 kartu")
             continue
 
         for player_index, deck in extracted_decks:
@@ -192,12 +203,14 @@ def main() -> None:
                 file_stem = f"episode_{episode_id or replay_path.stem}_p{player_index}_{signature}"
             else:
                 if signature in seen_signatures:
+                    log(f"[DUPLICATE] {replay_path.name} p{player_index}: deck sama, dilewati")
                     continue
                 seen_signatures.add(signature)
                 file_stem = f"deck_{signature}"
 
             output_path = output_dir / f"{file_stem}.csv"
             write_deck_csv(output_path, deck)
+            log(f"[OK] {replay_path.name} p{player_index}: deck 60 kartu disimpan ke {output_path.name}")
             manifest.append(
                 {
                     "source_file": replay_path.name,
@@ -225,8 +238,8 @@ def main() -> None:
             ensure_ascii=False,
         )
 
-    print(f"[OK] Extracted {extracted_count} deck file(s) into {output_dir}")
-    print(f"[OK] Manifest saved to {manifest_path}")
+    log(f"Selesai. Extracted {extracted_count} deck file(s), skipped {skipped_count} file(s)")
+    log(f"Manifest saved to {manifest_path}")
 
 
 if __name__ == "__main__":
