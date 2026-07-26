@@ -123,18 +123,12 @@ def main(args):
                     with open(base_path, 'rb') as f:
                         base_params = serialization.from_bytes(None, f.read())
                         
-                        from flax.core import unfreeze, freeze
-                        unfrozen_params = unfreeze(state.params)
-                        
-                        # Copy semua layer/bobot yang memiliki nama sama (Transformer, LSTM, Embedding)
-                        copied_keys = 0
-                        for key in base_params.keys():
-                            if key in unfrozen_params:
-                                unfrozen_params[key] = base_params[key]
-                                copied_keys += 1
-                                
-                        state = state.replace(params=freeze(unfrozen_params))
-                        print(f"Berhasil memasang {copied_keys} layer dari otak Guru (PTR V1) ke Critic!")
+                        if 'CardEmbedding_0' in base_params and 'knowledge_embed' in base_params['CardEmbedding_0']:
+                            from flax.core import unfreeze, freeze
+                            unfrozen_params = unfreeze(state.params)
+                            unfrozen_params['CardEmbedding_0']['knowledge_embed'] = base_params['CardEmbedding_0']['knowledge_embed']
+                            state = state.replace(params=freeze(unfrozen_params))
+                            print("Berhasil memasang otak Guru (HANYA Teacher Embeddings) dari PTR V1 ke Critic!")
                     
     # Replicate state to all devices AFTER loading weights
     state = replicate(state)
