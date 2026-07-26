@@ -310,6 +310,40 @@ export default function PlayAIPage() {
     );
   };
 
+  // Helper untuk merender 6 slot Prize Cards (tampilan berkurang saat diambil)
+  const renderPrizeSlot = (prizeList: any[], index: number, isPlayer: boolean = false) => {
+    const hasCard = index < prizeList.length && prizeList[index] !== undefined && prizeList[index] !== 'empty';
+    const prizeOptIdx = isPlayer && obs?.select?.option
+      ? obs.select.option.findIndex((opt: any) => opt.type === 3 && opt.area === 6 && opt.index === index)
+      : -1;
+    const isSelectable = prizeOptIdx !== -1;
+
+    return (
+      <div 
+        key={index} 
+        onClick={() => { if (isSelectable) sendSelect(prizeOptIdx); }}
+        style={{ 
+          width: '60px', 
+          height: '84px', 
+          border: isSelectable ? '2px solid #ef4444' : '1px dashed rgba(255,255,255,0.1)', 
+          borderRadius: '4px', 
+          position: 'relative', 
+          cursor: isSelectable ? 'pointer' : 'default', 
+          boxShadow: isSelectable ? '0 0 12px rgba(239, 68, 68, 0.8)' : 'none',
+          background: 'rgba(0,0,0,0.25)'
+        }}
+      >
+        {hasCard && (
+          <img 
+            src="/assets/cards/back.png" 
+            style={{ width: '100%', height: '100%', borderRadius: '4px', position: 'absolute', top: 0, left: 0 }} 
+            alt="Prize Card" 
+          />
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050b14', color: 'white', fontFamily: 'sans-serif' }}>Memuat Arena...</div>;
   }
@@ -456,11 +490,7 @@ export default function PlayAIPage() {
 
           {/* Left: Prize Cards */}
           <div style={{ width: '180px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-            {aiPrizeCards.map((_, i) => (
-              <div key={i} style={{ width: '60px', height: '84px', border: '1px dashed #333', borderRadius: '4px', position: 'relative' }}>
-                <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px', position: 'absolute', top: 0, left: 0 }} alt="Prize Back" />
-              </div>
-            ))}
+            {[...Array(6)].map((_, i) => renderPrizeSlot(aiPrizeCards, i, false))}
           </div>
 
           {/* Center: Active & Bench */}
@@ -569,19 +599,7 @@ export default function PlayAIPage() {
 
           {/* Left: Prize Cards */}
           <div style={{ width: '180px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-            {playerPrizeCards.map((_, i) => {
-              const prizeOptIdx = obs?.select?.option?.findIndex((opt: any) => opt.type === 3 && opt.area === 6 && opt.index === i);
-              const isSelectable = prizeOptIdx !== undefined && prizeOptIdx !== -1;
-              return (
-                <div 
-                  key={i} 
-                  onClick={() => { if (isSelectable) sendSelect(prizeOptIdx); }}
-                  style={{ width: '60px', height: '84px', border: isSelectable ? '2px solid #ef4444' : '1px dashed #333', borderRadius: '4px', position: 'relative', cursor: isSelectable ? 'pointer' : 'default', boxShadow: isSelectable ? '0 0 10px rgba(239, 68, 68, 0.8)' : 'none' }}
-                >
-                  <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px', position: 'absolute', top: 0, left: 0 }} alt="Prize Back" />
-                </div>
-              );
-            })}
+            {[...Array(6)].map((_, i) => renderPrizeSlot(playerPrizeCards, i, true))}
           </div>
 
           {/* Center: Active & Bench */}
