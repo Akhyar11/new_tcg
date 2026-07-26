@@ -77,10 +77,10 @@ def compute_old_log_probs_and_values_seq(state, seq_batch, glob_batch, carry_ini
     
     return jax.lax.stop_gradient(old_log_probs), jax.lax.stop_gradient(old_values)
 
-@functools.partial(jax.pmap, axis_name='batch')
+@functools.partial(jax.pmap, axis_name='batch', static_broadcasted_argnums=(9, 10, 11))
 def ppo_train_step_seq(state, seq_batch, glob_batch, carry_init, action_batch, mask_batch, 
-                       target_value_batch, valid_mask_batch, old_log_probs, clip_eps=0.2, 
-                       value_coef=0.5, entropy_coef=0.01):
+                       target_value_batch, valid_mask_batch, old_log_probs, clip_eps, 
+                       value_coef, entropy_coef):
     def loss_fn(params):
         @jax.remat
         def scan_fn(carry, step_inputs):
@@ -242,9 +242,9 @@ def main(args):
                     state, total_loss, p_loss, v_loss, ent_loss = ppo_train_step_seq(
                         state, seq_jax, glob_jax, carry_init, target_a_jax, mask_jax, 
                         target_v_jax, valid_jax, old_log_probs, 
-                        clip_eps=args.clip_eps, 
-                        value_coef=args.value_coef, 
-                        entropy_coef=args.entropy_coef
+                        args.clip_eps, 
+                        args.value_coef, 
+                        args.entropy_coef
                     )
                 
                 epoch_loss += total_loss.item()
