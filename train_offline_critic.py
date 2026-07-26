@@ -117,18 +117,24 @@ def main(args):
                 with open(model_path, 'rb') as f:
                     state = state.replace(params=serialization.from_bytes(state.params, f.read()))
             else:
-                base_path = os.path.join(args.save_dir, "model_base.msgpack")
+                base_path = os.path.join(args.save_dir, "model_lstm_pointer_final.msgpack")
                 if os.path.exists(base_path):
-                    print(f"Loading Teacher Embeddings from {base_path}...")
+                    print(f"Loading Teacher Weights from {base_path} (PTR V1)...")
                     with open(base_path, 'rb') as f:
                         base_params = serialization.from_bytes(None, f.read())
-                        # Load only the knowledge_embed dictionary safely
-                        if 'CardEmbedding_0' in base_params and 'knowledge_embed' in base_params['CardEmbedding_0']:
-                            from flax.core import unfreeze, freeze
-                            unfrozen_params = unfreeze(state.params)
-                            unfrozen_params['CardEmbedding_0']['knowledge_embed'] = base_params['CardEmbedding_0']['knowledge_embed']
-                            state = state.replace(params=freeze(unfrozen_params))
-                            print("Berhasil memasang otak Guru (Teacher Embeddings) ke Critic!")
+                        
+                        from flax.core import unfreeze, freeze
+                        unfrozen_params = unfreeze(state.params)
+                        
+                        # Copy semua layer/bobot yang memiliki nama sama (Transformer, LSTM, Embedding)
+                        copied_keys = 0
+                        for key in base_params.keys():
+                            if key in unfrozen_params:
+                                unfrozen_params[key] = base_params[key]
+                                copied_keys += 1
+                                
+                        state = state.replace(params=freeze(unfrozen_params))
+                        print(f"Berhasil memasang {copied_keys} layer dari otak Guru (PTR V1) ke Critic!")
                     
     # Replicate state to all devices AFTER loading weights
     state = replicate(state)
