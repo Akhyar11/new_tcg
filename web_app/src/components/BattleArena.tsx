@@ -482,13 +482,13 @@ export default function BattleArena({
       )}
 
       {/* TOP ROW: OPPONENT HAND */}
-      <div style={{ paddingTop: '2.2rem', paddingBottom: '0.3rem', paddingLeft: '1rem', paddingRight: '1rem', display: 'flex', justifyContent: 'center', gap: '5px', height: '95px', flexShrink: 0 }}>
+      <div style={{ paddingTop: '2rem', paddingBottom: '0.2rem', paddingLeft: '1rem', paddingRight: '1rem', display: 'flex', justifyContent: 'center', gap: '5px', height: '100px', flexShrink: 0 }}>
         {isSpectator && Array.isArray(aiHand) && aiHand.length > 0 ? (
           aiHand.map((card, i) => (
             <div
               key={i}
               onContextMenu={(e) => handleCardContextMenu(e, card)}
-              style={{ width: '55px', height: '77px', transition: 'transform 0.2s', position: 'relative' }}
+              style={{ width: '65px', height: '91px', transition: 'transform 0.2s', position: 'relative' }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(10px) scale(1.1)'; e.currentTarget.style.zIndex = '100'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.zIndex = '1'; }}
             >
@@ -497,7 +497,7 @@ export default function BattleArena({
           ))
         ) : (
           [...Array(aiHandCountVal)].map((_, i) => (
-            <div key={i} style={{ width: '55px', height: '77px' }}>
+            <div key={i} style={{ width: '65px', height: '91px' }}>
               <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px' }} alt="Card Back" />
             </div>
           ))
@@ -520,7 +520,7 @@ export default function BattleArena({
             {/* Active */}
             <div
               onContextMenu={(e) => handleCardContextMenu(e, aiActive, aiActive?.energyCards)}
-              style={{ position: 'relative', width: '115px', height: '160px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: aiActive && !aiActive.isFacedown ? 'pointer' : 'default' }}
+              style={{ position: 'relative', width: '145px', height: '203px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: aiActive && !aiActive.isFacedown ? 'pointer' : 'default' }}
             >
               {aiActive && !aiActive.isFacedown ? (
                 <>
@@ -535,12 +535,12 @@ export default function BattleArena({
             </div>
 
             {/* Bench Row */}
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '10px' }}>
               {[...Array(5)].map((_, i) => (
                 <div
                   key={i}
                   onContextMenu={(e) => handleCardContextMenu(e, aiBench[i], aiBench[i]?.energyCards)}
-                  style={{ position: 'relative', width: '75px', height: '105px', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '6px', cursor: aiBench[i] && !aiBench[i].isFacedown ? 'pointer' : 'default' }}
+                  style={{ position: 'relative', width: '90px', height: '126px', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '6px', cursor: aiBench[i] && !aiBench[i].isFacedown ? 'pointer' : 'default' }}
                 >
                   {aiBench[i] && !aiBench[i].isFacedown ? (
                     <>
@@ -562,7 +562,7 @@ export default function BattleArena({
             <div style={{ fontSize: '0.75rem', color: '#888' }}>Hand [{aiHandCountVal}]</div>
             <div
               onClick={() => setDiscardViewer({ cards: aiDiscard, title: isSpectator ? 'Discard Player 1' : 'Discard Lawan' })}
-              style={{ position: 'relative', width: '65px', height: '91px', border: '2px dashed #444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              style={{ position: 'relative', width: '75px', height: '105px', border: '2px dashed #444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             >
               {aiDiscard.length > 0 ? (
                 <img src={`/assets/cards/${aiDiscard[aiDiscard.length - 1]['Card ID'] || aiDiscard[aiDiscard.length - 1].engineId}.png`} style={{ width: '100%', height: '100%', borderRadius: '4px', objectFit: 'contain' }} />
@@ -570,7 +570,7 @@ export default function BattleArena({
                 <span style={{ color: '#666', fontSize: '0.7rem' }}>Discard</span>
               )}
             </div>
-            <div style={{ position: 'relative', width: '65px', height: '91px' }}>
+            <div style={{ position: 'relative', width: '75px', height: '105px' }}>
               <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px' }} />
               <div style={{ position: 'absolute', top: '-18px', width: '100%', textAlign: 'center', fontSize: '0.75rem', color: '#888' }}>Deck [{aiDeckCountVal}]</div>
             </div>
@@ -621,13 +621,13 @@ export default function BattleArena({
         {/* CENTRAL ARENA DIVIDER WITH PROMINENT STADIUM SLOT */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', position: 'relative', margin: '0.1rem 0' }}>
           {/* Left: Dedicated Stadium Slot */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', width: '200px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', width: '220px' }}>
             <div
               onClick={() => { if (stadiumCard) setPreviewCard({ card: stadiumCard, energies: [] }); }}
               onContextMenu={(e) => handleCardContextMenu(e, stadiumCard)}
               style={{
-                width: '75px',
-                height: '105px',
+                width: '90px',
+                height: '126px',
                 border: stadiumCard ? '2px solid #34d399' : '2px dashed rgba(52, 211, 153, 0.6)',
                 borderRadius: '8px',
                 background: stadiumCard ? 'rgba(52, 211, 153, 0.15)' : 'rgba(15, 23, 42, 0.85)',
@@ -682,7 +682,7 @@ export default function BattleArena({
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '1.5rem', alignItems: 'center' }}>
             {/* Active */}
             <div
-              style={{ position: 'relative', width: '115px', height: '160px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playerActive && !playerActive.isFacedown ? 'pointer' : 'default' }}
+              style={{ position: 'relative', width: '145px', height: '203px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playerActive && !playerActive.isFacedown ? 'pointer' : 'default' }}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => handleDrop(e, 4, 0)}
               onContextMenu={(e) => handleCardContextMenu(e, playerActive, playerActive?.energyCards)}
@@ -700,11 +700,11 @@ export default function BattleArena({
             </div>
 
             {/* Bench Row */}
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '10px' }}>
               {playerBench.map((benchCard, i) => (
                 <div
                   key={i}
-                  style={{ position: 'relative', width: '75px', height: '105px', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '6px', cursor: benchCard && !benchCard.isFacedown ? 'pointer' : 'default' }}
+                  style={{ position: 'relative', width: '90px', height: '126px', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '6px', cursor: benchCard && !benchCard.isFacedown ? 'pointer' : 'default' }}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => handleDrop(e, 5, i)}
                   onContextMenu={(e) => handleCardContextMenu(e, benchCard, benchCard?.energyCards)}
@@ -726,13 +726,13 @@ export default function BattleArena({
 
           {/* Right: Discard & Deck */}
           <div style={{ width: '160px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
-            <div style={{ position: 'relative', width: '65px', height: '91px' }}>
+            <div style={{ position: 'relative', width: '75px', height: '105px' }}>
               <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px' }} />
               <div style={{ position: 'absolute', top: '-18px', width: '100%', textAlign: 'center', fontSize: '0.75rem', color: '#888' }}>Deck [{playerDeckCount}]</div>
             </div>
             <div
               onClick={() => setDiscardViewer({ cards: playerDiscard, title: isSpectator ? 'Discard Player 0' : 'Discard Anda' })}
-              style={{ position: 'relative', width: '65px', height: '91px', border: '2px dashed #444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              style={{ position: 'relative', width: '75px', height: '105px', border: '2px dashed #444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             >
               {playerDiscard.length > 0 ? (
                 <img src={`/assets/cards/${playerDiscard[playerDiscard.length - 1]['Card ID'] || playerDiscard[playerDiscard.length - 1].engineId}.png`} style={{ width: '100%', height: '100%', borderRadius: '4px', objectFit: 'contain' }} />
@@ -747,7 +747,7 @@ export default function BattleArena({
       </div>
 
       {/* BOTTOM ROW: PLAYER HAND */}
-      <div style={{ padding: '0.4rem 0.5rem', display: 'flex', justifyContent: 'center', gap: '5px', height: '125px', flexShrink: 0, background: 'rgba(0,0,0,0.6)', position: 'relative', zIndex: 100, overflow: 'visible' }}>
+      <div style={{ padding: '0.4rem 0.5rem', display: 'flex', justifyContent: 'center', gap: '5px', height: '135px', flexShrink: 0, background: 'rgba(0,0,0,0.6)', position: 'relative', zIndex: 100, overflow: 'visible' }}>
         {playerHand.map((card, i) => (
           <div
             key={i}
@@ -756,7 +756,7 @@ export default function BattleArena({
               if (!isSpectator) e.dataTransfer.setData('text/plain', JSON.stringify({ area: 2, index: i }));
             }}
             onContextMenu={(e) => handleCardContextMenu(e, card)}
-            style={{ width: '75px', height: '105px', cursor: 'grab', transition: 'transform 0.2s', position: 'relative' }}
+            style={{ width: '85px', height: '119px', cursor: 'grab', transition: 'transform 0.2s', position: 'relative' }}
             onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-15px) scale(1.15)'; e.currentTarget.style.zIndex = '100'; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.zIndex = '1'; }}
           >
