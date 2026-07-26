@@ -150,11 +150,9 @@ def main():
     print(f"Deck: Mega Gardevoir's Symphonia (P0) vs Dachsbun ex Time to Chow Down (P1)")
     
     checkpoints_dir = os.path.join(ROOT, "checkpoints")
-    model_path = os.path.join(checkpoints_dir, "model_ptr_v3.msgpack")
-    if not os.path.exists(model_path):
-        model_path = os.path.join(checkpoints_dir, "model_lstm_pointer_v2_final.msgpack")
+    model_path = os.path.join(checkpoints_dir, "model_lstm_pointer_v2_final.msgpack")
         
-    print(f"[INFO]: Evaluasi PTR Model Checkpoint: {model_path}\n")
+    print(f"[INFO]: Evaluasi Model PTR V2 Checkpoint: {model_path}\n")
     
     from tcg_core.agents import LSTMAgent
     from tcg_core.models.lstm import PokemonAgent as LSTMModel
