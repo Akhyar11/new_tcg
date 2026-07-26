@@ -4,6 +4,7 @@ import glob
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from tqdm import tqdm
 from types import SimpleNamespace
 
 import sys
@@ -49,7 +50,7 @@ class KaggleReplayDataset(Dataset):
 
     def _load_all_files(self):
         print(f"Memuat {len(self.files)} file dari {self.directory}...")
-        for filepath in self.files:
+        for filepath in tqdm(self.files, desc="Parsing Replays"):
             try:
                 with open(filepath, 'r') as f:
                     data = json.load(f)
