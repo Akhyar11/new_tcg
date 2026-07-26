@@ -276,8 +276,11 @@ def main(args):
                 if args.save_dir:
                     os.makedirs(args.save_dir, exist_ok=True)
                     with open(model_path, 'wb') as f:
-                        f.write(serialization.to_bytes(state.params))
+                        from flax.jax_utils import unreplicate
+                        saved_state = unreplicate(state)
+                        f.write(serialization.to_bytes(saved_state.params))
                     print(f"Saved best checkpoint to {model_path}")
+                    upload_to_kaggle(args.save_dir, message=f"Sync best model from Epoch {epoch+1}")
             else:
                 print(f"Loss did not improve from {best_loss:.4f}.")
                 
