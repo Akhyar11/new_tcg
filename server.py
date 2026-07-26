@@ -15,29 +15,56 @@ import jax.numpy as jnp
 import numpy as np
 from flax import serialization
 
-AI_MODEL_PARAMS = None
-AI_MODEL_APPLY = None
+agent_p0 = None
+agent_p1 = None
+
 try:
-    from tcg_core.models.ptr import PokemonAgent
-    print("Memuat JAX AI Model...")
-    model = PokemonAgent(num_actions=250)
-    rng = jax.random.PRNGKey(42)
-    rng, init_rng = jax.random.split(rng)
-    dummy_seq = jnp.zeros((1, 93, 31))
-    dummy_glob = jnp.zeros((1, 266))
-    AI_MODEL_PARAMS = model.init(init_rng, dummy_seq, dummy_glob)
-    
-    cp_path = "checkpoints/model_final.msgpack"
-    if os.path.exists(cp_path):
-        with open(cp_path, 'rb') as f:
-            AI_MODEL_PARAMS = serialization.from_bytes(AI_MODEL_PARAMS, f.read())
-        print(f"JAX AI Model Checkpoint Loaded: {cp_path}")
-    else:
-        print("JAX AI Checkpoint not found, using random weights!")
-    
-    AI_MODEL_APPLY = jax.jit(model.apply)
+    from eval.eval_ptr_gameplay import PointerAgent, action_mapping
+    from tcg_core.models.ptr import PokemonAgent as PTRModel
+
+    checkpoints_dir = "checkpoints"
+    cp_path_p0 = os.path.join(checkpoints_dir, "model_lstm_pointer_v2_final.msgpack")
+    cp_path_p1 = os.path.join(checkpoints_dir, "model_lstm_pointer_final.msgpack")
+    if not os.path.exists(cp_path_p1):
+        cp_path_p1 = os.path.join(checkpoints_dir, "model_final.msgpack")
+
+    print("Memuat JAX AI Agents (P0: LSTM PTR V2 | P1: PTR V1)...")
+    agent_p0 = PointerAgent("PTR_V2_P0", PTRModel, action_mapping, cp_path_p0 if os.path.exists(cp_path_p0) else None)
+    print(f"✅ Player 0 AI Agent (LSTM PTR V2) Ready! Checkpoint: {cp_path_p0}")
+
+    agent_p1 = PointerAgent("PTR_V1_P1", PTRModel, action_mapping, cp_path_p1 if os.path.exists(cp_path_p1) else None)
+    print(f"✅ Player 1 AI Agent (PTR V1) Ready! Checkpoint: {cp_path_p1}")
 except Exception as e:
-    print(f"Gagal memuat JAX AI Model: {e}")
+    print(f"Gagal memuat JAX AI Agents: {e}")
+
+def predict_ai_action(obs, player_index: int):
+    agent = agent_p0 if player_index == 0 else agent_p1
+    model_name = "LSTM PTR V2 (P0)" if player_index == 0 else "PTR V1 (P1)"
+
+    if agent is not None:
+        try:
+            from cg.api import to_dataclass, Observation
+            obs_dataclass = to_dataclass(obs, Observation) if isinstance(obs, dict) else obs
+            choices = agent.select_action(obs_dataclass, deterministic=False)
+            if choices:
+                print(f"JAX AI [{model_name}] auto-playing choices {choices}")
+                return choices
+        except Exception as e:
+            import traceback
+            print(f"Error pada JAX AI Inference [{model_name}]: {e}")
+            traceback.print_exc()
+
+    # Fallback ke Random AI jika model bermasalah
+    select_data = obs.get("select", {}) if isinstance(obs, dict) else (getattr(obs, 'select', {}) or {})
+    opts = select_data.get("option", []) if isinstance(select_data, dict) else (getattr(select_data, 'option', []) or [])
+    min_c = select_data.get("minCount", 1) if isinstance(select_data, dict) else (getattr(select_data, 'minCount', 1) or 1)
+    opt_count = len(opts)
+
+    import random
+    target_c = min(max(min_c, 1), opt_count)
+    choices = random.sample(range(opt_count), target_c) if opt_count > 0 else []
+    print(f"Random AI [{model_name}] auto-playing choices {choices}")
+    return choices
 
 app = FastAPI(title="Pokemon TCG AI Server")
 
@@ -97,7 +124,7 @@ HTML_CONTENT = """
                 logs.appendChild(p);
                 logs.scrollTop = logs.scrollHeight;
             }
-
+            
             ws.onmessage = function(event) {
                 var data = JSON.parse(event.data);
                 logMsg("Server: " + JSON.stringify(data));
@@ -169,13 +196,8 @@ async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     
     async def process_ai_turns(obs):
-        import random
         import asyncio
         import cg.game
-        import numpy as np
-        from cg.api import to_dataclass, Observation, OptionType
-        from tcg_core.feature_extractor import extract_features
-        from tcg_core.action_mapping import get_action_index_for_option, create_action_mask
 
         while obs and obs.get("current", {}).get("yourIndex") == 1:
             await manager.send_personal_message({"type": "update", "obs": obs}, websocket)
@@ -185,62 +207,8 @@ async def websocket_endpoint(websocket: WebSocket):
             if not select_data or not select_data.get("option"):
                 break
 
-            opts = select_data["option"]
-            opt_count = len(opts)
-            min_c = select_data.get("minCount", 1)
-
-            # Jika JAX model tersedia, gunakan model
-            if AI_MODEL_APPLY is not None and AI_MODEL_PARAMS is not None:
-                try:
-                    obs_dataclass = to_dataclass(obs, Observation)
-                    features = extract_features(obs_dataclass.current, obs_dataclass.select, 1)
-
-                    seq_input = np.expand_dims(features["seq_input"], axis=0)
-                    glob_input = np.expand_dims(features["glob_input"], axis=0)
-
-                    masked_logits, _ = AI_MODEL_APPLY(AI_MODEL_PARAMS, seq_input, glob_input)
-                    logits_np = np.array(masked_logits[0])
-
-                    # === Categorical sampling tanpa pengembalian ===
-                    mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs_dataclass.select.option]}
-                    mask_array = create_action_mask(mock_select_dict)
-                    masked = logits_np - 1e9 * (1.0 - mask_array)
-                    logits_exp = np.exp(masked - np.max(masked))
-                    probs = logits_exp / (logits_exp.sum() + 1e-10)
-
-                    sampled_indices = []
-                    remaining = probs.copy()
-                    for _ in range(min_c):
-                        if remaining.sum() <= 0:
-                            break
-                        p = remaining / remaining.sum()
-                        idx = int(np.random.choice(len(p), p=p))
-                        sampled_indices.append(idx)
-                        remaining[idx] = 0.0
-
-                    choices = []
-                    for jax_idx in sampled_indices:
-                        for cpp_idx, opt in enumerate(mock_select_dict["options"]):
-                            mapped_idx = get_action_index_for_option(opt)
-                            if mapped_idx == jax_idx and cpp_idx not in choices:
-                                choices.append(cpp_idx)
-                                break
-
-                    print(f"JAX AI (RL Model) auto-playing choices {choices}")
-                    obs = cg.game.battle_select(choices)
-                except Exception as e:
-                    import traceback
-                    print(f"Error pada JAX AI Inference: {e}")
-                    traceback.print_exc()
-                    print("Fallback ke random agent!")
-                    target_c = min(max(min_c, 1), opt_count)
-                    choices = random.sample(range(opt_count), target_c) if opt_count > 0 else []
-                    obs = cg.game.battle_select(choices)
-            else:
-                target_c = min(max(min_c, 1), opt_count)
-                choices = random.sample(range(opt_count), target_c) if opt_count > 0 else []
-                print(f"Random AI auto-playing choices {choices}")
-                obs = cg.game.battle_select(choices)
+            choices = predict_ai_action(obs, 1)
+            obs = cg.game.battle_select(choices)
                 
         return obs
 
@@ -256,12 +224,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 import glob
                 import random
                 import asyncio
-                import numpy as np
-                from cg.api import to_dataclass, Observation, OptionType
-                from tcg_core.feature_extractor import extract_features
-                from tcg_core.action_mapping import get_action_index_for_option, create_action_mask
 
-                print("Starting AI vs AI battle...")
+                print("Starting AI vs AI battle (P0: LSTM PTR V2 vs P1: PTR V1)...")
                 deck_files = glob.glob("deck_generated/*.csv")
                 
                 # Pick deck for Player 0
@@ -277,11 +241,13 @@ async def websocket_endpoint(websocket: WebSocket):
                 print(f"Player 0 Deck: {deck0_file}")
                 print(f"Player 1 Deck: {deck1_file}")
 
+                if agent_p0 and hasattr(agent_p0, 'reset'): agent_p0.reset()
+                if agent_p1 and hasattr(agent_p1, 'reset'): agent_p1.reset()
+
                 obs, start_data = cg.game.battle_start(deck0, deck1)
                 
                 while obs and obs.get("current", {}).get("result", -1) == -1:
                     frontend_obs = json.loads(cg.game.visualize_data())[-1]
-                    # Add missing select field to frontend_obs if present in engine obs
                     if "select" in obs and "select" not in frontend_obs:
                         frontend_obs["select"] = obs["select"]
                     
@@ -293,62 +259,9 @@ async def websocket_endpoint(websocket: WebSocket):
                         print("No options available. Game over?")
                         break
                         
-                    opts = select_data["option"]
-                    opt_count = len(opts)
-                    min_c = select_data.get("minCount", 1)
                     curr_player = obs.get("current", {}).get("yourIndex", 0)
-
-                    # Jika JAX model tersedia, gunakan model
-                    if AI_MODEL_APPLY is not None and AI_MODEL_PARAMS is not None:
-                        try:
-                            obs_dataclass = to_dataclass(obs, Observation)
-                            features = extract_features(obs_dataclass.current, obs_dataclass.select, curr_player)
-
-                            seq_input = np.expand_dims(features["seq_input"], axis=0)
-                            glob_input = np.expand_dims(features["glob_input"], axis=0)
-
-                            masked_logits, _ = AI_MODEL_APPLY(AI_MODEL_PARAMS, seq_input, glob_input)
-                            logits_np = np.array(masked_logits[0])
-
-                            # === Categorical sampling tanpa pengembalian ===
-                            mock_select_dict = {"options": [{"type": OptionType(o.type).name, "index": o.index} for o in obs_dataclass.select.option]}
-                            mask_array = create_action_mask(mock_select_dict)
-                            masked = logits_np - 1e9 * (1.0 - mask_array)
-                            logits_exp = np.exp(masked - np.max(masked))
-                            probs = logits_exp / (logits_exp.sum() + 1e-10)
-
-                            sampled_indices = []
-                            remaining = probs.copy()
-                            for _ in range(min_c):
-                                if remaining.sum() <= 0:
-                                    break
-                                p = remaining / remaining.sum()
-                                idx = int(np.random.choice(len(p), p=p))
-                                sampled_indices.append(idx)
-                                remaining[idx] = 0.0
-
-                            choices = []
-                            for jax_idx in sampled_indices:
-                                for cpp_idx, opt in enumerate(mock_select_dict["options"]):
-                                    mapped_idx = get_action_index_for_option(opt)
-                                    if mapped_idx == jax_idx and cpp_idx not in choices:
-                                        choices.append(cpp_idx)
-                                        break
-
-                            print(f"JAX AI (Player {curr_player}) auto-playing choices {choices}")
-                            obs = cg.game.battle_select(choices)
-                        except Exception as e:
-                            import traceback
-                            print(f"Error pada JAX AI Inference (Player {curr_player}): {e}")
-                            traceback.print_exc()
-                            target_c = min(max(min_c, 1), opt_count)
-                            choices = random.sample(range(opt_count), target_c) if opt_count > 0 else []
-                            obs = cg.game.battle_select(choices)
-                    else:
-                        target_c = min(max(min_c, 1), opt_count)
-                        choices = random.sample(range(opt_count), target_c) if opt_count > 0 else []
-                        print(f"Random AI (Player {curr_player}) auto-playing choices {choices}")
-                        obs = cg.game.battle_select(choices)
+                    choices = predict_ai_action(obs, curr_player)
+                    obs = cg.game.battle_select(choices)
 
                 if obs:
                     frontend_obs = json.loads(cg.game.visualize_data())[-1]
