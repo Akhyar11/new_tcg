@@ -209,12 +209,27 @@ export default function PlayAIPage() {
       .filter((opt: any) => opt.type === 3 && (opt.area === 1 || opt.area === 3));
   }, [obs?.select]);
 
-  if (obs && obs.current) {
-    const p0 = obs.current.players[0];
-    const p1 = obs.current.players[1];
+  if (obs && obs.current && obs.current.players) {
+    // Detect Human Player vs AI dynamically based on visible hand array
+    const p0 = (obs.current.players[0]?.hand && Array.isArray(obs.current.players[0].hand))
+      ? obs.current.players[0]
+      : (obs.current.players[1]?.hand && Array.isArray(obs.current.players[1].hand))
+      ? obs.current.players[1]
+      : obs.current.players[0];
+
+    const p1 = (p0 === obs.current.players[0])
+      ? obs.current.players[1]
+      : obs.current.players[0];
 
     // Player 0 (Anda)
-    if (p0.deckCount !== undefined) playerDeckCount = p0.deckCount;
+    if (p0.deckCount !== undefined && p0.deckCount !== null) {
+      playerDeckCount = p0.deckCount;
+    } else if (p0.deck_count !== undefined && p0.deck_count !== null) {
+      playerDeckCount = p0.deck_count;
+    } else if (Array.isArray(p0.deck)) {
+      playerDeckCount = p0.deck.length;
+    }
+
     if (p0.prize) playerPrizeCards = p0.prize;
     if (p0.hand) {
       playerHand = p0.hand.map((c: any) => ({ ...getCardInfo(c.id), engineSerial: c.serial, engineId: c.id }));
@@ -252,7 +267,13 @@ export default function PlayAIPage() {
     }
 
     // Player 1 (AI)
-    if (p1.deckCount !== undefined) aiDeckCountVal = p1.deckCount;
+    if (p1.deckCount !== undefined && p1.deckCount !== null) {
+      aiDeckCountVal = p1.deckCount;
+    } else if (p1.deck_count !== undefined && p1.deck_count !== null) {
+      aiDeckCountVal = p1.deck_count;
+    } else if (Array.isArray(p1.deck)) {
+      aiDeckCountVal = p1.deck.length;
+    }
     if (p1.handCount !== undefined) aiHandCountVal = p1.handCount;
     else if (p1.hand) aiHandCountVal = p1.hand.length;
     if (p1.prize) aiPrizeCards = p1.prize;
