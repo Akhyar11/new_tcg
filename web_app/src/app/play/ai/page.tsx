@@ -279,6 +279,26 @@ export default function PlayAIPage() {
   // ================= MOCK DRAG & DROP & ATTACK DIBUANG =================
   // Semua aksi sekarang harus melalui Action Panel dari C++ Engine
 
+  // Helper untuk merender HP Progress Bar Badge
+  const renderHPBadge = (card: any) => {
+    if (!card || card.isFacedown || card.hp === undefined || !card.maxHp) return null;
+    const currentHp = card.hp;
+    const maxHp = card.maxHp;
+    const pct = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
+    const barColor = pct > 50 ? '#34d399' : pct > 20 ? '#fbbf24' : '#f43f5e';
+    return (
+      <div style={{ position: 'absolute', bottom: '4px', left: '4px', right: '4px', background: 'rgba(15, 23, 42, 0.9)', borderRadius: '6px', padding: '3px 6px', border: '1px solid rgba(255,255,255,0.15)', zIndex: 30, display: 'flex', flexDirection: 'column', gap: '2px', backdropFilter: 'blur(4px)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 'bold', color: 'white' }}>
+          <span>HP</span>
+          <span style={{ color: barColor }}>{currentHp}/{maxHp}</span>
+        </div>
+        <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', overflow: 'hidden' }}>
+          <div style={{ width: `${pct}%`, height: '100%', background: barColor, transition: 'width 0.3s' }} />
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050b14', color: 'white', fontFamily: 'sans-serif' }}>Memuat Arena...</div>;
   }
@@ -392,9 +412,21 @@ export default function PlayAIPage() {
     );
   }
 
+  const isPlayerTurn = obs?.current?.yourIndex === 0;
+
   // ================= MAIN ARENA =================
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#121212', color: 'white', fontFamily: '"Inter", sans-serif', overflowX: 'hidden' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#050b14', color: 'white', fontFamily: '"Inter", sans-serif', overflowX: 'hidden', position: 'relative' }}>
+
+      {/* TURN STATUS BANNER HUD */}
+      {obs && (
+        <div style={{ position: 'absolute', top: '1rem', left: '50%', transform: 'translateX(-50%)', zIndex: 200, display: 'flex', alignItems: 'center', gap: '0.8rem', background: isPlayerTurn ? 'rgba(56, 189, 248, 0.12)' : 'rgba(244, 63, 94, 0.12)', border: `1px solid ${isPlayerTurn ? 'rgba(56, 189, 248, 0.5)' : 'rgba(244, 63, 94, 0.5)'}`, borderRadius: '30px', padding: '0.5rem 1.5rem', backdropFilter: 'blur(8px)', boxShadow: isPlayerTurn ? '0 0 20px rgba(56, 189, 248, 0.25)' : '0 0 20px rgba(244, 63, 94, 0.25)' }}>
+          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: isPlayerTurn ? '#38bdf8' : '#f43f5e', boxShadow: `0 0 10px ${isPlayerTurn ? '#38bdf8' : '#f43f5e'}` }} />
+          <span style={{ fontWeight: '900', fontSize: '0.9rem', letterSpacing: '1.5px', color: isPlayerTurn ? '#38bdf8' : '#f43f5e' }}>
+            {isPlayerTurn ? 'GILIRAN ANDA (PLAYER)' : 'GILIRAN LAWAN (JAX AI)'}
+          </span>
+        </div>
+      )}
 
       {/* TOP ROW: OPPONENT HAND */}
       <div style={{ padding: '0.5rem 1rem', display: 'flex', justifyContent: 'center', gap: '5px', minHeight: '120px', flexShrink: 0 }}>
@@ -431,9 +463,7 @@ export default function PlayAIPage() {
                   {aiActive.energyCards && aiActive.energyCards.map((en: any, i: number) => (
                     <img key={i} src={`/assets/cards/${en['Card ID']}.png`} style={{ position: 'absolute', width: '100%', height: '100%', top: `${(i + 1) * 15}px`, left: 0, zIndex: 1, borderRadius: '8px' }} />
                   ))}
-                  {aiActive.hp !== undefined && aiActive.hp < aiActive.maxHp && (
-                    <div style={{ position: 'absolute', bottom: '-10px', right: '-10px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', zIndex: 20 }}>{aiActive.maxHp - aiActive.hp}</div>
-                  )}
+                  {renderHPBadge(aiActive)}
                 </>
               ) : aiActive && aiActive.isFacedown ? (
                 <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '8px' }} />
@@ -450,6 +480,7 @@ export default function PlayAIPage() {
                       {aiBench[i].energyCards && aiBench[i].energyCards.map((en: any, ei: number) => (
                         <img key={ei} src={`/assets/cards/${en['Card ID']}.png`} style={{ position: 'absolute', width: '100%', height: '100%', top: `${(ei + 1) * 10}px`, left: 0, zIndex: 1, borderRadius: '6px' }} />
                       ))}
+                      {renderHPBadge(aiBench[i])}
                     </>
                   ) : aiBench[i] && aiBench[i].isFacedown ? (
                     <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '6px' }} />
@@ -478,29 +509,42 @@ export default function PlayAIPage() {
           </div>
         </div>
 
-        {/* ACTION PANEL */}
+        {/* ACTION PANEL HUD */}
         {obs?.select && obs.current?.yourIndex === 0 && (
-          <div style={{ position: 'absolute', left: '250px', top: '60%', transform: 'translateY(-50%)', background: 'rgba(30, 30, 30, 0.95)', border: '1px solid #444', borderRadius: '8px', padding: '1rem', zIndex: 100, width: '250px' }}>
-            <h3 style={{ margin: '0 0 1rem 0', color: '#38bdf8', fontSize: '1rem' }}>Pilih Aksi <span style={{ fontSize: '0.7rem', color: '#888' }}>(Ctx: {obs.select.context})</span></h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '40vh', overflowY: 'auto' }}>
+          <div style={{ position: 'absolute', left: '250px', top: '55%', transform: 'translateY(-50%)', background: 'rgba(15, 23, 42, 0.92)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '16px', padding: '1.2rem', zIndex: 100, width: '280px', backdropFilter: 'blur(12px)', boxShadow: '0 15px 35px rgba(0,0,0,0.6)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.08)', pb: '0.5rem' }}>
+              <h3 style={{ margin: 0, color: '#38bdf8', fontSize: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>⚡</span> Panel Aksi
+              </h3>
+              <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.06)', padding: '0.2rem 0.5rem', borderRadius: '10px', color: '#94a3b8' }}>Ctx: {obs.select.context}</span>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '40vh', overflowY: 'auto' }}>
               {obs.select.minCount === 0 && (
-                <button onClick={() => sendSelect(-1)} style={{ background: '#3b82f6', border: '1px solid #2563eb', borderRadius: '4px', padding: '0.6rem', color: 'white', textAlign: 'center', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold' }}>SELESAI / LANJUT</button>
+                <button onClick={() => sendSelect(-1)} style={{ background: 'linear-gradient(135deg, #0ea5e9, #2563eb)', border: 'none', borderRadius: '8px', padding: '0.75rem', color: 'white', textAlign: 'center', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)' }}>SELESAI / LANJUT →</button>
               )}
               {obs.select.option.map((opt: any, idx: number) => {
                 if (opt.type === 7 || opt.type === 8 || opt.type === 9 || opt.type === 13 || (opt.type === 3 && opt.area === 2)) return null;
-                if (opt.type === 3 && (opt.area === 6 || opt.area === 1 || opt.area === 3)) return null; // Sembunyikan opsi Prize/Deck/Discard di Panel Action
-                let label = `Option ${idx}`;
-                if (opt.type === 1) label = "YES";
-                else if (opt.type === 2) label = "NO";
-                else if (opt.type === 14) label = "END TURN";
-                else if (opt.type === 12) label = "RETREAT";
-                else if (opt.type === 10) label = `USE ABILITY (Area ${opt.area} Idx ${opt.index})`;
-                else if (opt.type === 13) label = `ATTACK ${opt.attackId}`;
-                else if (opt.type === 3) label = `SELECT CARD (Area ${opt.area} Idx ${opt.index})`;
+                if (opt.type === 3 && (opt.area === 6 || opt.area === 1 || opt.area === 3)) return null;
+
+                let label = `Aksi ${idx}`;
+                let bgStyle = 'linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))';
+                let borderStyle = '1px solid rgba(255,255,255,0.1)';
+                let textColor = 'white';
+
+                if (opt.type === 1) { label = "✓ YES"; bgStyle = 'linear-gradient(135deg, #10b981, #059669)'; borderStyle = 'none'; }
+                else if (opt.type === 2) { label = "✕ NO"; bgStyle = 'linear-gradient(135deg, #ef4444, #dc2626)'; borderStyle = 'none'; }
+                else if (opt.type === 14) { label = "⏹ END TURN"; bgStyle = 'linear-gradient(135deg, #f43f5e, #be123c)'; borderStyle = 'none'; }
+                else if (opt.type === 12) { label = "🔄 RETREAT"; bgStyle = 'linear-gradient(135deg, #f59e0b, #d97706)'; borderStyle = 'none'; }
+                else if (opt.type === 10) { label = `🔮 USE ABILITY (Area ${opt.area} Idx ${opt.index})`; bgStyle = 'linear-gradient(135deg, #8b5cf6, #6d28d9)'; borderStyle = 'none'; }
+                else if (opt.type === 13) { label = `⚔️ ATTACK ${opt.attackId}`; bgStyle = 'linear-gradient(135deg, #dc2626, #991b1b)'; borderStyle = 'none'; }
+                else if (opt.type === 3) { label = `🎴 SELECT CARD (Area ${opt.area} Idx ${opt.index})`; }
 
                 return (
-                  <button key={idx} onClick={() => sendSelect(idx)} style={{ background: '#2a2a2a', border: '1px solid #444', borderRadius: '4px', padding: '0.6rem', color: 'white', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem' }}>{label}</button>
-                )
+                  <button key={idx} onClick={() => sendSelect(idx)} style={{ background: bgStyle, border: borderStyle, borderRadius: '8px', padding: '0.7rem 0.9rem', color: textColor, textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>{label}</span>
+                  </button>
+                );
               })}
             </div>
           </div>
@@ -543,9 +587,7 @@ export default function PlayAIPage() {
                   {playerActive.energyCards && playerActive.energyCards.map((en: any, i: number) => (
                     <img key={i} src={`/assets/cards/${en['Card ID']}.png`} style={{ position: 'absolute', width: '100%', height: '100%', top: `${(i + 1) * 15}px`, left: 0, zIndex: 1, borderRadius: '8px' }} />
                   ))}
-                  {playerActive.hp !== undefined && playerActive.hp < playerActive.maxHp && (
-                    <div style={{ position: 'absolute', top: '-10px', right: '-10px', background: '#ef4444', color: 'white', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', zIndex: 20 }}>{playerActive.maxHp - playerActive.hp}</div>
-                  )}
+                  {renderHPBadge(playerActive)}
                 </>
               ) : playerActive && playerActive.isFacedown ? (
                 <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '8px' }} />
@@ -567,6 +609,7 @@ export default function PlayAIPage() {
                       {benchCard.energyCards && benchCard.energyCards.map((en: any, ei: number) => (
                         <img key={ei} src={`/assets/cards/${en['Card ID']}.png`} style={{ position: 'absolute', width: '100%', height: '100%', top: `${(ei + 1) * 10}px`, left: 0, zIndex: 1, borderRadius: '6px' }} />
                       ))}
+                      {renderHPBadge(benchCard)}
                     </>
                   ) : benchCard && benchCard.isFacedown ? (
                     <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '6px' }} />
@@ -808,7 +851,9 @@ export default function PlayAIPage() {
               <button 
                 disabled={multiSelectIndices.length < obs.select.minCount}
                 onClick={() => {
-                  socketRef.current?.send(JSON.stringify({ type: 'select', options: multiSelectIndices }));
+                  if (ws) {
+                    ws.send(JSON.stringify({ type: 'select', options: multiSelectIndices }));
+                  }
                   setMultiSelectIndices([]);
                 }}
                 style={{ 

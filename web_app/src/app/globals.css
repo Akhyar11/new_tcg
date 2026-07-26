@@ -1,13 +1,11 @@
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #050b14;
+  --foreground: #f8fafc;
+  --accent-cyan: #38bdf8;
+  --accent-indigo: #818cf8;
+  --accent-purple: #c084fc;
+  --accent-rose: #f43f5e;
+  --accent-emerald: #34d399;
 }
 
 html {
@@ -26,7 +24,7 @@ body {
   flex-direction: column;
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -37,13 +35,65 @@ body {
   margin: 0;
 }
 
+/* Firefox Scrollbar Styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.4) rgba(15, 23, 42, 0.8);
+}
+
+/* Webkit Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.8);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.4);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.8);
+}
+
 a {
   color: inherit;
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+/* TCG Keyframe Animations */
+@keyframes turnPulse {
+  0% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
+  50% { box-shadow: 0 0 35px rgba(56, 189, 248, 0.7); }
+  100% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
 }
+
+@keyframes cardGlow {
+  0% { transform: scale(1); box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); }
+  50% { transform: scale(1.03); box-shadow: 0 0 25px rgba(56, 189, 248, 0.8); }
+  100% { transform: scale(1); box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); }
+}
+
+@keyframes pulseRed {
+  0% { box-shadow: 0 0 10px rgba(244, 63, 94, 0.4); }
+  50% { box-shadow: 0 0 25px rgba(244, 63, 94, 0.8); }
+  100% { box-shadow: 0 0 10px rgba(244, 63, 94, 0.4); }
+}
+
+.turn-active {
+  animation: turnPulse 2s infinite;
+}
+
+.card-highlight {
+  animation: cardGlow 1.8s infinite ease-in-out;
+}
+
+.danger-glow {
+  animation: pulseRed 1.5s infinite;
+}
+
