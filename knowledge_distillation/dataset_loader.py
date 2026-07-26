@@ -70,16 +70,19 @@ class KaggleReplayDataset(Dataset):
             with open(filepath, 'rb') as f:
                 data = json.loads(f.read())
         except Exception:
-            return None
+            import random
+            return self.__getitem__(random.randint(0, len(self.samples) - 1))
             
         rewards = data.get("rewards", [])
         if not rewards or len(rewards) < 2 or any(r is None for r in rewards):
-            return None
+            import random
+            return self.__getitem__(random.randint(0, len(self.samples) - 1))
             
         final_reward = float(rewards[player_idx])
         steps = data.get("steps", [])
         if not steps:
-            return None
+            import random
+            return self.__getitem__(random.randint(0, len(self.samples) - 1))
             
         total_turns = len(steps)
         
@@ -147,7 +150,8 @@ class KaggleReplayDataset(Dataset):
             time_step += 1
             
         if time_step == 0:
-            return None
+            import random
+            return self.__getitem__(random.randint(0, len(self.samples) - 1))
             
         return (
             torch.tensor(seq_inputs, dtype=torch.float32),
