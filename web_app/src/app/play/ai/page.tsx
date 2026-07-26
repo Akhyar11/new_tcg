@@ -316,6 +316,21 @@ export default function PlayAIPage() {
   // ================= MOCK DRAG & DROP & ATTACK DIBUANG =================
   // Semua aksi sekarang harus melalui Action Panel dari C++ Engine
 
+  // Helper universal untuk menangani Klik Kanan (inspect) kartu
+  const handleCardContextMenu = (e: React.MouseEvent, card: any, energies: any[] = []) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!card || card.isFacedown) return;
+
+    const cardId = card['Card ID'] || card.engineId || card.id;
+    const fullCardInfo = card['Card Name'] ? card : { ...getCardInfo(cardId), ...card };
+
+    setPreviewCard({
+      card: fullCardInfo,
+      energies: energies || card.energyCards || []
+    });
+  };
+
   // Helper untuk merender HP Progress Bar Badge
   const renderHPBadge = (card: any) => {
     if (!card || card.isFacedown || card.hp === undefined || !card.maxHp) return null;
@@ -621,10 +636,13 @@ export default function PlayAIPage() {
           {/* Center: Active & Bench */}
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '2rem', alignItems: 'center' }}>
             {/* Active */}
-            <div style={{ position: 'relative', width: '140px', height: '196px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div 
+              onContextMenu={(e) => handleCardContextMenu(e, aiActive, aiActive?.energyCards)}
+              style={{ position: 'relative', width: '140px', height: '196px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: aiActive && !aiActive.isFacedown ? 'pointer' : 'default' }}
+            >
               {aiActive && !aiActive.isFacedown ? (
                 <>
-                  <img src={`/assets/cards/${aiActive['Card ID']}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: aiActive, energies: aiActive.energyCards || [] }); }} />
+                  <img src={`/assets/cards/${aiActive['Card ID'] || aiActive.engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, aiActive, aiActive.energyCards)} />
                   {/* Compact Energy Fan Underneath */}
                   {aiActive.energyCards && aiActive.energyCards.map((en: any, i: number) => (
                     <img 
@@ -659,10 +677,14 @@ export default function PlayAIPage() {
             {/* Bench Row */}
             <div style={{ display: 'flex', gap: '10px' }}>
               {[...Array(5)].map((_, i) => (
-                <div key={i} style={{ position: 'relative', width: '90px', height: '126px', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '6px' }}>
+                <div 
+                  key={i} 
+                  onContextMenu={(e) => handleCardContextMenu(e, aiBench[i], aiBench[i]?.energyCards)}
+                  style={{ position: 'relative', width: '90px', height: '126px', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '6px', cursor: aiBench[i] && !aiBench[i].isFacedown ? 'pointer' : 'default' }}
+                >
                   {aiBench[i] && !aiBench[i].isFacedown ? (
                     <>
-                      <img src={`/assets/cards/${aiBench[i]['Card ID']}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: aiBench[i], energies: aiBench[i].energyCards || [] }); }} />
+                      <img src={`/assets/cards/${aiBench[i]['Card ID'] || aiBench[i].engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, aiBench[i], aiBench[i].energyCards)} />
                       {aiBench[i].energyCards && aiBench[i].energyCards.map((en: any, ei: number) => (
                         <img 
                           key={ei} 
@@ -761,6 +783,7 @@ export default function PlayAIPage() {
           
           <div 
             onClick={() => { if (stadiumCard) setPreviewCard({ card: stadiumCard, energies: [] }); }}
+            onContextMenu={(e) => handleCardContextMenu(e, stadiumCard)}
             style={{ 
               width: '90px', 
               height: '126px', 
@@ -813,13 +836,14 @@ export default function PlayAIPage() {
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '2rem', alignItems: 'center' }}>
             {/* Active */}
             <div
-              style={{ position: 'relative', width: '140px', height: '196px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ position: 'relative', width: '140px', height: '196px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playerActive && !playerActive.isFacedown ? 'pointer' : 'default' }}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => handleDrop(e, 4, 0)}
+              onContextMenu={(e) => handleCardContextMenu(e, playerActive, playerActive?.energyCards)}
             >
               {playerActive && !playerActive.isFacedown ? (
                 <>
-                  <img src={`/assets/cards/${playerActive['Card ID']}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: playerActive, energies: playerActive.energyCards || [] }); }} />
+                  <img src={`/assets/cards/${playerActive['Card ID'] || playerActive.engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, playerActive, playerActive?.energyCards)} />
                   {/* Compact Energy Fan Underneath */}
                   {playerActive.energyCards && playerActive.energyCards.map((en: any, i: number) => (
                     <img 
@@ -856,13 +880,14 @@ export default function PlayAIPage() {
               {playerBench.map((benchCard, i) => (
                 <div
                   key={i}
-                  style={{ position: 'relative', width: '90px', height: '126px', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '6px' }}
+                  style={{ position: 'relative', width: '90px', height: '126px', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '6px', cursor: benchCard && !benchCard.isFacedown ? 'pointer' : 'default' }}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => handleDrop(e, 5, i)}
+                  onContextMenu={(e) => handleCardContextMenu(e, benchCard, benchCard?.energyCards)}
                 >
                   {benchCard && !benchCard.isFacedown ? (
                     <>
-                      <img src={`/assets/cards/${benchCard['Card ID']}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: benchCard, energies: benchCard.energyCards || [] }); }} />
+                      <img src={`/assets/cards/${benchCard['Card ID'] || benchCard.engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, benchCard, benchCard?.energyCards)} />
                       {benchCard.energyCards && benchCard.energyCards.map((en: any, ei: number) => (
                         <img 
                           key={ei} 
@@ -933,10 +958,10 @@ export default function PlayAIPage() {
                 }
               }
             }}
+            onContextMenu={(e) => handleCardContextMenu(e, card)}
             style={{ width: '90px', height: '126px', cursor: 'grab', transition: 'transform 0.2s', position: 'relative' }}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-20px) scale(1.1)'; e.currentTarget.style.zIndex = '100'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.zIndex = '1'; }}
-            onContextMenu={(e) => { e.preventDefault(); setPreviewCard({ card: card, energies: [] }); }}
           >
             <img src={`/assets/cards/${card['Card ID']}.png`} style={{ width: '100%', height: '100%', borderRadius: '6px', pointerEvents: 'none', boxShadow: '0 5px 15px rgba(0,0,0,0.5)' }} />
           </div>
