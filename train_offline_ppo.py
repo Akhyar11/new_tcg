@@ -178,8 +178,6 @@ def main(args):
     
     num_devices = jax.local_device_count()
     print(f"Menggunakan {num_devices} GPU(s) via jax.pmap")
-    state = replicate(state)
-    
     model_path = os.path.join(args.save_dir, "model_ptr_v3.msgpack")
     if os.path.exists(model_path):
         print(f"Loading weights from {model_path}...")
@@ -199,6 +197,9 @@ def main(args):
                 state = state.replace(params=serialization.from_state_dict(state.params, raw_dict['params']))
             else:
                 state = state.replace(params=serialization.from_state_dict(state.params, raw_dict))
+                
+    # Replicate state SETELAH diload, supaya dimensi pmap (2, ...) terbentuk di atas weights yang benar.
+    state = replicate(state)
             
     print("Starting Sequence-Based Offline PPO training...")
     
