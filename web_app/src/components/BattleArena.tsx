@@ -410,7 +410,7 @@ export default function BattleArena({
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#050b14', color: 'white', fontFamily: '"Inter", sans-serif', overflowX: 'hidden', position: 'relative' }}>
+    <div style={{ height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#050b14', color: 'white', fontFamily: '"Inter", sans-serif', overflow: 'hidden', position: 'relative' }}>
 
       {/* GAME OVER MODAL OVERLAY */}
       {obs?.current?.result !== undefined && obs.current.result !== -1 && (
@@ -467,9 +467,9 @@ export default function BattleArena({
 
       {/* TURN STATUS BANNER HUD */}
       {obs && obs.current?.result === -1 && (
-        <div style={{ position: 'absolute', top: '1rem', left: '50%', transform: 'translateX(-50%)', zIndex: 200, display: 'flex', alignItems: 'center', gap: '0.8rem', background: isPlayerTurn ? 'rgba(56, 189, 248, 0.12)' : 'rgba(244, 63, 94, 0.12)', border: `1px solid ${isPlayerTurn ? 'rgba(56, 189, 248, 0.5)' : 'rgba(244, 63, 94, 0.5)'}`, borderRadius: '30px', padding: '0.5rem 1.5rem', backdropFilter: 'blur(8px)', boxShadow: isPlayerTurn ? '0 0 20px rgba(56, 189, 248, 0.25)' : '0 0 20px rgba(244, 63, 94, 0.25)' }}>
-          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: isPlayerTurn ? '#38bdf8' : '#f43f5e', boxShadow: `0 0 10px ${isPlayerTurn ? '#38bdf8' : '#f43f5e'}` }} />
-          <span style={{ fontWeight: '900', fontSize: '0.9rem', letterSpacing: '1.5px', color: isPlayerTurn ? '#38bdf8' : '#f43f5e' }}>
+        <div style={{ position: 'absolute', top: '0.3rem', left: '50%', transform: 'translateX(-50%)', zIndex: 200, display: 'flex', alignItems: 'center', gap: '0.6rem', background: isPlayerTurn ? 'rgba(56, 189, 248, 0.15)' : 'rgba(244, 63, 94, 0.15)', border: `1px solid ${isPlayerTurn ? 'rgba(56, 189, 248, 0.6)' : 'rgba(244, 63, 94, 0.6)'}`, borderRadius: '30px', padding: '0.3rem 1.2rem', backdropFilter: 'blur(8px)', boxShadow: isPlayerTurn ? '0 0 15px rgba(56, 189, 248, 0.25)' : '0 0 15px rgba(244, 63, 94, 0.25)' }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: isPlayerTurn ? '#38bdf8' : '#f43f5e', boxShadow: `0 0 8px ${isPlayerTurn ? '#38bdf8' : '#f43f5e'}` }} />
+          <span style={{ fontWeight: '900', fontSize: '0.8rem', letterSpacing: '1.2px', color: isPlayerTurn ? '#38bdf8' : '#f43f5e' }}>
             {isSpectator
               ? isPlayerTurn
                 ? 'GILIRAN PLAYER 0 (AI 1)'
@@ -482,13 +482,13 @@ export default function BattleArena({
       )}
 
       {/* TOP ROW: OPPONENT HAND */}
-      <div style={{ padding: '0.5rem 1rem', display: 'flex', justifyContent: 'center', gap: '5px', minHeight: '120px', flexShrink: 0, overflow: 'visible' }}>
+      <div style={{ paddingTop: '2.2rem', paddingBottom: '0.3rem', paddingLeft: '1rem', paddingRight: '1rem', display: 'flex', justifyContent: 'center', gap: '5px', height: '95px', flexShrink: 0 }}>
         {isSpectator && Array.isArray(aiHand) && aiHand.length > 0 ? (
           aiHand.map((card, i) => (
             <div
               key={i}
               onContextMenu={(e) => handleCardContextMenu(e, card)}
-              style={{ width: '75px', height: '105px', transition: 'transform 0.2s', position: 'relative' }}
+              style={{ width: '55px', height: '77px', transition: 'transform 0.2s', position: 'relative' }}
               onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(10px) scale(1.1)'; e.currentTarget.style.zIndex = '100'; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.zIndex = '1'; }}
             >
@@ -497,7 +497,7 @@ export default function BattleArena({
           ))
         ) : (
           [...Array(aiHandCountVal)].map((_, i) => (
-            <div key={i} style={{ width: '75px', height: '105px' }}>
+            <div key={i} style={{ width: '55px', height: '77px' }}>
               <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px' }} alt="Card Back" />
             </div>
           ))
@@ -505,22 +505,22 @@ export default function BattleArena({
       </div>
 
       {/* MIDDLE SECTION: PLAYMAT */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '1rem 2rem', gap: '2rem', position: 'relative' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '0.4rem 1.5rem', gap: '0.4rem', position: 'relative', overflow: 'hidden' }}>
 
         {/* ================= OPPONENT HALF ================= */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
           {/* Left: Prize Cards */}
-          <div style={{ width: '180px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+          <div style={{ width: '160px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
             {[...Array(6)].map((_, i) => renderPrizeSlot(aiPrizeCards, i, false))}
           </div>
 
           {/* Center: Active & Bench */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '2rem', alignItems: 'center' }}>
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '1.5rem', alignItems: 'center' }}>
             {/* Active */}
             <div
               onContextMenu={(e) => handleCardContextMenu(e, aiActive, aiActive?.energyCards)}
-              style={{ position: 'relative', width: '140px', height: '196px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: aiActive && !aiActive.isFacedown ? 'pointer' : 'default' }}
+              style={{ position: 'relative', width: '115px', height: '160px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: aiActive && !aiActive.isFacedown ? 'pointer' : 'default' }}
             >
               {aiActive && !aiActive.isFacedown ? (
                 <>
@@ -535,12 +535,12 @@ export default function BattleArena({
             </div>
 
             {/* Bench Row */}
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
               {[...Array(5)].map((_, i) => (
                 <div
                   key={i}
                   onContextMenu={(e) => handleCardContextMenu(e, aiBench[i], aiBench[i]?.energyCards)}
-                  style={{ position: 'relative', width: '90px', height: '126px', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '6px', cursor: aiBench[i] && !aiBench[i].isFacedown ? 'pointer' : 'default' }}
+                  style={{ position: 'relative', width: '75px', height: '105px', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '6px', cursor: aiBench[i] && !aiBench[i].isFacedown ? 'pointer' : 'default' }}
                 >
                   {aiBench[i] && !aiBench[i].isFacedown ? (
                     <>
@@ -558,38 +558,38 @@ export default function BattleArena({
           </div>
 
           {/* Right: Discard & Deck */}
-          <div style={{ width: '180px', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
-            <div style={{ fontSize: '0.8rem', color: '#888' }}>Hand [{aiHandCountVal}]</div>
+          <div style={{ width: '160px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+            <div style={{ fontSize: '0.75rem', color: '#888' }}>Hand [{aiHandCountVal}]</div>
             <div
               onClick={() => setDiscardViewer({ cards: aiDiscard, title: isSpectator ? 'Discard Player 1' : 'Discard Lawan' })}
-              style={{ position: 'relative', width: '80px', height: '112px', border: '2px dashed #444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              style={{ position: 'relative', width: '65px', height: '91px', border: '2px dashed #444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             >
               {aiDiscard.length > 0 ? (
                 <img src={`/assets/cards/${aiDiscard[aiDiscard.length - 1]['Card ID'] || aiDiscard[aiDiscard.length - 1].engineId}.png`} style={{ width: '100%', height: '100%', borderRadius: '4px', objectFit: 'contain' }} />
               ) : (
-                <span style={{ color: '#666', fontSize: '0.8rem' }}>Discard</span>
+                <span style={{ color: '#666', fontSize: '0.7rem' }}>Discard</span>
               )}
             </div>
-            <div style={{ position: 'relative', width: '80px', height: '112px' }}>
+            <div style={{ position: 'relative', width: '65px', height: '91px' }}>
               <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px' }} />
-              <div style={{ position: 'absolute', top: '-20px', width: '100%', textAlign: 'center', fontSize: '0.8rem', color: '#888' }}>Deck [{aiDeckCountVal}]</div>
+              <div style={{ position: 'absolute', top: '-18px', width: '100%', textAlign: 'center', fontSize: '0.75rem', color: '#888' }}>Deck [{aiDeckCountVal}]</div>
             </div>
           </div>
         </div>
 
         {/* ACTION PANEL HUD (For Player vs AI mode) */}
         {!isSpectator && obs?.select && obs.current?.yourIndex === 0 && (
-          <div style={{ position: 'absolute', left: '250px', top: '55%', transform: 'translateY(-50%)', background: 'rgba(15, 23, 42, 0.92)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '16px', padding: '1.2rem', zIndex: 100, width: '280px', backdropFilter: 'blur(12px)', boxShadow: '0 15px 35px rgba(0,0,0,0.6)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.5rem' }}>
-              <h3 style={{ margin: 0, color: '#38bdf8', fontSize: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ position: 'absolute', left: '220px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(56, 189, 248, 0.4)', borderRadius: '16px', padding: '1rem', zIndex: 100, width: '260px', backdropFilter: 'blur(12px)', boxShadow: '0 15px 35px rgba(0,0,0,0.6)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.4rem' }}>
+              <h3 style={{ margin: 0, color: '#38bdf8', fontSize: '0.95rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <span>⚡</span> Panel Aksi
               </h3>
-              <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.06)', padding: '0.2rem 0.5rem', borderRadius: '10px', color: '#94a3b8' }}>Ctx: {obs.select.context}</span>
+              <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.06)', padding: '0.2rem 0.5rem', borderRadius: '10px', color: '#94a3b8' }}>Ctx: {obs.select.context}</span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '40vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '35vh', overflowY: 'auto' }}>
               {obs.select.minCount === 0 && onSelectOption && (
-                <button onClick={() => onSelectOption(-1)} style={{ background: 'linear-gradient(135deg, #0ea5e9, #2563eb)', border: 'none', borderRadius: '8px', padding: '0.75rem', color: 'white', textAlign: 'center', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)' }}>SELESAI / LANJUT →</button>
+                <button onClick={() => onSelectOption(-1)} style={{ background: 'linear-gradient(135deg, #0ea5e9, #2563eb)', border: 'none', borderRadius: '8px', padding: '0.65rem', color: 'white', textAlign: 'center', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)' }}>SELESAI / LANJUT →</button>
               )}
               {obs.select.option.map((opt: any, idx: number) => {
                 if (opt.type === 7 || opt.type === 8 || opt.type === 9 || opt.type === 13 || (opt.type === 3 && opt.area === 2)) return null;
@@ -609,7 +609,7 @@ export default function BattleArena({
                 else if (opt.type === 3) { label = `🎴 SELECT CARD (Area ${opt.area} Idx ${opt.index})`; }
 
                 return (
-                  <button key={idx} onClick={() => onSelectOption && onSelectOption(idx)} style={{ background: bgStyle, border: borderStyle, borderRadius: '8px', padding: '0.7rem 0.9rem', color: textColor, textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <button key={idx} onClick={() => onSelectOption && onSelectOption(idx)} style={{ background: bgStyle, border: borderStyle, borderRadius: '8px', padding: '0.6rem 0.8rem', color: textColor, textAlign: 'left', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '600', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span>{label}</span>
                   </button>
                 );
@@ -619,15 +619,15 @@ export default function BattleArena({
         )}
 
         {/* CENTRAL ARENA DIVIDER WITH PROMINENT STADIUM SLOT */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px', position: 'relative', margin: '0.2rem 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', position: 'relative', margin: '0.1rem 0' }}>
           {/* Left: Dedicated Stadium Slot */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '220px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', width: '200px' }}>
             <div
               onClick={() => { if (stadiumCard) setPreviewCard({ card: stadiumCard, energies: [] }); }}
               onContextMenu={(e) => handleCardContextMenu(e, stadiumCard)}
               style={{
-                width: '90px',
-                height: '126px',
+                width: '75px',
+                height: '105px',
                 border: stadiumCard ? '2px solid #34d399' : '2px dashed rgba(52, 211, 153, 0.6)',
                 borderRadius: '8px',
                 background: stadiumCard ? 'rgba(52, 211, 153, 0.15)' : 'rgba(15, 23, 42, 0.85)',
@@ -649,20 +649,20 @@ export default function BattleArena({
                     style={{ width: '100%', height: '100%', borderRadius: '6px', objectFit: 'contain' }}
                     alt={stadiumCard['Card Name'] || 'Stadium'}
                   />
-                  <div style={{ position: 'absolute', bottom: '-8px', background: '#34d399', color: '#0f172a', padding: '0.1rem 0.5rem', borderRadius: '10px', fontSize: '0.65rem', fontWeight: '900', letterSpacing: '0.5px' }}>
+                  <div style={{ position: 'absolute', bottom: '-7px', background: '#34d399', color: '#0f172a', padding: '0.1rem 0.4rem', borderRadius: '10px', fontSize: '0.6rem', fontWeight: '900', letterSpacing: '0.5px' }}>
                     STADIUM
                   </div>
                 </>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: 'rgba(52, 211, 153, 0.8)' }}>
-                  <span style={{ fontSize: '1.5rem' }}>🏟️</span>
-                  <span style={{ fontSize: '0.7rem', fontWeight: '900', letterSpacing: '1px', color: '#34d399' }}>STADIUM</span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', color: 'rgba(52, 211, 153, 0.8)' }}>
+                  <span style={{ fontSize: '1.2rem' }}>🏟️</span>
+                  <span style={{ fontSize: '0.65rem', fontWeight: '900', letterSpacing: '1px', color: '#34d399' }}>STADIUM</span>
                 </div>
               )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <span style={{ fontSize: '0.75rem', color: '#34d399', fontWeight: '900', letterSpacing: '0.5px' }}>ARENA STADIUM</span>
-              <span style={{ fontSize: '0.65rem', color: '#64748b' }}>{stadiumCard ? stadiumCard['Card Name'] : 'Tidak Ada Stadium'}</span>
+              <span style={{ fontSize: '0.7rem', color: '#34d399', fontWeight: '900', letterSpacing: '0.5px' }}>ARENA STADIUM</span>
+              <span style={{ fontSize: '0.6rem', color: '#64748b' }}>{stadiumCard ? stadiumCard['Card Name'] : 'Tidak Ada Stadium'}</span>
             </div>
           </div>
 
@@ -674,15 +674,15 @@ export default function BattleArena({
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, 'generic', 0)}>
 
           {/* Left: Prize Cards */}
-          <div style={{ width: '180px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+          <div style={{ width: '160px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
             {[...Array(6)].map((_, i) => renderPrizeSlot(playerPrizeCards, i, true))}
           </div>
 
           {/* Center: Active & Bench */}
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '2rem', alignItems: 'center' }}>
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '1.5rem', alignItems: 'center' }}>
             {/* Active */}
             <div
-              style={{ position: 'relative', width: '140px', height: '196px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playerActive && !playerActive.isFacedown ? 'pointer' : 'default' }}
+              style={{ position: 'relative', width: '115px', height: '160px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playerActive && !playerActive.isFacedown ? 'pointer' : 'default' }}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => handleDrop(e, 4, 0)}
               onContextMenu={(e) => handleCardContextMenu(e, playerActive, playerActive?.energyCards)}
@@ -700,11 +700,11 @@ export default function BattleArena({
             </div>
 
             {/* Bench Row */}
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
               {playerBench.map((benchCard, i) => (
                 <div
                   key={i}
-                  style={{ position: 'relative', width: '90px', height: '126px', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '6px', cursor: benchCard && !benchCard.isFacedown ? 'pointer' : 'default' }}
+                  style={{ position: 'relative', width: '75px', height: '105px', border: '2px dashed rgba(255,255,255,0.1)', borderRadius: '6px', cursor: benchCard && !benchCard.isFacedown ? 'pointer' : 'default' }}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => handleDrop(e, 5, i)}
                   onContextMenu={(e) => handleCardContextMenu(e, benchCard, benchCard?.energyCards)}
@@ -725,29 +725,29 @@ export default function BattleArena({
           </div>
 
           {/* Right: Discard & Deck */}
-          <div style={{ width: '180px', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
-            <div style={{ position: 'relative', width: '80px', height: '112px' }}>
+          <div style={{ width: '160px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+            <div style={{ position: 'relative', width: '65px', height: '91px' }}>
               <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px' }} />
-              <div style={{ position: 'absolute', top: '-20px', width: '100%', textAlign: 'center', fontSize: '0.8rem', color: '#888' }}>Deck [{playerDeckCount}]</div>
+              <div style={{ position: 'absolute', top: '-18px', width: '100%', textAlign: 'center', fontSize: '0.75rem', color: '#888' }}>Deck [{playerDeckCount}]</div>
             </div>
             <div
               onClick={() => setDiscardViewer({ cards: playerDiscard, title: isSpectator ? 'Discard Player 0' : 'Discard Anda' })}
-              style={{ position: 'relative', width: '80px', height: '112px', border: '2px dashed #444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              style={{ position: 'relative', width: '65px', height: '91px', border: '2px dashed #444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             >
               {playerDiscard.length > 0 ? (
                 <img src={`/assets/cards/${playerDiscard[playerDiscard.length - 1]['Card ID'] || playerDiscard[playerDiscard.length - 1].engineId}.png`} style={{ width: '100%', height: '100%', borderRadius: '4px', objectFit: 'contain' }} />
               ) : (
-                <span style={{ color: '#666', fontSize: '0.8rem' }}>Discard</span>
+                <span style={{ color: '#666', fontSize: '0.7rem' }}>Discard</span>
               )}
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#888' }}>Hand [{playerHand.length}]</div>
+            <div style={{ fontSize: '0.75rem', color: '#888' }}>Hand [{playerHand.length}]</div>
           </div>
 
         </div>
       </div>
 
       {/* BOTTOM ROW: PLAYER HAND */}
-      <div style={{ padding: '1rem', display: 'flex', justifyContent: 'center', gap: '5px', minHeight: '160px', flexShrink: 0, background: 'rgba(0,0,0,0.5)', overflow: 'visible' }}>
+      <div style={{ padding: '0.4rem 0.5rem', display: 'flex', justifyContent: 'center', gap: '5px', height: '125px', flexShrink: 0, background: 'rgba(0,0,0,0.6)', position: 'relative', zIndex: 100, overflow: 'visible' }}>
         {playerHand.map((card, i) => (
           <div
             key={i}
@@ -756,8 +756,8 @@ export default function BattleArena({
               if (!isSpectator) e.dataTransfer.setData('text/plain', JSON.stringify({ area: 2, index: i }));
             }}
             onContextMenu={(e) => handleCardContextMenu(e, card)}
-            style={{ width: '90px', height: '126px', cursor: 'grab', transition: 'transform 0.2s', position: 'relative' }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-20px) scale(1.15)'; e.currentTarget.style.zIndex = '100'; }}
+            style={{ width: '75px', height: '105px', cursor: 'grab', transition: 'transform 0.2s', position: 'relative' }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-15px) scale(1.15)'; e.currentTarget.style.zIndex = '100'; }}
             onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.zIndex = '1'; }}
           >
             <img src={`/assets/cards/${card['Card ID'] || card.engineId}.png`} style={{ width: '100%', height: '100%', borderRadius: '6px', boxShadow: '0 5px 15px rgba(0,0,0,0.5)', objectFit: 'contain' }} alt={card['Card Name']} />
