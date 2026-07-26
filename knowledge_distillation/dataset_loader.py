@@ -55,7 +55,7 @@ class KaggleReplayDataset(Dataset):
                     data = json.load(f)
                     
                 rewards = data.get("rewards", [])
-                if not rewards or len(rewards) < 2:
+                if not rewards or len(rewards) < 2 or any(r is None for r in rewards):
                     continue
                     
                 steps = data.get("steps", [])
