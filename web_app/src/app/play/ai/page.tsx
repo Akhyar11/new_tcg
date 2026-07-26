@@ -190,10 +190,15 @@ export default function PlayAIPage() {
   let playerActive: any = null;
   let playerBench: any[] = [null, null, null, null, null];
   let playerDiscard: any[] = [];
+  let playerDeckCount: number = deck.length;
+  let playerPrizeCards: any[] = [...Array(6)];
 
   let aiActive: any = null;
   let aiBench: any[] = [null, null, null, null, null];
   let aiDiscard: any[] = [];
+  let aiHandCountVal: number = aiHandCount;
+  let aiDeckCountVal: number = 60 - aiHandCount;
+  let aiPrizeCards: any[] = [...Array(6)];
 
   const deckOrDiscardOptions = useMemo(() => {
     if (!obs?.select?.option) return [];
@@ -207,6 +212,8 @@ export default function PlayAIPage() {
     const p1 = obs.current.players[1];
 
     // Player 0 (Anda)
+    if (p0.deckCount !== undefined) playerDeckCount = p0.deckCount;
+    if (p0.prize) playerPrizeCards = p0.prize;
     if (p0.hand) {
       playerHand = p0.hand.map((c: any) => ({ ...getCardInfo(c.id), engineSerial: c.serial, engineId: c.id }));
     }
@@ -243,6 +250,10 @@ export default function PlayAIPage() {
     }
 
     // Player 1 (AI)
+    if (p1.deckCount !== undefined) aiDeckCountVal = p1.deckCount;
+    if (p1.handCount !== undefined) aiHandCountVal = p1.handCount;
+    else if (p1.hand) aiHandCountVal = p1.hand.length;
+    if (p1.prize) aiPrizeCards = p1.prize;
     if (p1.active && p1.active.length > 0) {
       if (p1.active[0] === null) {
         aiActive = { isFacedown: true };
@@ -430,7 +441,7 @@ export default function PlayAIPage() {
 
       {/* TOP ROW: OPPONENT HAND */}
       <div style={{ padding: '0.5rem 1rem', display: 'flex', justifyContent: 'center', gap: '5px', minHeight: '120px', flexShrink: 0 }}>
-        {[...Array(aiHandCount)].map((_, i) => (
+        {[...Array(aiHandCountVal)].map((_, i) => (
           <div key={i} style={{ width: '75px', height: '105px' }}>
             <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px' }} alt="Card Back" />
           </div>
@@ -445,7 +456,7 @@ export default function PlayAIPage() {
 
           {/* Left: Prize Cards */}
           <div style={{ width: '180px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-            {[...Array(6)].map((_, i) => (
+            {aiPrizeCards.map((_, i) => (
               <div key={i} style={{ width: '60px', height: '84px', border: '1px dashed #333', borderRadius: '4px', position: 'relative' }}>
                 <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px', position: 'absolute', top: 0, left: 0 }} alt="Prize Back" />
               </div>
@@ -492,7 +503,7 @@ export default function PlayAIPage() {
 
           {/* Right: Discard & Deck */}
           <div style={{ width: '180px', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
-            <div style={{ fontSize: '0.8rem', color: '#888' }}>Hand [{aiHandCount}]</div>
+            <div style={{ fontSize: '0.8rem', color: '#888' }}>Hand [{aiHandCountVal}]</div>
             <div 
               onClick={() => setDiscardViewer({cards: aiDiscard, title: "Discard Lawan"})}
               style={{ position: 'relative', width: '80px', height: '112px', border: '2px dashed #444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
@@ -504,7 +515,7 @@ export default function PlayAIPage() {
             </div>
             <div style={{ position: 'relative', width: '80px', height: '112px' }}>
               <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px' }} />
-              <div style={{ position: 'absolute', top: '-20px', width: '100%', textAlign: 'center', fontSize: '0.8rem', color: '#888' }}>Deck [{60 - aiHandCount}]</div>
+              <div style={{ position: 'absolute', top: '-20px', width: '100%', textAlign: 'center', fontSize: '0.8rem', color: '#888' }}>Deck [{aiDeckCountVal}]</div>
             </div>
           </div>
         </div>
@@ -558,7 +569,7 @@ export default function PlayAIPage() {
 
           {/* Left: Prize Cards */}
           <div style={{ width: '180px', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-            {[...Array(6)].map((_, i) => {
+            {playerPrizeCards.map((_, i) => {
               const prizeOptIdx = obs?.select?.option?.findIndex((opt: any) => opt.type === 3 && opt.area === 6 && opt.index === i);
               const isSelectable = prizeOptIdx !== undefined && prizeOptIdx !== -1;
               return (
@@ -623,7 +634,7 @@ export default function PlayAIPage() {
           <div style={{ width: '180px', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
             <div style={{ position: 'relative', width: '80px', height: '112px' }}>
               <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '4px' }} />
-              <div style={{ position: 'absolute', top: '-20px', width: '100%', textAlign: 'center', fontSize: '0.8rem', color: '#888' }}>Deck [{deck.length}]</div>
+              <div style={{ position: 'absolute', top: '-20px', width: '100%', textAlign: 'center', fontSize: '0.8rem', color: '#888' }}>Deck [{playerDeckCount}]</div>
             </div>
             <div 
               onClick={() => setDiscardViewer({cards: playerDiscard, title: "Discard Anda"})}
