@@ -411,7 +411,7 @@ export default function BattleArena({
   };
 
   return (
-    <div style={{ height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#050b14', color: 'white', fontFamily: '"Inter", sans-serif', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'radial-gradient(ellipse at 50% 50%, #0c192c 0%, #050b14 100%)', color: 'white', fontFamily: '"Inter", sans-serif', overflow: 'hidden', position: 'relative' }}>
 
       {/* GAME OVER MODAL OVERLAY */}
       {obs?.current?.result !== undefined && obs.current.result !== -1 && (
@@ -521,17 +521,30 @@ export default function BattleArena({
             {/* Active */}
             <div
               onContextMenu={(e) => handleCardContextMenu(e, aiActive, aiActive?.energyCards)}
-              style={{ position: 'relative', width: '145px', height: '203px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: aiActive && !aiActive.isFacedown ? 'pointer' : 'default' }}
+              style={{
+                position: 'relative',
+                width: '145px',
+                height: '203px',
+                border: aiActive && !aiActive.isFacedown ? '2px solid #f43f5e' : '2px dashed rgba(244,63,94,0.3)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: aiActive && !aiActive.isFacedown ? 'pointer' : 'default',
+                boxShadow: aiActive && !aiActive.isFacedown ? '0 0 30px rgba(244, 63, 94, 0.45), inset 0 0 15px rgba(244, 63, 94, 0.2)' : 'none',
+                transition: 'all 0.3s ease',
+                background: 'rgba(15, 23, 42, 0.8)',
+              }}
             >
               {aiActive && !aiActive.isFacedown ? (
                 <>
-                  <img src={`/assets/cards/${aiActive['Card ID'] || aiActive.engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, aiActive, aiActive.energyCards)} />
+                  <img src={`/assets/cards/${aiActive['Card ID'] || aiActive.engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '10px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, aiActive, aiActive.energyCards)} />
                   {/* Dynamic Energy Badges HUD */}
                   {renderEnergyBadges(aiActive.energyCards)}
                   {renderHPBadge(aiActive)}
                 </>
               ) : aiActive && aiActive.isFacedown ? (
-                <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '8px' }} />
+                <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '10px' }} />
               ) : null}
             </div>
 
@@ -683,20 +696,33 @@ export default function BattleArena({
           <div style={{ flex: 1, display: 'flex', justifyContent: 'center', gap: '1.5rem', alignItems: 'center' }}>
             {/* Active */}
             <div
-              style={{ position: 'relative', width: '145px', height: '203px', border: '2px solid rgba(255,255,255,0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playerActive && !playerActive.isFacedown ? 'pointer' : 'default' }}
+              style={{
+                position: 'relative',
+                width: '145px',
+                height: '203px',
+                border: playerActive && !playerActive.isFacedown ? '2px solid #38bdf8' : '2px dashed rgba(56,189,248,0.3)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: playerActive && !playerActive.isFacedown ? 'pointer' : 'default',
+                boxShadow: playerActive && !playerActive.isFacedown ? '0 0 30px rgba(56, 189, 248, 0.45), inset 0 0 15px rgba(56, 189, 248, 0.2)' : 'none',
+                transition: 'all 0.3s ease',
+                background: 'rgba(15, 23, 42, 0.8)',
+              }}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => handleDrop(e, 4, 0)}
               onContextMenu={(e) => handleCardContextMenu(e, playerActive, playerActive?.energyCards)}
             >
               {playerActive && !playerActive.isFacedown ? (
                 <>
-                  <img src={`/assets/cards/${playerActive['Card ID'] || playerActive.engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, playerActive, playerActive?.energyCards)} />
+                  <img src={`/assets/cards/${playerActive['Card ID'] || playerActive.engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '10px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, playerActive, playerActive?.energyCards)} />
                   {/* Dynamic Energy Badges HUD */}
                   {renderEnergyBadges(playerActive?.energyCards)}
                   {renderHPBadge(playerActive)}
                 </>
               ) : playerActive && playerActive.isFacedown ? (
-                <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '8px' }} />
+                <img src="/assets/cards/back.png" style={{ width: '100%', height: '100%', borderRadius: '10px' }} />
               ) : null}
             </div>
 
