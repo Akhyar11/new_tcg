@@ -745,51 +745,56 @@ export default function PlayAIPage() {
           </div>
         )}
 
-        {/* CENTRAL STADIUM SLOT */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', margin: '-0.5rem 0' }}>
-          <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', flex: 1 }} />
-          
-          <div 
-            onClick={() => { if (stadiumCard) setPreviewCard({ card: stadiumCard, energies: [] }); }}
-            onContextMenu={(e) => handleCardContextMenu(e, stadiumCard)}
-            style={{ 
-              width: '90px', 
-              height: '126px', 
-              border: stadiumCard ? '2px solid #34d399' : '2px dashed rgba(52, 211, 153, 0.3)', 
-              borderRadius: '8px', 
-              background: stadiumCard ? 'rgba(52, 211, 153, 0.1)' : 'rgba(15, 23, 42, 0.7)', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              position: 'relative', 
-              cursor: stadiumCard ? 'pointer' : 'default',
-              boxShadow: stadiumCard ? '0 0 20px rgba(52, 211, 153, 0.4)' : 'none',
-              transition: 'all 0.3s ease',
-              zIndex: 50,
-              margin: '0 2rem'
-            }}
-          >
-            {stadiumCard ? (
-              <>
-                <img 
-                  src={`/assets/cards/${stadiumCard['Card ID']}.png`} 
-                  style={{ width: '100%', height: '100%', borderRadius: '6px', objectFit: 'contain' }} 
-                  alt={stadiumCard['Card Name'] || 'Stadium'} 
-                />
-                <div style={{ position: 'absolute', bottom: '-8px', background: '#34d399', color: '#0f172a', padding: '0.1rem 0.5rem', borderRadius: '10px', fontSize: '0.65rem', fontWeight: '900', letterSpacing: '0.5px' }}>
-                  STADIUM
+        {/* CENTRAL ARENA DIVIDER WITH PROMINENT STADIUM SLOT */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px', position: 'relative', margin: '0.2rem 0' }}>
+          {/* Left: Dedicated Stadium Slot */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '220px' }}>
+            <div 
+              onClick={() => { if (stadiumCard) setPreviewCard({ card: stadiumCard, energies: [] }); }}
+              onContextMenu={(e) => handleCardContextMenu(e, stadiumCard)}
+              style={{ 
+                width: '90px', 
+                height: '126px', 
+                border: stadiumCard ? '2px solid #34d399' : '2px dashed rgba(52, 211, 153, 0.6)', 
+                borderRadius: '8px', 
+                background: stadiumCard ? 'rgba(52, 211, 153, 0.15)' : 'rgba(15, 23, 42, 0.85)', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                position: 'relative', 
+                cursor: stadiumCard ? 'pointer' : 'default',
+                boxShadow: stadiumCard ? '0 0 25px rgba(52, 211, 153, 0.5)' : '0 0 15px rgba(52, 211, 153, 0.15)',
+                transition: 'all 0.3s ease',
+                zIndex: 50
+              }}
+            >
+              {stadiumCard ? (
+                <>
+                  <img 
+                    src={`/assets/cards/${stadiumCard['Card ID'] || stadiumCard.engineId}.png`} 
+                    style={{ width: '100%', height: '100%', borderRadius: '6px', objectFit: 'contain' }} 
+                    alt={stadiumCard['Card Name'] || 'Stadium'} 
+                  />
+                  <div style={{ position: 'absolute', bottom: '-8px', background: '#34d399', color: '#0f172a', padding: '0.1rem 0.5rem', borderRadius: '10px', fontSize: '0.65rem', fontWeight: '900', letterSpacing: '0.5px' }}>
+                    STADIUM
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: 'rgba(52, 211, 153, 0.8)' }}>
+                  <span style={{ fontSize: '1.5rem' }}>🏟️</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: '900', letterSpacing: '1px', color: '#34d399' }}>STADIUM</span>
                 </div>
-              </>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', color: 'rgba(52, 211, 153, 0.5)' }}>
-                <span style={{ fontSize: '1.2rem' }}>🏟️</span>
-                <span style={{ fontSize: '0.65rem', fontWeight: 'bold', letterSpacing: '1px' }}>STADIUM</span>
-              </div>
-            )}
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span style={{ fontSize: '0.75rem', color: '#34d399', fontWeight: '900', letterSpacing: '0.5px' }}>ARENA STADIUM</span>
+              <span style={{ fontSize: '0.65rem', color: '#64748b' }}>{stadiumCard ? stadiumCard['Card Name'] : 'Tidak Ada Stadium'}</span>
+            </div>
           </div>
 
-          <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', flex: 1 }} />
+          {/* Divider Line */}
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)', marginLeft: '1rem' }} />
         </div>
 
         {/* ================= PLAYER HALF ================= */}
