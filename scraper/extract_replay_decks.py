@@ -117,7 +117,8 @@ def extract_initial_decks(replay_data: dict) -> List[Tuple[int, List[int]]]:
 
 
 def deck_signature(deck: Sequence[int]) -> str:
-    payload = ",".join(map(str, deck)).encode("utf-8")
+    sorted_deck = sorted(deck)
+    payload = ",".join(map(str, sorted_deck)).encode("utf-8")
     return hashlib.sha1(payload).hexdigest()[:12]
 
 

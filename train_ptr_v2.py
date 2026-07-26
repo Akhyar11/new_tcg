@@ -24,13 +24,23 @@ def main():
         "REPLAY_DECK_DIR",
         os.path.join(repo_root, "scraper", "replay_decks"),
     )
-    replay_deck_dir_path = Path(replay_deck_dir)
-    has_replay_decks = replay_deck_dir_path.is_dir() and any(replay_deck_dir_path.glob("*.csv"))
-    primary_deck_path = replay_deck_dir if has_replay_decks else os.path.join(repo_root, "new_deck")
-    if has_replay_decks:
-        print(f"Menggunakan deck hasil ekstraksi replay: {primary_deck_path}")
-    else:
-        print(f"Deck hasil ekstraksi replay tidak ditemukan, fallback ke: {primary_deck_path}")
+    
+    combined_deck_dir = os.path.join(repo_root, "combined_decks")
+    os.makedirs(combined_deck_dir, exist_ok=True)
+    
+    import shutil
+    import glob
+    
+    print("Menggabungkan deck dari 'new_deck' dan 'replay_decks'...")
+    for f in glob.glob(os.path.join(repo_root, "new_deck", "*.csv")):
+        shutil.copy(f, combined_deck_dir)
+        
+    if os.path.isdir(replay_deck_dir):
+        for f in glob.glob(os.path.join(replay_deck_dir, "*.csv")):
+            shutil.copy(f, combined_deck_dir)
+            
+    primary_deck_path = combined_deck_dir
+    print(f"Menggunakan gabungan deck di: {primary_deck_path}")
 
     # Download latest from Kaggle before starting
     print("Mendownload checkpoint terbaru dari Kaggle...")
