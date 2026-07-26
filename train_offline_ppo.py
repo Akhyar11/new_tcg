@@ -150,7 +150,7 @@ def main(args):
     print(f"Syncing initial weights from Kaggle...")
     download_from_kaggle(args.save_dir)
         
-    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True)
+    dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True, drop_last=True, num_workers=4)
     
     rng = jax.random.PRNGKey(42)
     state = create_train_state(rng, args.learning_rate)
