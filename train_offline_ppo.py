@@ -15,6 +15,7 @@ from tqdm import tqdm
 from knowledge_distillation.dataset_loader import KaggleReplayDataset
 from tcg_core.models.ptr import PokemonAgent as PTRModel
 from tcg_core.kaggle_sync import download_from_kaggle, upload_to_kaggle
+import gc
 import tcg_core.action_mapping as action_mapping
 
 def collate_fn_filter_none(batch):
@@ -169,7 +170,8 @@ def main(args):
         batch_size=args.batch_size, 
         shuffle=True, 
         drop_last=True, 
-        num_workers=8,
+        num_workers=4,
+        prefetch_factor=1,
         collate_fn=collate_fn_filter_none
     )
     
@@ -257,6 +259,13 @@ def main(args):
                     P=f"{epoch_p_loss/batches:.3f}", 
                     V=f"{epoch_v_loss/batches:.3f}"
                 )
+                
+                # Hapus variabel besar dan bersihkan memori secara manual
+                del seq_input, glob_input, target_action, target_value, action_mask, valid_mask
+                del seq_jax, glob_jax, target_a_jax, target_v_jax, mask_jax, valid_jax
+                del old_log_probs
+                if batches % 10 == 0:
+                    gc.collect()
                 
             avg_epoch_loss = epoch_loss / batches
             print(f"Epoch {epoch+1} Loss: {avg_epoch_loss:.4f} (Pol: {epoch_p_loss/batches:.4f}, Val: {epoch_v_loss/batches:.4f}, Ent: {epoch_ent_loss/batches:.4f})")

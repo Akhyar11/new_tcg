@@ -1,4 +1,5 @@
 import os
+import gc
 try:
     import orjson as json
 except ImportError:
@@ -152,6 +153,10 @@ class KaggleReplayDataset(Dataset):
         if time_step == 0:
             import random
             return self.__getitem__(random.randint(0, len(self.samples) - 1))
+            
+        # Bersihkan memori JSON yang terfragmentasi di DataLoader worker
+        del data, steps, current_state, select_data_dict, options
+        gc.collect()
             
         return (
             torch.tensor(seq_inputs, dtype=torch.float32),
