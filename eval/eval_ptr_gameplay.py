@@ -150,14 +150,11 @@ def main():
     print(f"Deck: Mega Gardevoir's Symphonia (P0) vs Dachsbun ex Time to Chow Down (P1)")
     
     checkpoints_dir = os.path.join(ROOT, "checkpoints")
-    model_path = os.path.join(checkpoints_dir, "model_lstm_pointer_final.msgpack")
-    lstm_model_path = os.path.join(checkpoints_dir, "model_lstm_final.msgpack")
-    
-    if not os.path.exists(model_path) or not os.path.exists(lstm_model_path):
-        print("\n[PERINGATAN]: Checkpoint tidak ditemukan! Agen akan menggunakan bobot ACAK.")
-        print("Silakan jalankan `python train_ptr.py` terlebih dahulu jika ingin melihat taktik aslinya.\n")
-    else:
-        print("\n[INFO]: Menggunakan model terlatih dari checkpoint!\n")
+    model_path = os.path.join(checkpoints_dir, "model_ptr_v3.msgpack")
+    if not os.path.exists(model_path):
+        model_path = os.path.join(checkpoints_dir, "model_lstm_pointer_v2_final.msgpack")
+        
+    print(f"[INFO]: Evaluasi PTR Model Checkpoint: {model_path}\n")
     
     from tcg_core.agents import LSTMAgent
     from tcg_core.models.lstm import PokemonAgent as LSTMModel
