@@ -1,0 +1,675 @@
+=== TCG PTR GAMEPLAY ANALYSIS ===
+Deck: Mega Gardevoir's Symphonia (P0) vs Dachsbun ex Time to Chow Down (P1)
+
+[INFO]: Menggunakan model terlatih dari checkpoint!
+
+--- MULAI PERTANDINGAN ---
+
+--- [Turn 0 | Step 1] ---
+  [STATE P0] Active: Kosong | Bench: 0 | Prizes: ? | Hand (0): 
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: YES | (Critic: +0.073)
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 0 | Step 2] ---
+  [STATE P0] Active: Kosong | Bench: 0 | Prizes: ? | Hand (7): Basic {P} Energy, Mystery Garden, XerneasEX, Buddy-Buddy Poffin, Pokégear 3.0, Carmine, Ultra Ball
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:2) [-> XerneasEX] | (Critic: +0.803)
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 0 | Step 3] ---
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ? | Hand (7): Fidough, Boss’s Orders, Boss’s Orders, Boss’s Orders, Fidough, Carmine, Basic {P} Energy
+  [STATE P0] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: CARD (idx:0) [-> Fidough] | (Critic: +1.423)
+
+--- [Turn 0 | Step 4] ---
+  [STATE P1] Active: Kosong | Bench: 0 | Prizes: ? | Hand (6): Boss’s Orders, Boss’s Orders, Boss’s Orders, Fidough, Carmine, Basic {P} Energy
+  [STATE P0] Active: Kosong | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: CARD (idx:3) [-> Fidough] | (Critic: +0.293)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 1 | Step 5] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (7): Basic {P} Energy, Mystery Garden, Buddy-Buddy Poffin, Pokégear 3.0, Carmine, Ultra Ball, Hilda
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:0) [Basic {P} Energy] | (Critic: +0.362)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 1 | Step 6] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (6): Mystery Garden, Buddy-Buddy Poffin, Pokégear 3.0, Carmine, Ultra Ball, Hilda
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:4) [Ultra Ball] | (Critic: +1.733)
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 1 | Step 7] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (5): Mystery Garden, Buddy-Buddy Poffin, Pokégear 3.0, Carmine, Hilda
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:4) [-> Hilda] | CARD (idx:0) [-> Mystery Garden] | (Critic: +1.845)
+
+--- [Turn 1 | Step 8] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (3): Buddy-Buddy Poffin, Pokégear 3.0, Carmine
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PASS/END | (Critic: +1.664)
+
+--- [Turn 1 | Step 9] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (3): Buddy-Buddy Poffin, Pokégear 3.0, Carmine
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:2) [Carmine] | (Critic: +2.936)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 1 | Step 10] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (5): Mega Gardevoir ex, Mystery Garden, Buddy-Buddy Poffin, Kirlia, Boss’s Orders
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:1) [Mystery Garden] | (Critic: +2.030)
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 1 | Step 11] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (4): Mega Gardevoir ex, Buddy-Buddy Poffin, Kirlia, Boss’s Orders
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: END | (Critic: +1.900)
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 2 | Step 12] ---
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 1 | Prizes: ? | Hand (6): Boss’s Orders, Boss’s Orders, Boss’s Orders, Carmine, Basic {P} Energy, Buddy-Buddy Poffin
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: PLAY (idx:5) [Buddy-Buddy Poffin] | (Critic: -1.451)
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 2 | Step 13] ---
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 1 | Prizes: ? | Hand (5): Boss’s Orders, Boss’s Orders, Boss’s Orders, Carmine, Basic {P} Energy
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: CARD (idx:24) [-> Fidough] | (Critic: -1.378)
+
+--- [Turn 2 | Step 14] ---
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 2 | Prizes: ? | Hand (5): Boss’s Orders, Boss’s Orders, Boss’s Orders, Carmine, Basic {P} Energy
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACH (idx:4) [Basic {P} Energy] | (Critic: -2.192)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 2 | Step 15] ---
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 2 | Prizes: ? | Hand (4): Boss’s Orders, Boss’s Orders, Boss’s Orders, Carmine
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: PLAY (idx:3) [Carmine] | (Critic: -2.728)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 2 | Step 16] ---
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 2 | Prizes: ? | Hand (5): Dachsbun ex, Ultra Ball, Basic {P} Energy, Basic {P} Energy, Basic {P} Energy
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: PLAY (idx:1) [Ultra Ball] | (Critic: -1.832)
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 2 | Step 17] ---
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 2 | Prizes: ? | Hand (4): Dachsbun ex, Basic {P} Energy, Basic {P} Energy, Basic {P} Energy
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: CARD (idx:0) [-> Dachsbun ex] | CARD (idx:1) [-> Basic {P} Energy] | (Critic: -1.949)
+
+--- [Turn 2 | Step 18] ---
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 2 | Prizes: ? | Hand (2): Basic {P} Energy, Basic {P} Energy
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: CARD (idx:18) [-> Dachsbun ex] | (Critic: -2.186)
+
+--- [Turn 2 | Step 19] ---
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 2 | Prizes: ? | Hand (3): Basic {P} Energy, Basic {P} Energy, Dachsbun ex
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACK | (Critic: -1.959)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 3 | Step 20] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (5): Mega Gardevoir ex, Buddy-Buddy Poffin, Kirlia, Boss’s Orders, Basic {P} Energy
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:4) [Basic {P} Energy] | (Critic: +3.777)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 3 | Step 21] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (4): Mega Gardevoir ex, Buddy-Buddy Poffin, Kirlia, Boss’s Orders
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACK | (Critic: +4.501)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 50 HP
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 4 | Step 22] ---
+  [STATE P1] Active: Fidough (HP: 10/60) | Bench: 2 | Prizes: ? | Hand (4): Basic {P} Energy, Basic {P} Energy, Dachsbun ex, Prime Catcher
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACH (idx:0) [Basic {P} Energy] | (Critic: -1.921)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 4 | Step 23] ---
+  [STATE P1] Active: Fidough (HP: 10/60) | Bench: 2 | Prizes: ? | Hand (3): Basic {P} Energy, Dachsbun ex, Prime Catcher
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: EVOLVE (idx:1) [Dachsbun ex] | (Critic: -2.096)
+  >>> ENGINE: Evolusi Pokemon
+
+--- [Turn 4 | Step 24] ---
+  [STATE P1] Active: Fidough (HP: 10/60) | Bench: 2 | Prizes: ? | Hand (2): Basic {P} Energy, Prime Catcher
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACK | (Critic: -1.683)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 50 HP
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Evolusi Pokemon
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 5 | Step 25] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (5): Mega Gardevoir ex, Buddy-Buddy Poffin, Kirlia, Boss’s Orders, Carmine
+  [STATE P1] Active: Fidough (HP: 10/60) | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACK | (Critic: +3.538)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 50 HP
+
+--- [Turn 5 | Step 26] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (5): Mega Gardevoir ex, Buddy-Buddy Poffin, Kirlia, Boss’s Orders, Carmine
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:2) | (Critic: +2.843)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 50 HP
+
+--- [Turn 5 | Step 27] ---
+  [STATE P1] Active: Kosong | Bench: 2 | Prizes: ? | Hand (2): Basic {P} Energy, Prime Catcher
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: CARD (idx:0) | (Critic: -0.602)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 6 | Step 28] ---
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 1 | Prizes: ? | Hand (3): Basic {P} Energy, Prime Catcher, Basic {P} Energy
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACH (idx:0) [Basic {P} Energy] | (Critic: -0.259)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 6 | Step 29] ---
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 1 | Prizes: ? | Hand (2): Prime Catcher, Basic {P} Energy
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACK | (Critic: +1.432)
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 7 | Step 30] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (7): Mega Gardevoir ex, Buddy-Buddy Poffin, Kirlia, Boss’s Orders, Carmine, Basic {P} Energy, Boss’s Orders
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:5) [Basic {P} Energy] | (Critic: -0.506)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 7 | Step 31] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (6): Mega Gardevoir ex, Buddy-Buddy Poffin, Kirlia, Boss’s Orders, Carmine, Boss’s Orders
+  [STATE P1] Active: Fidough (HP: 60/60) | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACK | (Critic: -0.820)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 50 HP
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 8 | Step 32] ---
+  [STATE P1] Active: Fidough (HP: 10/60) | Bench: 1 | Prizes: ? | Hand (3): Prime Catcher, Basic {P} Energy, Basic {P} Energy
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACH (idx:1) [Basic {P} Energy] | (Critic: +0.817)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 8 | Step 33] ---
+  [STATE P1] Active: Fidough (HP: 10/60) | Bench: 1 | Prizes: ? | Hand (2): Prime Catcher, Basic {P} Energy
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACK | (Critic: +1.435)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 50 HP
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 9 | Step 34] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (7): Mega Gardevoir ex, Buddy-Buddy Poffin, Kirlia, Boss’s Orders, Carmine, Boss’s Orders, XerneasEX
+  [STATE P1] Active: Fidough (HP: 10/60) | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACK | (Critic: -1.279)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 50 HP
+
+--- [Turn 9 | Step 35] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ? | Hand (7): Mega Gardevoir ex, Buddy-Buddy Poffin, Kirlia, Boss’s Orders, Carmine, Boss’s Orders, XerneasEX
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:2) | (Critic: -2.155)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 50 HP
+
+--- [Turn 9 | Step 36] ---
+  [STATE P1] Active: Kosong | Bench: 1 | Prizes: ? | Hand (2): Prime Catcher, Basic {P} Energy
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: CARD (idx:0) | (Critic: +2.718)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 10 | Step 37] ---
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ? | Hand (3): Prime Catcher, Basic {P} Energy, Basic {P} Energy
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACH (idx:1) [Basic {P} Energy] | (Critic: +4.360)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 10 | Step 38] ---
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ? | Hand (2): Prime Catcher, Basic {P} Energy
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 0 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACK | (Critic: +4.291)
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 130 HP
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 11 | Step 39] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 0 | Prizes: ? | Hand (9): Mega Gardevoir ex, Buddy-Buddy Poffin, Kirlia, Boss’s Orders, Carmine, Boss’s Orders, XerneasEX, Lacey, Rare Candy
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:6) [XerneasEX] | (Critic: -1.603)
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 11 | Step 40] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (8): Mega Gardevoir ex, Buddy-Buddy Poffin, Kirlia, Boss’s Orders, Carmine, Boss’s Orders, Lacey, Rare Candy
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:6) [Lacey] | (Critic: -2.807)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 11 | Step 41] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (4): Basic {P} Energy, Ultra Ball, Kirlia, Ultra Ball
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:1) [Ultra Ball] | (Critic: -3.110)
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 11 | Step 42] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (3): Basic {P} Energy, Kirlia, Ultra Ball
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:1) [-> Kirlia] | CARD (idx:2) [-> Ultra Ball] | (Critic: -3.703)
+
+--- [Turn 11 | Step 43] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (1): Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:12) [-> Mega Gardevoir ex] | (Critic: -3.843)
+
+--- [Turn 11 | Step 44] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (2): Basic {P} Energy, Mega Gardevoir ex
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:0) [Basic {P} Energy] | (Critic: -4.273)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 11 | Step 45] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (1): Mega Gardevoir ex
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: RETREAT | (Critic: -4.240)
+
+--- [Turn 11 | Step 46] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (1): Mega Gardevoir ex
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ENERGY (idx:0) | (Critic: -4.462)
+
+--- [Turn 11 | Step 47] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (1): Mega Gardevoir ex
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0) | (Critic: -4.588)
+
+--- [Turn 11 | Step 48] ---
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 1 | Prizes: ? | Hand (1): Mega Gardevoir ex
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: END | (Critic: -4.628)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 130 HP
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 12 | Step 49] ---
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ? | Hand (3): Prime Catcher, Basic {P} Energy, Dachsbun ex
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 1 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACH (idx:1) [Basic {P} Energy] | (Critic: +4.574)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 12 | Step 50] ---
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ? | Hand (2): Prime Catcher, Dachsbun ex
+  [STATE P0] Active: XerneasEX (HP: 210/210) | Bench: 1 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACK | (Critic: +3.405)
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 130 HP
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 13 | Step 51] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (2): Mega Gardevoir ex, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:1) [Basic {P} Energy] | (Critic: -4.704)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 13 | Step 52] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (1): Mega Gardevoir ex
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: RETREAT | (Critic: -4.733)
+
+--- [Turn 13 | Step 53] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (1): Mega Gardevoir ex
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ENERGY (idx:0) | (Critic: -4.724)
+
+--- [Turn 13 | Step 54] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (1): Mega Gardevoir ex
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0) | (Critic: -4.696)
+
+--- [Turn 13 | Step 55] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (1): Mega Gardevoir ex
+  [STATE P1] Active: Dachsbun ex (HP: 250/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACK | (Critic: -4.347)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 130 HP
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 50 HP
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 14 | Step 56] ---
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ? | Hand (3): Prime Catcher, Dachsbun ex, Basic {P} Energy
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACH (idx:2) [Basic {P} Energy] | (Critic: +4.649)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 14 | Step 57] ---
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ? | Hand (2): Prime Catcher, Dachsbun ex
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACK | (Critic: +4.439)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 130 HP
+
+--- [Turn 14 | Step 58] ---
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ? | Hand (2): Prime Catcher, Dachsbun ex
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: CARD (idx:1) | CARD (idx:2) | (Critic: +4.981)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 50 HP
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 130 HP
+
+--- [Turn 14 | Step 59] ---
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ? | Hand (1): Mega Gardevoir ex
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0) | (Critic: -4.684)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 15 | Step 60] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 0 | Prizes: ? | Hand (2): Mega Gardevoir ex, Carmine
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:1) [Carmine] | (Critic: -4.585)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 15 | Step 61] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 0 | Prizes: ? | Hand (5): Rare Candy, Buddy-Buddy Poffin, Kirlia, Buddy-Buddy Poffin, Energy Retrieval
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:4) [Energy Retrieval] | (Critic: -4.301)
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 15 | Step 62] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 0 | Prizes: ? | Hand (4): Rare Candy, Buddy-Buddy Poffin, Kirlia, Buddy-Buddy Poffin
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:13) | CARD (idx:11) | (Critic: -4.254)
+
+--- [Turn 15 | Step 63] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 0 | Prizes: ? | Hand (6): Rare Candy, Buddy-Buddy Poffin, Kirlia, Buddy-Buddy Poffin, Basic {P} Energy, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:4) [Basic {P} Energy] | (Critic: -3.929)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 15 | Step 64] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 0 | Prizes: ? | Hand (5): Rare Candy, Buddy-Buddy Poffin, Kirlia, Buddy-Buddy Poffin, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:1) [Buddy-Buddy Poffin] | (Critic: -3.825)
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 15 | Step 65] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 0 | Prizes: ? | Hand (4): Rare Candy, Kirlia, Buddy-Buddy Poffin, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:7) [-> Ralts] | CARD (idx:15) [-> Ralts] | (Critic: -3.466)
+
+--- [Turn 15 | Step 66] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 2 | Prizes: ? | Hand (4): Rare Candy, Kirlia, Buddy-Buddy Poffin, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: RETREAT | (Critic: -3.574)
+
+--- [Turn 15 | Step 67] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 2 | Prizes: ? | Hand (4): Rare Candy, Kirlia, Buddy-Buddy Poffin, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ENERGY (idx:0) | (Critic: -3.730)
+
+--- [Turn 15 | Step 68] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 2 | Prizes: ? | Hand (4): Rare Candy, Kirlia, Buddy-Buddy Poffin, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0) | (Critic: -3.679)
+
+--- [Turn 15 | Step 69] ---
+  [STATE P0] Active: Ralts (HP: 70/70) | Bench: 2 | Prizes: ? | Hand (4): Rare Candy, Kirlia, Buddy-Buddy Poffin, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:2) [Buddy-Buddy Poffin] | (Critic: -3.833)
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 15 | Step 70] ---
+  [STATE P0] Active: Ralts (HP: 70/70) | Bench: 2 | Prizes: ? | Hand (3): Rare Candy, Kirlia, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:13) [-> Ralts] | (Critic: -3.343)
+
+--- [Turn 15 | Step 71] ---
+  [STATE P0] Active: Ralts (HP: 70/70) | Bench: 3 | Prizes: ? | Hand (3): Rare Candy, Kirlia, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ABILITY (idx:0) | (Critic: -3.936)
+
+--- [Turn 15 | Step 72] ---
+  [STATE P0] Active: Ralts (HP: 70/70) | Bench: 3 | Prizes: ? | Hand (3): Rare Candy, Kirlia, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:2) [-> Basic {P} Energy] | (Critic: -3.846)
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 15 | Step 73] ---
+  [STATE P0] Active: Ralts (HP: 70/70) | Bench: 3 | Prizes: ? | Hand (4): Rare Candy, Kirlia, Basic {P} Energy, Neo Upper Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: END | (Critic: -3.885)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 16 | Step 74] ---
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ? | Hand (5): Prime Catcher, Dachsbun ex, Basic {P} Energy, Basic {P} Energy, Pokégear 3.0
+  [STATE P0] Active: Ralts (HP: 70/70) | Bench: 3 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACH (idx:2) [Basic {P} Energy] | (Critic: +4.445)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 16 | Step 75] ---
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ? | Hand (4): Prime Catcher, Dachsbun ex, Basic {P} Energy, Pokégear 3.0
+  [STATE P0] Active: Ralts (HP: 70/70) | Bench: 3 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACK | (Critic: +4.281)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 130 HP
+
+--- [Turn 16 | Step 76] ---
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ? | Hand (4): Prime Catcher, Dachsbun ex, Basic {P} Energy, Pokégear 3.0
+  [STATE P0] Active: Kosong | Bench: 3 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: CARD (idx:1) | (Critic: +4.901)
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 130 HP
+
+--- [Turn 16 | Step 77] ---
+  [STATE P0] Active: Kosong | Bench: 3 | Prizes: ? | Hand (4): Rare Candy, Kirlia, Basic {P} Energy, Neo Upper Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:1) | (Critic: -2.788)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 17 | Step 78] ---
+  [STATE P0] Active: Ralts (HP: 70/70) | Bench: 2 | Prizes: ? | Hand (5): Rare Candy, Kirlia, Basic {P} Energy, Neo Upper Energy, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:2) [Basic {P} Energy] | (Critic: -2.835)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 17 | Step 79] ---
+  [STATE P0] Active: Ralts (HP: 70/70) | Bench: 2 | Prizes: ? | Hand (4): Rare Candy, Kirlia, Neo Upper Energy, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: EVOLVE (idx:1) [Kirlia] | (Critic: -2.918)
+  >>> ENGINE: Evolusi Pokemon
+
+--- [Turn 17 | Step 80] ---
+  [STATE P0] Active: Kirlia (HP: 100/100) | Bench: 2 | Prizes: ? | Hand (3): Rare Candy, Neo Upper Energy, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ABILITY (idx:0) | (Critic: -3.291)
+
+--- [Turn 17 | Step 81] ---
+  [STATE P0] Active: Kirlia (HP: 100/100) | Bench: 2 | Prizes: ? | Hand (3): Rare Candy, Neo Upper Energy, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:1) [-> Neo Upper Energy] | (Critic: -3.157)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 17 | Step 82] ---
+  [STATE P0] Active: Kirlia (HP: 100/100) | Bench: 2 | Prizes: ? | Hand (3): Rare Candy, Basic {P} Energy, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: END | (Critic: -3.468)
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Evolusi Pokemon
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 18 | Step 83] ---
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ? | Hand (6): Prime Catcher, Dachsbun ex, Basic {P} Energy, Pokégear 3.0, Buddy-Buddy Poffin, Judge
+  [STATE P0] Active: Kirlia (HP: 100/100) | Bench: 2 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACH (idx:2) [Basic {P} Energy] | (Critic: +4.009)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 18 | Step 84] ---
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ? | Hand (5): Prime Catcher, Dachsbun ex, Pokégear 3.0, Buddy-Buddy Poffin, Judge
+  [STATE P0] Active: Kirlia (HP: 100/100) | Bench: 2 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACK | (Critic: +3.532)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 130 HP
+
+--- [Turn 18 | Step 85] ---
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ? | Hand (5): Prime Catcher, Dachsbun ex, Pokégear 3.0, Buddy-Buddy Poffin, Judge
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: CARD (idx:1) | (Critic: +4.753)
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 130 HP
+
+--- [Turn 18 | Step 86] ---
+  [STATE P0] Active: Kosong | Bench: 2 | Prizes: ? | Hand (3): Rare Candy, Basic {P} Energy, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:1) | (Critic: -2.649)
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 19 | Step 87] ---
+  [STATE P0] Active: Ralts (HP: 70/70) | Bench: 1 | Prizes: ? | Hand (4): Rare Candy, Basic {P} Energy, Basic {P} Energy, Mega Gardevoir ex
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: PLAY (idx:0) [Rare Candy] | (Critic: -3.253)
+  >>> ENGINE: Memainkan Kartu
+
+--- [Turn 19 | Step 88] ---
+  [STATE P0] Active: Ralts (HP: 70/70) | Bench: 1 | Prizes: ? | Hand (3): Basic {P} Energy, Basic {P} Energy, Mega Gardevoir ex
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: EVOLVE (idx:2) [Mega Gardevoir ex] | (Critic: -3.527)
+  >>> ENGINE: Evolusi Pokemon
+
+--- [Turn 19 | Step 89] ---
+  [STATE P0] Active: Mega Gardevoir ex (HP: 360/360) | Bench: 1 | Prizes: ? | Hand (2): Basic {P} Energy, Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ATTACH (idx:0) [Basic {P} Energy] | (Critic: -2.624)
+  >>> ENGINE: Pasang Energi
+
+--- [Turn 19 | Step 90] ---
+  [STATE P0] Active: Mega Gardevoir ex (HP: 360/360) | Bench: 1 | Prizes: ? | Hand (1): Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: RETREAT | (Critic: -2.079)
+
+--- [Turn 19 | Step 91] ---
+  [STATE P0] Active: Mega Gardevoir ex (HP: 360/360) | Bench: 1 | Prizes: ? | Hand (1): Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ENERGY (idx:0) | (Critic: -3.021)
+
+--- [Turn 19 | Step 92] ---
+  [STATE P0] Active: Mega Gardevoir ex (HP: 360/360) | Bench: 1 | Prizes: ? | Hand (1): Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ENERGY (idx:0) | (Critic: -3.033)
+
+--- [Turn 19 | Step 93] ---
+  [STATE P0] Active: Mega Gardevoir ex (HP: 360/360) | Bench: 1 | Prizes: ? | Hand (1): Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0) | (Critic: -3.508)
+
+--- [Turn 19 | Step 94] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (1): Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: ABILITY (idx:0) | (Critic: -3.651)
+
+--- [Turn 19 | Step 95] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (1): Basic {P} Energy
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: CARD (idx:0) [-> Basic {P} Energy] | (Critic: -3.542)
+  >>> ENGINE: Draw Kartu
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 19 | Step 96] ---
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ? | Hand (2): Rare Candy, Kirlia
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ?
+  [ACTION] P0 (PTR) memilih: END | (Critic: -3.393)
+  >>> ENGINE: Memainkan Kartu
+  >>> ENGINE: Evolusi Pokemon
+  >>> ENGINE: Pasang Energi
+  >>> ENGINE: Draw Kartu
+
+--- [Turn 20 | Step 97] ---
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ? | Hand (7): Prime Catcher, Dachsbun ex, Pokégear 3.0, Buddy-Buddy Poffin, Judge, Fidough, Kieran
+  [STATE P0] Active: XerneasEX (HP: 80/210) | Bench: 1 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: ATTACK | (Critic: +3.589)
+  >>> ENGINE: Serangan Terjadi!
+  >>> ENGINE: Menerima Damage 130 HP
+
+--- [Turn 20 | Step 98] ---
+  [STATE P1] Active: Dachsbun ex (HP: 200/250) | Bench: 0 | Prizes: ? | Hand (7): Prime Catcher, Dachsbun ex, Pokégear 3.0, Buddy-Buddy Poffin, Judge, Fidough, Kieran
+  [STATE P0] Active: Kosong | Bench: 1 | Prizes: ?
+  [ACTION] P1 (PTR) memilih: CARD (idx:1) | CARD (idx:0) | (Critic: +4.494)
+
+--- PERTANDINGAN SELESAI ---
+PEMENANG: P1 (PTR)

@@ -21,7 +21,12 @@ class BaseAgent:
         
         if checkpoint_path and os.path.exists(checkpoint_path):
             with open(checkpoint_path, 'rb') as f:
-                self.params = serialization.from_bytes(self.params, f.read())
+                bytes_data = f.read()
+                raw_dict = serialization.msgpack_restore(bytes_data)
+                # self.params has top-level key 'params'
+                if 'params' not in raw_dict:
+                    raw_dict = {'params': raw_dict}
+                self.params = serialization.from_state_dict(self.params, raw_dict)
                 
         self.apply_fn = jax.jit(self.model.apply)
         
