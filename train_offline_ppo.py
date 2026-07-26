@@ -2,6 +2,8 @@ import os
 import argparse
 import jax
 import jax.numpy as jnp
+import functools
+from flax.jax_utils import replicate, unreplicate
 import optax
 from flax.training import train_state
 from flax import serialization
@@ -37,7 +39,7 @@ def create_train_state(rng, learning_rate):
         tx=tx,
     )
 
-@jax.jit
+@functools.partial(jax.pmap, axis_name='batch')
 def compute_old_log_probs_and_values_seq(state, seq_batch, glob_batch, carry_init, action_batch, mask_batch):
     """
     Melakukan unroll LSTM (lax.scan) untuk mencari log_prob lama dari seluruh sequence.
@@ -75,7 +77,7 @@ def compute_old_log_probs_and_values_seq(state, seq_batch, glob_batch, carry_ini
     
     return jax.lax.stop_gradient(old_log_probs), jax.lax.stop_gradient(old_values)
 
-@jax.jit
+@functools.partial(jax.pmap, axis_name='batch')
 def ppo_train_step_seq(state, seq_batch, glob_batch, carry_init, action_batch, mask_batch, 
                        target_value_batch, valid_mask_batch, old_log_probs, clip_eps=0.2, 
                        value_coef=0.5, entropy_coef=0.01):
@@ -140,6 +142,9 @@ def ppo_train_step_seq(state, seq_batch, glob_batch, carry_init, action_batch, m
         return mean_total_loss, (mean_p_loss, mean_v_loss, mean_e_loss)
 
     (loss, aux), grads = jax.value_and_grad(loss_fn, has_aux=True)(state.params)
+    grads = jax.lax.pmean(grads, axis_name='batch')
+    loss = jax.lax.pmean(loss, axis_name='batch')
+    aux = jax.lax.pmean(aux, axis_name='batch')
     state = state.apply_gradients(grads=grads)
     return state, loss, aux[0], aux[1], aux[2]
 
@@ -170,6 +175,10 @@ def main(args):
     
     rng = jax.random.PRNGKey(42)
     state = create_train_state(rng, args.learning_rate)
+    
+    num_devices = jax.local_device_count()
+    print(f"Menggunakan {num_devices} GPU(s) via jax.pmap")
+    state = replicate(state)
     
     model_path = os.path.join(args.save_dir, "model_ptr_v3.msgpack")
     if os.path.exists(model_path):
@@ -208,16 +217,16 @@ def main(args):
                 if batch_data is None:
                     continue
                 seq_input, glob_input, target_action, target_value, action_mask, valid_mask = batch_data
-                seq_jax = jnp.array(seq_input.numpy())
-                glob_jax = jnp.array(glob_input.numpy())
-                target_a_jax = jnp.array(target_action.numpy())
-                target_v_jax = jnp.array(target_value.numpy())
-                mask_jax = jnp.array(action_mask.numpy())
-                valid_jax = jnp.array(valid_mask.numpy())
+                seq_jax = jnp.array(seq_input.numpy()).reshape(num_devices, -1, *seq_input.shape[1:])
+                glob_jax = jnp.array(glob_input.numpy()).reshape(num_devices, -1, *glob_input.shape[1:])
+                target_a_jax = jnp.array(target_action.numpy()).reshape(num_devices, -1, *target_action.shape[1:])
+                target_v_jax = jnp.array(target_value.numpy()).reshape(num_devices, -1, *target_value.shape[1:])
+                mask_jax = jnp.array(action_mask.numpy()).reshape(num_devices, -1, *action_mask.shape[1:])
+                valid_jax = jnp.array(valid_mask.numpy()).reshape(num_devices, -1, *valid_mask.shape[1:])
                 
-                batch_size = seq_jax.shape[0]
+                local_batch_size = seq_jax.shape[1]
                 # Carry state selalu direset ke 0 di awal setiap ronde/episode game
-                carry_init = (jnp.zeros((batch_size, 256)), jnp.zeros((batch_size, 256)))
+                carry_init = (jnp.zeros((num_devices, local_batch_size, 256)), jnp.zeros((num_devices, local_batch_size, 256)))
                 
                 # Step 1: Hitung old_log_probs secara sequence (unrolled over time)
                 old_log_probs, _ = compute_old_log_probs_and_values_seq(
