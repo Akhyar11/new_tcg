@@ -1,5 +1,8 @@
 import os
-import json
+try:
+    import orjson as json
+except ImportError:
+    import json
 import glob
 import numpy as np
 import torch
@@ -64,8 +67,8 @@ class KaggleReplayDataset(Dataset):
         player_idx = meta["player_idx"]
         
         try:
-            with open(filepath, 'r') as f:
-                data = json.load(f)
+            with open(filepath, 'rb') as f:
+                data = json.loads(f.read())
         except Exception:
             return None
             

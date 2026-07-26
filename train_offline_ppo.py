@@ -169,7 +169,7 @@ def main(args):
         batch_size=args.batch_size, 
         shuffle=True, 
         drop_last=True, 
-        num_workers=4,
+        num_workers=8,
         collate_fn=collate_fn_filter_none
     )
     
