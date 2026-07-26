@@ -80,6 +80,7 @@ def ppo_train_step_seq(state, seq_batch, glob_batch, carry_init, action_batch, m
                        target_value_batch, valid_mask_batch, old_log_probs, clip_eps=0.2, 
                        value_coef=0.5, entropy_coef=0.01):
     def loss_fn(params):
+        @jax.remat
         def scan_fn(carry, step_inputs):
             seq_t, glob_t, action_t, mask_t, target_v_t, valid_t, old_log_prob_t = step_inputs
             
