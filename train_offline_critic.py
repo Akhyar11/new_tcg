@@ -150,10 +150,8 @@ def main(args):
                 if batch is None:
                     continue
                     
-                seq_input = batch['seq_inputs']
-                glob_input = batch['glob_inputs']
-                target_value = batch['target_values']
-                valid_mask = batch['valid_masks']
+                # Dataset mengembalikan TUPLE (seq, glob, target_a, target_v, action_mask, valid_mask)
+                seq_input, glob_input, _, target_value, _, valid_mask = batch
                 
                 # Reshape to (num_devices, local_batch_size, ...)
                 bs = seq_input.shape[0]
