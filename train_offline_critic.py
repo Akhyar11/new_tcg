@@ -110,12 +110,25 @@ def main(args):
             with open(model_path, 'rb') as f:
                 state = state.replace(params=serialization.from_bytes(state.params, f.read()))
         else:
-            print("Syncing initial critic weights from Kaggle (if any)...")
+            print("Syncing initial weights from Kaggle (if any)...")
             download_from_kaggle(args.save_dir)
             if os.path.exists(model_path):
                 print(f"Loading weights from {model_path}...")
                 with open(model_path, 'rb') as f:
                     state = state.replace(params=serialization.from_bytes(state.params, f.read()))
+            else:
+                base_path = os.path.join(args.save_dir, "model_base.msgpack")
+                if os.path.exists(base_path):
+                    print(f"Loading Teacher Embeddings from {base_path}...")
+                    with open(base_path, 'rb') as f:
+                        base_params = serialization.from_bytes(None, f.read())
+                        # Load only the knowledge_embed dictionary safely
+                        if 'CardEmbedding_0' in base_params and 'knowledge_embed' in base_params['CardEmbedding_0']:
+                            from flax.core import unfreeze, freeze
+                            unfrozen_params = unfreeze(state.params)
+                            unfrozen_params['CardEmbedding_0']['knowledge_embed'] = base_params['CardEmbedding_0']['knowledge_embed']
+                            state = state.replace(params=freeze(unfrozen_params))
+                            print("Berhasil memasang otak Guru (Teacher Embeddings) ke Critic!")
                     
     # Replicate state to all devices AFTER loading weights
     state = replicate(state)
