@@ -247,10 +247,10 @@ def main(args):
                         args.entropy_coef
                     )
                 
-                epoch_loss += total_loss.item()
-                epoch_p_loss += p_loss.item()
-                epoch_v_loss += v_loss.item()
-                epoch_ent_loss += ent_loss.item()
+                epoch_loss += total_loss[0].item()
+                epoch_p_loss += p_loss[0].item()
+                epoch_v_loss += v_loss[0].item()
+                epoch_ent_loss += ent_loss[0].item()
                 batches += 1
                 pbar.set_postfix(
                     L=f"{epoch_loss/batches:.3f}", 
