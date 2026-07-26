@@ -146,6 +146,7 @@ def _get_board_quality(player_state, is_opponent: bool = False) -> float:
 def calculate_potential(state, player_index: int) -> float:
     """
     Hitung potential state dengan card data integration & PBRS linearity.
+    Termasuk insentif Hand Resource Advantage & Evolution Progress untuk kartu Trainer/Item.
     """
     if state is None:
         return 0.0
@@ -163,40 +164,52 @@ def calculate_potential(state, player_index: int) -> float:
     opp_board_quality = _get_board_quality(opp_state, is_opponent=True)
     board_quality_diff = my_board_quality - opp_board_quality
     
-    # 3. Traditional Board Stats (HP Ratio, Pokemon Count, Energy, Hand Count)
+    # 3. Hand Resource Advantage (Menstimulasi Supporter Draw seperti Professor's Research)
+    my_hand_count = len(getattr(my_state, 'hand', []) or [])
+    opp_hand_count = len(getattr(opp_state, 'hand', []) or [])
+    hand_diff = min(1.0, my_hand_count / 7.0) - min(1.0, opp_hand_count / 7.0)
+
+    # 4. Stage & Evolution Progress (Menstimulasi Item search seperti Nest Ball / Ultra Ball)
+    def get_evolution_score(player_state):
+        score = 0.0
+        p_list = (player_state.active or []) + (player_state.bench or [])
+        for p in p_list:
+            if p:
+                score += 0.2  # Base presence
+                pre_evo = getattr(p, 'preEvolution', [])
+                if pre_evo and len(pre_evo) > 0:
+                    score += 0.3  # Evolved Pokemon
+        return score
+
+    evo_diff = get_evolution_score(my_state) - get_evolution_score(opp_state)
+
+    # 5. Traditional Board Stats (HP Ratio, Energy)
     def get_board_stats(player_state):
         hp_ratio_sum = 0.0
-        pokemon_count = 0
         energy_count = 0
-        
-        for p in player_state.active + player_state.bench:
+        p_list = (player_state.active or []) + (player_state.bench or [])
+        for p in p_list:
             if p:
-                pokemon_count += 1
-                max_hp = getattr(p, 'maxHp', 1)
-                safe_max_hp = max(max_hp, 1)
-                hp_ratio_sum += min(1.0, p.hp / safe_max_hp)
-                
+                max_hp = max(getattr(p, 'maxHp', 1), 1)
+                hp_ratio_sum += min(1.0, p.hp / max_hp)
                 energies = getattr(p, 'energies', [])
                 energy_count += min(len(energies), 4)
-                
-        return hp_ratio_sum, pokemon_count, energy_count
+        return hp_ratio_sum, energy_count
         
-    my_hp_ratio, my_poke_count, my_energy_count = get_board_stats(my_state)
-    opp_hp_ratio, opp_poke_count, opp_energy_count = get_board_stats(opp_state)
+    my_hp_ratio, my_energy_count = get_board_stats(my_state)
+    opp_hp_ratio, opp_energy_count = get_board_stats(opp_state)
     
     hp_ratio_diff = my_hp_ratio - opp_hp_ratio
-    poke_count_diff = my_poke_count - opp_poke_count
     energy_diff = my_energy_count - opp_energy_count
-    
-    # 4. Deck Count (Prevent deck-out)
     deck_diff = my_state.deckCount - opp_state.deckCount
     
-    # Combine potentials dengan pembobotan seimbang (tanpa clip buatan agar PBRS linear)
-    potential = (prize_diff * 0.20) + \
+    # Combine potentials dengan pembobotan seimbang (PBRS Linear)
+    potential = (prize_diff * 0.25) + \
                 (board_quality_diff * 0.15) + \
+                (hand_diff * 0.12) + \
+                (evo_diff * 0.10) + \
                 (hp_ratio_diff * 0.08) + \
-                (poke_count_diff * 0.05) + \
-                (energy_diff * 0.04) + \
+                (energy_diff * 0.05) + \
                 (deck_diff * 0.0002)
     
     return float(potential)
