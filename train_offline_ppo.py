@@ -174,11 +174,21 @@ def main(args):
     if os.path.exists(model_path):
         print(f"Loading weights from {model_path}...")
         with open(model_path, 'rb') as f:
-            state = state.replace(params=serialization.from_bytes(state.params, f.read()))
+            bytes_data = f.read()
+            raw_dict = serialization.msgpack_restore(bytes_data)
+            if 'params' in raw_dict and len(raw_dict.keys()) == 1:
+                state = state.replace(params=serialization.from_state_dict(state.params, raw_dict['params']))
+            else:
+                state = state.replace(params=serialization.from_state_dict(state.params, raw_dict))
     elif args.load_checkpoint and os.path.exists(args.load_checkpoint):
         print(f"Loading fallback weights from {args.load_checkpoint}...")
         with open(args.load_checkpoint, 'rb') as f:
-            state = state.replace(params=serialization.from_bytes(state.params, f.read()))
+            bytes_data = f.read()
+            raw_dict = serialization.msgpack_restore(bytes_data)
+            if 'params' in raw_dict and len(raw_dict.keys()) == 1:
+                state = state.replace(params=serialization.from_state_dict(state.params, raw_dict['params']))
+            else:
+                state = state.replace(params=serialization.from_state_dict(state.params, raw_dict))
             
     print("Starting Sequence-Based Offline PPO training...")
     
