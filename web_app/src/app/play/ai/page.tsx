@@ -468,8 +468,107 @@ export default function PlayAIPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#050b14', color: 'white', fontFamily: '"Inter", sans-serif', overflowX: 'hidden', position: 'relative' }}>
 
+      {/* GAME OVER MODAL OVERLAY */}
+      {obs?.current?.result !== undefined && obs.current.result !== -1 && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(5, 11, 20, 0.92)',
+          backdropFilter: 'blur(16px)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          animation: 'fadeIn 0.4s ease-out'
+        }}>
+          <div style={{
+            background: obs.current.result === 0 
+              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 78, 59, 0.5))'
+              : obs.current.result === 1
+              ? 'linear-gradient(135deg, rgba(244, 63, 94, 0.25), rgba(136, 19, 55, 0.5))'
+              : 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(120, 53, 15, 0.5))',
+            border: `2px solid ${
+              obs.current.result === 0 ? '#10b981' : obs.current.result === 1 ? '#f43f5e' : '#f59e0b'
+            }`,
+            borderRadius: '24px',
+            padding: '3rem 3.5rem',
+            textAlign: 'center',
+            maxWidth: '540px',
+            boxShadow: `0 25px 60px ${
+              obs.current.result === 0 ? 'rgba(16, 185, 129, 0.4)' : obs.current.result === 1 ? 'rgba(244, 63, 94, 0.4)' : 'rgba(245, 158, 11, 0.4)'
+            }`,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1.5rem'
+          }}>
+            <div style={{ fontSize: '4.5rem', filter: 'drop-shadow(0 0 20px currentColor)' }}>
+              {obs.current.result === 0 ? '🏆' : obs.current.result === 1 ? '💀' : '⚖️'}
+            </div>
+
+            <div>
+              <h2 style={{ 
+                fontSize: '2.5rem', 
+                fontWeight: '900', 
+                margin: 0, 
+                letterSpacing: '2px',
+                color: obs.current.result === 0 ? '#34d399' : obs.current.result === 1 ? '#fb7185' : '#fbbf24'
+              }}>
+                {obs.current.result === 0 ? 'KEMENANGAN!' : obs.current.result === 1 ? 'KEKALAHAN!' : 'HASIL SERI!'}
+              </h2>
+              <p style={{ color: '#94a3b8', margin: '0.6rem 0 0 0', fontSize: '1rem', lineHeight: '1.5' }}>
+                {obs.current.result === 0 
+                  ? 'Selamat! Anda berhasil mengalahkan JAX AI dalam pertempuran ini.' 
+                  : obs.current.result === 1
+                  ? 'JAX AI memenangkan pertempuran (Prize habis / Deck out).'
+                  : 'Pertempuran berakhir seimbang.'}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', width: '100%', marginTop: '1rem' }}>
+              <button 
+                onClick={() => { setGameState('SELECT_DECK'); setObs(null); }}
+                style={{ 
+                  flex: 1, 
+                  padding: '0.9rem 1.5rem', 
+                  background: 'linear-gradient(135deg, #0ea5e9, #2563eb)', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '12px', 
+                  fontWeight: 'bold', 
+                  fontSize: '1rem', 
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 15px rgba(14, 165, 233, 0.4)',
+                  transition: 'all 0.2s'
+                }}>
+                🔄 Main Lagi
+              </button>
+              <Link 
+                href="/" 
+                style={{ 
+                  flex: 1, 
+                  padding: '0.9rem 1.5rem', 
+                  background: 'rgba(255, 255, 255, 0.08)', 
+                  color: 'white', 
+                  border: '1px solid rgba(255, 255, 255, 0.2)', 
+                  borderRadius: '12px', 
+                  fontWeight: 'bold', 
+                  fontSize: '1rem', 
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s'
+                }}>
+                🏠 Menu Utama
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* TURN STATUS BANNER HUD */}
-      {obs && (
+      {obs && obs.current?.result === -1 && (
         <div style={{ position: 'absolute', top: '1rem', left: '50%', transform: 'translateX(-50%)', zIndex: 200, display: 'flex', alignItems: 'center', gap: '0.8rem', background: isPlayerTurn ? 'rgba(56, 189, 248, 0.12)' : 'rgba(244, 63, 94, 0.12)', border: `1px solid ${isPlayerTurn ? 'rgba(56, 189, 248, 0.5)' : 'rgba(244, 63, 94, 0.5)'}`, borderRadius: '30px', padding: '0.5rem 1.5rem', backdropFilter: 'blur(8px)', boxShadow: isPlayerTurn ? '0 0 20px rgba(56, 189, 248, 0.25)' : '0 0 20px rgba(244, 63, 94, 0.25)' }}>
           <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: isPlayerTurn ? '#38bdf8' : '#f43f5e', boxShadow: `0 0 10px ${isPlayerTurn ? '#38bdf8' : '#f43f5e'}` }} />
           <span style={{ fontWeight: '900', fontSize: '0.9rem', letterSpacing: '1.5px', color: isPlayerTurn ? '#38bdf8' : '#f43f5e' }}>

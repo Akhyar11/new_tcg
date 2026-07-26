@@ -327,7 +327,89 @@ export default function PlayAIVsAIPage() {
 
   // ================= MAIN ARENA =================
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#121212', color: 'white', fontFamily: '"Inter", sans-serif', overflowX: 'hidden' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#121212', color: 'white', fontFamily: '"Inter", sans-serif', overflowX: 'hidden', position: 'relative' }}>
+
+      {/* GAME OVER MODAL OVERLAY (SPECTATOR) */}
+      {obs?.current?.result !== undefined && obs.current.result !== -1 && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(5, 11, 20, 0.92)',
+          backdropFilter: 'blur(16px)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(129, 140, 248, 0.4))',
+            border: '2px solid #38bdf8',
+            borderRadius: '24px',
+            padding: '3rem 4rem',
+            textAlign: 'center',
+            maxWidth: '540px',
+            boxShadow: '0 25px 60px rgba(56, 189, 248, 0.3)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1.5rem'
+          }}>
+            <div style={{ fontSize: '4.5rem', filter: 'drop-shadow(0 0 20px currentColor)' }}>
+              🏆
+            </div>
+
+            <div>
+              <h2 style={{ fontSize: '2.5rem', fontWeight: '900', margin: 0, letterSpacing: '2px', color: '#38bdf8' }}>
+                PERTANDINGAN SELESAI!
+              </h2>
+              <p style={{ color: '#94a3b8', margin: '0.6rem 0 0 0', fontSize: '1.1rem', lineHeight: '1.5' }}>
+                {obs.current.result === 0 
+                  ? 'Player 0 (AI 1) memenangkan pertempuran!' 
+                  : obs.current.result === 1
+                  ? 'Player 1 (AI 2) memenangkan pertempuran!'
+                  : 'Pertandingan berakhir seri.'}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', width: '100%', marginTop: '1rem' }}>
+              <button 
+                onClick={() => { startGameWithDeck({cards: "[]"}); }}
+                style={{ 
+                  flex: 1, 
+                  padding: '0.9rem 1.5rem', 
+                  background: 'linear-gradient(135deg, #0ea5e9, #2563eb)', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '12px', 
+                  fontWeight: 'bold', 
+                  fontSize: '1rem', 
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 15px rgba(14, 165, 233, 0.4)'
+                }}>
+                🔄 Pertandingan Baru
+              </button>
+              <Link 
+                href="/" 
+                style={{ 
+                  flex: 1, 
+                  padding: '0.9rem 1.5rem', 
+                  background: 'rgba(255, 255, 255, 0.08)', 
+                  color: 'white', 
+                  border: '1px solid rgba(255, 255, 255, 0.2)', 
+                  borderRadius: '12px', 
+                  fontWeight: 'bold', 
+                  fontSize: '1rem', 
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                🏠 Menu Utama
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TOP ROW: OPPONENT HAND */}
       <div style={{ padding: '0.5rem 1rem', display: 'flex', justifyContent: 'center', gap: '5px', minHeight: '120px', flexShrink: 0, overflow: 'visible' }}>
