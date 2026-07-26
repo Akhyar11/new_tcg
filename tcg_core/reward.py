@@ -112,37 +112,31 @@ def _get_threat_score(pokemon_obj, card_db) -> float:
 def _get_board_quality(player_state, is_opponent: bool = False) -> float:
     """
     Hitung kualitas board berdasarkan:
-    - Threat level dari active Pokemon
-    - Bench Pokemon count & quality
+    - Threat level dari active Pokemon (50% dari threat component)
+    - Threat level dari bench Pokemon (50% dari threat component, tanpa bench dilution)
     - Total HP available
-    - Energy attachment level
     """
     card_db = _get_card_db()
     
-    total_threat = 0.0
-    pokemon_count = 0
     total_hp = 0.0
     active_threat = 0.0
+    bench_threat_sum = 0.0
     
-    # Active Pokemon (most important)
+    # Active Pokemon (Primary Attacker)
     if player_state.active and len(player_state.active) > 0 and player_state.active[0]:
         active_poke = player_state.active[0]
-        active_threat = _get_threat_score(active_poke, card_db) * 2.0  # 2x weight for active
-        total_threat += active_threat
+        active_threat = _get_threat_score(active_poke, card_db)
         total_hp += active_poke.hp
-        pokemon_count += 1
     
     # Bench Pokemon
     for bench_poke in player_state.bench:
         if bench_poke:
-            pokemon_count += 1
             threat = _get_threat_score(bench_poke, card_db)
-            total_threat += threat
+            bench_threat_sum += threat
             total_hp += bench_poke.hp
     
-    # Normalize: board quality is weighted threat + HP
-    # Weight: 60% threat level, 40% HP abundance
-    threat_component = total_threat / max(1, pokemon_count + 2)  # normalize
+    # Threat Component: Active 50% + Bench 50% (tanpa membagi dengan pokemon_count yang merusak insentif bench)
+    threat_component = (active_threat * 0.5) + (min(1.0, bench_threat_sum / 5.0) * 0.5)
     hp_component = min(1.0, total_hp / 500.0)  # normalize to 500 HP as "full"
     
     board_quality = threat_component * 0.6 + hp_component * 0.4
@@ -151,7 +145,7 @@ def _get_board_quality(player_state, is_opponent: bool = False) -> float:
 
 def calculate_potential(state, player_index: int) -> float:
     """
-    Hitung potential state dengan card data integration.
+    Hitung potential state dengan card data integration & PBRS linearity.
     """
     if state is None:
         return 0.0
@@ -159,17 +153,17 @@ def calculate_potential(state, player_index: int) -> float:
     my_state = state.players[player_index]
     opp_state = state.players[1 - player_index]
     
-    # 1. Prize Card Potential (Score bounds roughly +/- 0.6)
+    # 1. Prize Card Potential
     my_prize_taken = 6 - len(my_state.prize)
     opp_prize_taken = 6 - len(opp_state.prize)
     prize_diff = my_prize_taken - opp_prize_taken
     
-    # 2. Board Quality & Threat Assessment (with card data)
+    # 2. Board Quality & Threat Assessment (dengan fixed slot weights)
     my_board_quality = _get_board_quality(my_state, is_opponent=False)
     opp_board_quality = _get_board_quality(opp_state, is_opponent=True)
     board_quality_diff = my_board_quality - opp_board_quality
     
-    # 3. Traditional Board Stats (HP Ratio, Pokemon Count, Energy)
+    # 3. Traditional Board Stats (HP Ratio, Pokemon Count, Energy, Hand Count)
     def get_board_stats(player_state):
         hp_ratio_sum = 0.0
         pokemon_count = 0
@@ -194,27 +188,32 @@ def calculate_potential(state, player_index: int) -> float:
     poke_count_diff = my_poke_count - opp_poke_count
     energy_diff = my_energy_count - opp_energy_count
     
-    # 4. Deck Count (Prevent deck-out)
+    # 4. Hand Count Difference (Card Advantage)
+    my_hand = len(getattr(my_state, 'hand', []))
+    opp_hand = len(getattr(opp_state, 'hand', []))
+    hand_diff = min(2.0, (my_hand - opp_hand) / 5.0)
+    
+    # 5. Deck Count (Prevent deck-out)
     deck_diff = my_state.deckCount - opp_state.deckCount
     
-    # Combine potentials dengan improved weights
-    potential = (prize_diff * 0.15) + \
-                (board_quality_diff * 0.12) + \
+    # Combine potentials dengan pembobotan seimbang (tanpa clip buatan agar PBRS linear)
+    potential = (prize_diff * 0.20) + \
+                (board_quality_diff * 0.15) + \
                 (hp_ratio_diff * 0.08) + \
                 (poke_count_diff * 0.05) + \
-                (energy_diff * 0.03) + \
+                (energy_diff * 0.04) + \
+                (hand_diff * 0.03) + \
                 (deck_diff * 0.0002)
     
-    return float(np.clip(potential, -1.0, 1.0))
-
+    return float(potential)
 
 
 def calculate_step_reward(old_state, new_state, player_index: int, end_reason: int = 0, premature_end: bool = False) -> float:
     """
-    Menghitung reward per step dengan Potential-Based Shaping.
+    Menghitung reward per step dengan True Potential-Based Shaping (gamma=1.0 pada shaping delta).
     
     Komponen reward:
-    - r_shaping: Perubahan potential state (mendorong board improvement)
+    - r_shaping: Perubahan potential state (new_potential - old_potential)
     - r_step: Time penalty (encourage efficiency)
     - r_terminal: Zero-sum win/loss reward
     
@@ -223,18 +222,15 @@ def calculate_step_reward(old_state, new_state, player_index: int, end_reason: i
     if new_state is None:
         return -2.0  # Invalid state crash
 
-    # Hitung Shaping Reward dengan improved potential
+    # True Potential-Based Shaping (gamma=1.0 pada delta untuk mencegah leak saat winning)
     old_potential = calculate_potential(old_state, player_index)
     new_potential = calculate_potential(new_state, player_index)
-    gamma = 0.99
-    r_shaping = (gamma * new_potential) - old_potential
+    r_shaping = new_potential - old_potential
     
     # Strict Time Penalty (Setiap action step dikenakan penalti konstan)
-    # Mendorong agent untuk bermain cepat dan decisive
     r_step = -0.001
     
-    # Hukuman ekstra jika pass turn tanpa alasan (stalling)
-    # atau premature ending (surrender)
+    # Hukuman ekstra jika pass turn tanpa alasan (stalling) / surrender
     if premature_end:
         r_step -= 0.01
 
@@ -253,3 +249,4 @@ def calculate_step_reward(old_state, new_state, player_index: int, end_reason: i
     
     # Clip extreme values untuk numerical stability
     return float(np.clip(total_reward, -5.0, 5.0))
+

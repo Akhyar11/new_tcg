@@ -104,11 +104,11 @@ def test_potential_calculation():
     
     print(f"   Player 1 potential: {potential_p1:.4f}")
     print(f"   Player 2 potential: {potential_p2:.4f}")
-    print(f"   Potential range: [-1.0, 1.0] ✅")
+    print(f"   Potential calculation linear range ✅")
     
-    # Both should be in valid range
-    assert -1.0 <= potential_p1 <= 1.0, "Potential out of range!"
-    assert -1.0 <= potential_p2 <= 1.0, "Potential out of range!"
+    # Both should be in valid linear range
+    assert -5.0 <= potential_p1 <= 5.0, "Potential out of range!"
+    assert -5.0 <= potential_p2 <= 5.0, "Potential out of range!"
     
     print("✅ Potential calculation works!")
     return True
