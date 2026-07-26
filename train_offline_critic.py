@@ -85,7 +85,7 @@ def train_step_seq(state, seq_batch, glob_batch, carry_init, target_value_batch,
     return new_state, loss
 
 def main(args):
-    dataset = KaggleReplayDataset(args.dataset_dir, max_steps=args.max_steps, for_rl=True)
+    dataset = KaggleReplayDataset(args.dataset_dir, max_steps=args.max_steps)
     
     loader = DataLoader(
         dataset, 
