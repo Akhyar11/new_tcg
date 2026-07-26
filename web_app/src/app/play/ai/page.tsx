@@ -643,26 +643,9 @@ export default function PlayAIPage() {
               {aiActive && !aiActive.isFacedown ? (
                 <>
                   <img src={`/assets/cards/${aiActive['Card ID'] || aiActive.engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, aiActive, aiActive.energyCards)} />
-                  {/* Compact Energy Fan Underneath */}
-                  {aiActive.energyCards && aiActive.energyCards.map((en: any, i: number) => (
-                    <img 
-                      key={i} 
-                      src={`/assets/cards/${en['Card ID']}.png`} 
-                      style={{ 
-                        position: 'absolute', 
-                        width: '100%', 
-                        height: '100%', 
-                        top: `${Math.min((i + 1) * 4, 12)}px`, 
-                        left: `-${Math.min((i + 1) * 8, 24)}px`, 
-                        zIndex: 1, 
-                        borderRadius: '8px',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.5)'
-                      }} 
-                    />
-                  ))}
-                  {/* Energy Badge Pill */}
+                  {/* Energy Badge Pill HUD */}
                   {aiActive.energyCards && aiActive.energyCards.length > 0 && (
-                    <div style={{ position: 'absolute', bottom: '-8px', left: '30%', transform: 'translateX(-50%)', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.6)', borderRadius: '12px', padding: '1px 6px', fontSize: '0.65rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '-8px', left: '8px', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.7)', borderRadius: '12px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
                       <span>⚡</span>
                       <span>{aiActive.energyCards.length}</span>
                     </div>
@@ -685,24 +668,9 @@ export default function PlayAIPage() {
                   {aiBench[i] && !aiBench[i].isFacedown ? (
                     <>
                       <img src={`/assets/cards/${aiBench[i]['Card ID'] || aiBench[i].engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, aiBench[i], aiBench[i].energyCards)} />
-                      {aiBench[i].energyCards && aiBench[i].energyCards.map((en: any, ei: number) => (
-                        <img 
-                          key={ei} 
-                          src={`/assets/cards/${en['Card ID']}.png`} 
-                          style={{ 
-                            position: 'absolute', 
-                            width: '100%', 
-                            height: '100%', 
-                            top: `${Math.min((ei + 1) * 3, 9)}px`, 
-                            left: `-${Math.min((ei + 1) * 6, 18)}px`, 
-                            zIndex: 1, 
-                            borderRadius: '6px',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
-                          }} 
-                        />
-                      ))}
+                      {/* Energy Badge Pill HUD */}
                       {aiBench[i].energyCards && aiBench[i].energyCards.length > 0 && (
-                        <div style={{ position: 'absolute', bottom: '-6px', left: '30%', transform: 'translateX(-50%)', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.6)', borderRadius: '10px', padding: '1px 4px', fontSize: '0.6rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.8)' }}>
+                        <div style={{ position: 'absolute', top: '-6px', left: '4px', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.7)', borderRadius: '10px', padding: '1px 6px', fontSize: '0.6rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 4px 10px rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
                           <span>⚡</span>
                           <span>{aiBench[i].energyCards.length}</span>
                         </div>
@@ -844,26 +812,9 @@ export default function PlayAIPage() {
               {playerActive && !playerActive.isFacedown ? (
                 <>
                   <img src={`/assets/cards/${playerActive['Card ID'] || playerActive.engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, playerActive, playerActive?.energyCards)} />
-                  {/* Compact Energy Fan Underneath */}
-                  {playerActive.energyCards && playerActive.energyCards.map((en: any, i: number) => (
-                    <img 
-                      key={i} 
-                      src={`/assets/cards/${en['Card ID']}.png`} 
-                      style={{ 
-                        position: 'absolute', 
-                        width: '100%', 
-                        height: '100%', 
-                        top: `${Math.min((i + 1) * 4, 12)}px`, 
-                        left: `-${Math.min((i + 1) * 8, 24)}px`, 
-                        zIndex: 1, 
-                        borderRadius: '8px',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.5)'
-                      }} 
-                    />
-                  ))}
-                  {/* Energy Badge Pill */}
+                  {/* Energy Badge Pill HUD */}
                   {playerActive.energyCards && playerActive.energyCards.length > 0 && (
-                    <div style={{ position: 'absolute', bottom: '-8px', left: '30%', transform: 'translateX(-50%)', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.6)', borderRadius: '12px', padding: '1px 6px', fontSize: '0.65rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 2px 8px rgba(0,0,0,0.8)' }}>
+                    <div style={{ position: 'absolute', top: '-8px', left: '8px', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.7)', borderRadius: '12px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 4px 12px rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
                       <span>⚡</span>
                       <span>{playerActive.energyCards.length}</span>
                     </div>
@@ -888,24 +839,9 @@ export default function PlayAIPage() {
                   {benchCard && !benchCard.isFacedown ? (
                     <>
                       <img src={`/assets/cards/${benchCard['Card ID'] || benchCard.engineId}.png`} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '6px', zIndex: 10, position: 'relative' }} onContextMenu={(e) => handleCardContextMenu(e, benchCard, benchCard?.energyCards)} />
-                      {benchCard.energyCards && benchCard.energyCards.map((en: any, ei: number) => (
-                        <img 
-                          key={ei} 
-                          src={`/assets/cards/${en['Card ID']}.png`} 
-                          style={{ 
-                            position: 'absolute', 
-                            width: '100%', 
-                            height: '100%', 
-                            top: `${Math.min((ei + 1) * 3, 9)}px`, 
-                            left: `-${Math.min((ei + 1) * 6, 18)}px`, 
-                            zIndex: 1, 
-                            borderRadius: '6px',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.5)'
-                          }} 
-                        />
-                      ))}
+                      {/* Energy Badge Pill HUD */}
                       {benchCard.energyCards && benchCard.energyCards.length > 0 && (
-                        <div style={{ position: 'absolute', bottom: '-6px', left: '30%', transform: 'translateX(-50%)', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.6)', borderRadius: '10px', padding: '1px 4px', fontSize: '0.6rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '2px', boxShadow: '0 2px 6px rgba(0,0,0,0.8)' }}>
+                        <div style={{ position: 'absolute', top: '-6px', left: '4px', zIndex: 30, background: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(251, 191, 36, 0.7)', borderRadius: '10px', padding: '1px 6px', fontSize: '0.6rem', fontWeight: 'bold', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 4px 10px rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)' }}>
                           <span>⚡</span>
                           <span>{benchCard.energyCards.length}</span>
                         </div>
