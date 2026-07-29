@@ -1,0 +1,277 @@
+=== DETAILED IN-GAME ACTION LOG: LSTM_PTR_V1 vs LSTM_PTR_V2 ===
+
+[Turn 0 | Step 1] LSTM_PTR_V1 (P0): YES
+[Turn 0 | Step 2] LSTM_PTR_V1 (P0): CARD (idx:3) [-> Brute Bonnet]
+[Turn 0 | Step 3] LSTM_PTR_V2 (P1): CARD (idx:4) [-> Brute Bonnet]
+[Turn 0 | Step 4] LSTM_PTR_V1 (P0): NUMBER [Value: 0]
+[Turn 0 | Step 5] LSTM_PTR_V1 (P0): PASS/END
+[Turn 1 | Step 6] LSTM_PTR_V1 (P0): ATTACH (idx:5) [Binding Mochi]
+    >>> ENGINE: Pasang Energi
+[Turn 1 | Step 7] LSTM_PTR_V1 (P0): ATTACH (idx:5) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 1 | Step 8] LSTM_PTR_V1 (P0): PLAY (idx:3) [Ultra Ball]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 1 | Step 9] LSTM_PTR_V1 (P0): CARD (idx:2) [-> Energy Retrieval] | CARD (idx:0) [-> Carmine]
+[Turn 1 | Step 10] LSTM_PTR_V1 (P0): PASS/END
+[Turn 1 | Step 11] LSTM_PTR_V1 (P0): PLAY (idx:1) [Roaring Moon]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 1 | Step 12] LSTM_PTR_V1 (P0): END
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 2 | Step 13] LSTM_PTR_V2 (P1): ATTACH (idx:0) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 2 | Step 14] LSTM_PTR_V2 (P1): ATTACH (idx:0) [Binding Mochi]
+    >>> ENGINE: Pasang Energi
+[Turn 2 | Step 15] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+[Turn 3 | Step 16] LSTM_PTR_V1 (P0): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 4 | Step 17] LSTM_PTR_V2 (P1): ATTACH (idx:2) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 4 | Step 18] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 5 | Step 19] LSTM_PTR_V1 (P0): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 6 | Step 20] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 7 | Step 21] LSTM_PTR_V1 (P0): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 8 | Step 22] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 9 | Step 23] LSTM_PTR_V1 (P0): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 10 | Step 24] LSTM_PTR_V2 (P1): PLAY (idx:6) [Brute Bonnet]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 10 | Step 25] LSTM_PTR_V2 (P1): ATTACH (idx:1) [Air Balloon]
+    >>> ENGINE: Pasang Energi
+[Turn 10 | Step 26] LSTM_PTR_V2 (P1): ATTACH (idx:5) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 10 | Step 27] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 11 | Step 28] LSTM_PTR_V1 (P0): PLAY (idx:3) [Roaring Moon]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 11 | Step 29] LSTM_PTR_V1 (P0): PLAY (idx:4) [Roaring Moon]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 11 | Step 30] LSTM_PTR_V1 (P0): PLAY (idx:3) [Ultra Ball]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 11 | Step 31] LSTM_PTR_V1 (P0): CARD (idx:0) [-> Ultra Ball] | CARD (idx:2) [-> Buddy-Buddy Poffin]
+[Turn 11 | Step 32] LSTM_PTR_V1 (P0): CARD (idx:10) [-> Brute Bonnet]
+[Turn 11 | Step 33] LSTM_PTR_V1 (P0): PLAY (idx:1) [Brute Bonnet]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 11 | Step 34] LSTM_PTR_V1 (P0): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 12 | Step 35] LSTM_PTR_V2 (P1): PLAY (idx:4) [Lacey]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 12 | Step 36] LSTM_PTR_V2 (P1): ATTACH (idx:3) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 12 | Step 37] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 13 | Step 38] LSTM_PTR_V1 (P0): PLAY (idx:1) [Roaring Moon]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 13 | Step 39] LSTM_PTR_V1 (P0): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 13 | Step 40] LSTM_PTR_V2 (P1): CARD (idx:1)
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 13 | Step 41] LSTM_PTR_V1 (P0): CARD (idx:0)
+[Turn 14 | Step 42] LSTM_PTR_V2 (P1): ATTACH (idx:4) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 14 | Step 43] LSTM_PTR_V2 (P1): PLAY (idx:3) [Pokégear 3.0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 14 | Step 44] LSTM_PTR_V2 (P1): PASS/END
+[Turn 14 | Step 45] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 14 | Step 46] LSTM_PTR_V1 (P0): CARD (idx:2)
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 14 | Step 47] LSTM_PTR_V2 (P1): CARD (idx:0)
+[Turn 15 | Step 48] LSTM_PTR_V1 (P0): PLAY (idx:1) [Flutter Mane]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 15 | Step 49] LSTM_PTR_V1 (P0): PLAY (idx:1) [Pokégear 3.0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 15 | Step 50] LSTM_PTR_V1 (P0): PASS/END
+[Turn 15 | Step 51] LSTM_PTR_V1 (P0): PLAY (idx:0) [Explorer’s Guidance]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 15 | Step 52] LSTM_PTR_V1 (P0): CARD (idx:1) | CARD (idx:2)
+[Turn 15 | Step 53] LSTM_PTR_V1 (P0): ATTACH (idx:0) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 15 | Step 54] LSTM_PTR_V1 (P0): END
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Damage 10 HP
+[Turn 16 | Step 55] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+[Turn 17 | Step 56] LSTM_PTR_V1 (P0): PLAY (idx:0) [Kieran]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 17 | Step 57] LSTM_PTR_V1 (P0): NO
+[Turn 17 | Step 58] LSTM_PTR_V1 (P0): END
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Damage 10 HP
+[Turn 18 | Step 59] LSTM_PTR_V2 (P1): ATTACH (idx:4) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 18 | Step 60] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+[Turn 19 | Step 61] LSTM_PTR_V1 (P0): PLAY (idx:1) [Lacey]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 19 | Step 62] LSTM_PTR_V1 (P0): PLAY (idx:2) [Ultra Ball]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 19 | Step 63] LSTM_PTR_V1 (P0): CARD (idx:0) [-> Basic {D} Energy] | CARD (idx:1) [-> Buddy-Buddy Poffin]
+[Turn 19 | Step 64] LSTM_PTR_V1 (P0): CARD (idx:24) [-> Brute Bonnet]
+[Turn 19 | Step 65] LSTM_PTR_V1 (P0): END
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Damage 10 HP
+[Turn 20 | Step 66] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+[Turn 21 | Step 67] LSTM_PTR_V1 (P0): PLAY (idx:0) [Explorer’s Guidance]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 21 | Step 68] LSTM_PTR_V1 (P0): CARD (idx:1) | CARD (idx:0)
+[Turn 21 | Step 69] LSTM_PTR_V1 (P0): ATTACH (idx:3) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 21 | Step 70] LSTM_PTR_V1 (P0): RETREAT
+[Turn 21 | Step 71] LSTM_PTR_V1 (P0): ENERGY (idx:0)
+[Turn 21 | Step 72] LSTM_PTR_V1 (P0): ENERGY (idx:0)
+[Turn 21 | Step 73] LSTM_PTR_V1 (P0): CARD (idx:2)
+[Turn 21 | Step 74] LSTM_PTR_V1 (P0): END
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+[Turn 22 | Step 75] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+[Turn 23 | Step 76] LSTM_PTR_V1 (P0): END
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Damage 10 HP
+[Turn 24 | Step 77] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+[Turn 25 | Step 78] LSTM_PTR_V1 (P0): PLAY (idx:4) [Awakening Drum]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 25 | Step 79] LSTM_PTR_V1 (P0): ATTACH (idx:5) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 25 | Step 80] LSTM_PTR_V1 (P0): ATTACH (idx:7) [Air Balloon]
+    >>> ENGINE: Pasang Energi
+[Turn 25 | Step 81] LSTM_PTR_V1 (P0): RETREAT
+[Turn 25 | Step 82] LSTM_PTR_V1 (P0): ENERGY (idx:0)
+[Turn 25 | Step 83] LSTM_PTR_V1 (P0): CARD (idx:0)
+[Turn 25 | Step 84] LSTM_PTR_V1 (P0): PLAY (idx:5) [Explorer’s Guidance]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 25 | Step 85] LSTM_PTR_V1 (P0): CARD (idx:1) | CARD (idx:0)
+[Turn 25 | Step 86] LSTM_PTR_V1 (P0): END
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 26 | Step 87] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+[Turn 27 | Step 88] LSTM_PTR_V1 (P0): ATTACH (idx:5) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 27 | Step 89] LSTM_PTR_V1 (P0): PLAY (idx:5) [Explorer’s Guidance]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 27 | Step 90] LSTM_PTR_V1 (P0): CARD (idx:1) | CARD (idx:0)
+[Turn 27 | Step 91] LSTM_PTR_V1 (P0): END
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Damage 10 HP
+[Turn 28 | Step 92] LSTM_PTR_V2 (P1): ATTACK
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+
+--- MATCH END: PEMENANG: LSTM_PTR_V2 (P1) ---

@@ -21,12 +21,13 @@ def main():
     args = parser.parse_args()
 
     deck_dir = os.path.join(ROOT, "new_deck")
-    deck_path_0 = os.path.join(deck_dir, "Pikachu ex Synergy.csv")
-    deck_path_1 = os.path.join(deck_dir, "Mega Gardevoir's Symphonia.csv")
+    deck_path_0 = os.path.join(deck_dir, "Roaring Moon Ancient Depths.csv")
+    deck_path_1 = os.path.join(deck_dir, "Miraidon Future Speed.csv")
     d0 = load_deck(deck_path_0)
     d1 = load_deck(deck_path_1)
     
-    print("=== CRITIC VALUE ANALYSIS (LSTM PTR V2) ===")
+    print("=== CRITIC VALUE ANALYSIS (LSTM PTR V2 - NEW DECKS) ===")
+    print("Deck P0: Roaring Moon Ancient Depths | Deck P1: Miraidon Future Speed")
     
     checkpoints_dir = os.path.join(ROOT, "checkpoints")
     model_v2_path = os.path.join(checkpoints_dir, "model_lstm_pointer_v2_final.msgpack")

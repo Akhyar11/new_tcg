@@ -76,13 +76,21 @@ def main():
     
     agent_ff = FFAgent("FF", FFModel, action_mapping, os.path.join(checkpoints_dir, "model_final.msgpack"))
     agent_lstm = LSTMAgent("LSTM", LSTMModel, action_mapping, os.path.join(checkpoints_dir, "model_lstm_final.msgpack"))
-    agent_ptr = PointerAgent("LSTM_PTR", LSTMPointerModel, action_mapping, os.path.join(checkpoints_dir, "model_lstm_pointer_final.msgpack"))
+    agent_ptr1 = PointerAgent("LSTM_PTR_V1", LSTMPointerModel, action_mapping, os.path.join(checkpoints_dir, "model_lstm_pointer_final.msgpack"))
+    agent_ptr2 = PointerAgent("LSTM_PTR_V2", LSTMPointerModel, action_mapping, os.path.join(checkpoints_dir, "model_lstm_pointer_v2_final.msgpack"))
     
-    agents = {"FF": agent_ff, "LSTM": agent_lstm, "LSTM_PTR": agent_ptr}
-    matchups = [("FF", "LSTM"), ("FF", "LSTM_PTR"), ("LSTM", "LSTM_PTR")]
-    scores = {"FF": 0, "LSTM": 0, "LSTM_PTR": 0}
+    agents = {"FF": agent_ff, "LSTM": agent_lstm, "LSTM_PTR_V1": agent_ptr1, "LSTM_PTR_V2": agent_ptr2}
+    matchups = [
+        ("FF", "LSTM"),
+        ("FF", "LSTM_PTR_V1"),
+        ("FF", "LSTM_PTR_V2"),
+        ("LSTM", "LSTM_PTR_V1"),
+        ("LSTM", "LSTM_PTR_V2"),
+        ("LSTM_PTR_V1", "LSTM_PTR_V2")
+    ]
+    scores = {"FF": 0, "LSTM": 0, "LSTM_PTR_V1": 0, "LSTM_PTR_V2": 0}
     
-    NUM_GAMES = 20 # per configuration (10 as P0, 10 as P1) -> total 20 games per matchup
+    NUM_GAMES = 6 # 3 as P0, 3 as P1 per matchup
     
     for m1, m2 in matchups:
         print(f"\n--- MATCHUP: {m1} vs {m2} ---")
@@ -95,7 +103,7 @@ def main():
             res = simulate_game(agents[m1], agents[m2], d0, d1)
             if res == 0: m1_wins += 1
             elif res == 1: m2_wins += 1
-            print(f"Game {i+1} ({m1} as P0): Winner = {'P0 ('+m1+')' if res == 0 else 'P1 ('+m2+')' if res == 1 else 'Tie'}")
+            print(f"Game {i+1} ({m1} as P0 vs {m2}): Winner = {'P0 ('+m1+')' if res == 0 else 'P1 ('+m2+')' if res == 1 else 'Tie'}")
             
         # m2 as P0, m1 as P1
         for i in range(NUM_GAMES // 2):
@@ -104,7 +112,7 @@ def main():
             res = simulate_game(agents[m2], agents[m1], d0, d1)
             if res == 0: m2_wins += 1
             elif res == 1: m1_wins += 1
-            print(f"Game {i+1+NUM_GAMES//2} ({m2} as P0): Winner = {'P0 ('+m2+')' if res == 0 else 'P1 ('+m1+')' if res == 1 else 'Tie'}")
+            print(f"Game {i+1+NUM_GAMES//2} ({m2} as P0 vs {m1}): Winner = {'P0 ('+m2+')' if res == 0 else 'P1 ('+m1+')' if res == 1 else 'Tie'}")
             
         print(f"Matchup Result -> {m1}: {m1_wins} wins | {m2}: {m2_wins} wins")
         scores[m1] += m1_wins

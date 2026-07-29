@@ -1,0 +1,248 @@
+=== DETAILED IN-GAME ACTION LOG: FF vs LSTM ===
+
+[Turn 0 | Step 1] FF (P0): NO
+[Turn 0 | Step 2] LSTM (P1): CARD (idx:2) [-> Brute Bonnet]
+[Turn 0 | Step 3] FF (P0): CARD (idx:6) [-> Roaring Moon]
+[Turn 0 | Step 4] LSTM (P1): CARD (idx:0) [-> Flutter Mane]
+[Turn 1 | Step 5] LSTM (P1): PLAY (idx:5) [Roaring Moon]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 1 | Step 6] LSTM (P1): PLAY (idx:4) [Carmine]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 1 | Step 7] LSTM (P1): PLAY (idx:2) [Buddy-Buddy Poffin]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 1 | Step 8] LSTM (P1): ATTACH (idx:0) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 1 | Step 9] LSTM (P1): PLAY (idx:0) [Buddy-Buddy Poffin]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 1 | Step 10] LSTM (P1): END
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 2 | Step 11] FF (P0): PLAY (idx:6) [Risky Ruins]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 2 | Step 12] FF (P0): PLAY (idx:2) [Ultra Ball]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 2 | Step 13] FF (P0): CARD (idx:0) [-> Ultra Ball] | CARD (idx:3) [-> Binding Mochi]
+[Turn 2 | Step 14] FF (P0): CARD (idx:8) [-> Roaring Moon]
+[Turn 2 | Step 15] FF (P0): PLAY (idx:3) [Roaring Moon]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 2 | Step 16] FF (P0): PLAY (idx:0) [Carmine]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 2 | Step 17] FF (P0): ATTACH (idx:0) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 2 | Step 18] FF (P0): ATTACH (idx:0) [Binding Mochi]
+    >>> ENGINE: Pasang Energi
+[Turn 2 | Step 19] FF (P0): END
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Pasang Energi
+[Turn 3 | Step 20] LSTM (P1): ATTACH (idx:0) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 3 | Step 21] LSTM (P1): END
+    >>> ENGINE: Pasang Energi
+[Turn 4 | Step 22] FF (P0): PLAY (idx:2) [Carmine]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 4 | Step 23] FF (P0): PLAY (idx:0) [Buddy-Buddy Poffin]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 4 | Step 24] FF (P0): ATTACH (idx:2) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 4 | Step 25] FF (P0): END
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+[Turn 5 | Step 26] LSTM (P1): ATTACH (idx:0) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 5 | Step 27] LSTM (P1): PLAY (idx:1) [Carmine]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 5 | Step 28] LSTM (P1): PLAY (idx:1) [Energy Retrieval]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 5 | Step 29] LSTM (P1): CARD (idx:7)
+[Turn 5 | Step 30] LSTM (P1): END
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 6 | Step 31] FF (P0): PLAY (idx:2) [Kieran]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 6 | Step 32] FF (P0): NO
+[Turn 6 | Step 33] FF (P0): PLAY (idx:2) [Brute Bonnet]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 6 | Step 34] FF (P0): END
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 7 | Step 35] LSTM (P1): PLAY (idx:5) [Explorer’s Guidance]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 7 | Step 36] LSTM (P1): CARD (idx:4) | CARD (idx:0)
+[Turn 7 | Step 37] LSTM (P1): PLAY (idx:5) [Ultra Ball]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 7 | Step 38] LSTM (P1): CARD (idx:0) [-> Basic {D} Energy] | CARD (idx:1) [-> Kieran]
+[Turn 7 | Step 39] LSTM (P1): CARD (idx:24) [-> Brute Bonnet]
+[Turn 7 | Step 40] LSTM (P1): ATTACH (idx:2) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 7 | Step 41] LSTM (P1): PLAY (idx:3) [Brute Bonnet]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 7 | Step 42] LSTM (P1): END
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 8 | Step 43] FF (P0): PLAY (idx:0) [Carmine]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 8 | Step 44] FF (P0): PLAY (idx:4) [Pokégear 3.0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 8 | Step 45] FF (P0): CARD (idx:6)
+[Turn 8 | Step 46] FF (P0): PLAY (idx:2) [Roaring Moon]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 8 | Step 47] FF (P0): PLAY (idx:1) [Buddy-Buddy Poffin]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 8 | Step 48] FF (P0): ATTACH (idx:0) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 8 | Step 49] FF (P0): ATTACH (idx:0) [Binding Mochi]
+    >>> ENGINE: Pasang Energi
+[Turn 8 | Step 50] FF (P0): END
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Pasang Energi
+[Turn 9 | Step 51] LSTM (P1): PLAY (idx:3) [Switch]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 9 | Step 52] LSTM (P1): CARD (idx:2)
+[Turn 9 | Step 53] LSTM (P1): PLAY (idx:2) [Explorer’s Guidance]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 9 | Step 54] LSTM (P1): CARD (idx:4) | CARD (idx:0)
+[Turn 9 | Step 55] LSTM (P1): PLAY (idx:2) [Ultra Ball]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 9 | Step 56] LSTM (P1): CARD (idx:0) [-> Explorer’s Guidance] | CARD (idx:2) [-> Kieran]
+[Turn 9 | Step 57] LSTM (P1): CARD (idx:16) [-> Flutter Mane]
+[Turn 9 | Step 58] LSTM (P1): PLAY (idx:1) [Flutter Mane]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Damage 20 HP
+[Turn 9 | Step 59] LSTM (P1): END
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Damage 20 HP
+[Turn 10 | Step 60] FF (P0): PLAY (idx:0) [Explorer’s Guidance]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 10 | Step 61] FF (P0): CARD (idx:0) | CARD (idx:4)
+[Turn 10 | Step 62] FF (P0): PLAY (idx:2) [Ultra Ball]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 10 | Step 63] FF (P0): CARD (idx:0) [-> Basic {D} Energy] | CARD (idx:1) [-> Ultra Ball]
+[Turn 10 | Step 64] FF (P0): CARD (idx:10) [-> Flutter Mane]
+[Turn 10 | Step 65] FF (P0): PLAY (idx:0) [Flutter Mane]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Damage 20 HP
+[Turn 10 | Step 66] FF (P0): END
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Damage 20 HP
+[Turn 11 | Step 67] LSTM (P1): ATTACH (idx:1) [Binding Mochi]
+    >>> ENGINE: Pasang Energi
+[Turn 11 | Step 68] LSTM (P1): PLAY (idx:0) [Lacey]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 11 | Step 69] LSTM (P1): ATTACH (idx:3) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 11 | Step 70] LSTM (P1): PLAY (idx:0) [Roaring Moon]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 11 | Step 71] LSTM (P1): END
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 12 | Step 72] FF (P0): PLAY (idx:0) [Pokégear 3.0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 12 | Step 73] FF (P0): CARD (idx:6)
+[Turn 12 | Step 74] FF (P0): PLAY (idx:0) [Carmine]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 12 | Step 75] FF (P0): ATTACH (idx:1) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 12 | Step 76] FF (P0): PLAY (idx:0) [Energy Retrieval]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 12 | Step 77] FF (P0): CARD (idx:8) | CARD (idx:13)
+[Turn 12 | Step 78] FF (P0): PLAY (idx:2) [Brute Bonnet]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 12 | Step 79] FF (P0): END
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 13 | Step 80] LSTM (P1): ATTACH (idx:2) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 13 | Step 81] LSTM (P1): PLAY (idx:1) [Explorer’s Guidance]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 13 | Step 82] LSTM (P1): CARD (idx:5) | CARD (idx:4)
+[Turn 13 | Step 83] LSTM (P1): PLAY (idx:2) [Ultra Ball]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 13 | Step 84] LSTM (P1): CARD (idx:0) [-> Boss’s Orders] | CARD (idx:1) [-> Risky Ruins]
+[Turn 13 | Step 85] LSTM (P1): END
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 14 | Step 86] FF (P0): ATTACH (idx:2) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 14 | Step 87] FF (P0): PLAY (idx:0) [Lacey]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 14 | Step 88] FF (P0): ATTACH (idx:0) [Air Balloon]
+    >>> ENGINE: Pasang Energi
+[Turn 14 | Step 89] FF (P0): PLAY (idx:1) [Awakening Drum]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 14 | Step 90] FF (P0): PLAY (idx:3) [Switch]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 14 | Step 91] FF (P0): CARD (idx:2)
+[Turn 14 | Step 92] FF (P0): END
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 15 | Step 93] LSTM (P1): PLAY (idx:0) [Boss’s Orders]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 15 | Step 94] LSTM (P1): CARD (idx:1)
+[Turn 15 | Step 95] LSTM (P1): END
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 16 | Step 96] FF (P0): ATTACH (idx:1) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 16 | Step 97] FF (P0): PLAY (idx:4) [Lacey]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 16 | Step 98] FF (P0): ATTACK
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+[Turn 17 | Step 99] LSTM (P1): PLAY (idx:0) [Energy Retrieval]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 17 | Step 100] LSTM (P1): CARD (idx:18) | CARD (idx:21)
+[Turn 17 | Step 101] LSTM (P1): ATTACH (idx:0) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 17 | Step 102] LSTM (P1): END
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Damage 10 HP
+[Turn 18 | Step 103] FF (P0): ATTACH (idx:1) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 18 | Step 104] FF (P0): PLAY (idx:0) [Explorer’s Guidance]
+    >>> ENGINE: Memainkan Kartu [ID:0]
+[Turn 18 | Step 105] FF (P0): CARD (idx:1) | CARD (idx:0)
+[Turn 18 | Step 106] FF (P0): ATTACK
+    >>> ENGINE: Damage 10 HP
+    >>> ENGINE: Pasang Energi
+    >>> ENGINE: Memainkan Kartu [ID:0]
+    >>> ENGINE: Serangan Terjadi!
+    >>> ENGINE: Damage 10 HP
+[Turn 19 | Step 107] LSTM (P1): ATTACH (idx:0) [Basic {D} Energy]
+    >>> ENGINE: Pasang Energi
+[Turn 19 | Step 108] LSTM (P1): END
+    >>> ENGINE: Damage 10 HP
+
+--- MATCH END: PEMENANG: LSTM (P1) ---

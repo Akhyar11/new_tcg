@@ -806,7 +806,7 @@ export default function BattleArena({
               <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', color: '#94a3b8' }}>
                 <span style={{ background: '#334155', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.9rem' }}>{previewCard.card['Stage (Pokémon)/Type (Energy and Trainer)']}</span>
                 {previewCard.card['HP'] && <span style={{ background: '#ef4444', color: 'white', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold' }}>HP {previewCard.card['HP']}</span>}
-                {previewCard.card['Type'] && <span style={{ background: '#eab308', color: 'black', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold' }}>{previewCard.card['Type']}</span>}
+                {previewCard.card['Type'] && <span style={{ background: getEnergySymbolAndColor(previewCard.card['Type']).color, color: '#0f172a', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold' }}>{previewCard.card['Type']}</span>}
               </div>
 
               {!isSpectator && (
@@ -920,7 +920,7 @@ export default function BattleArena({
               <div style={{ marginTop: '2rem', display: 'flex', gap: '2rem', fontSize: '0.9rem', color: '#94a3b8', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
                 <div><strong>Weakness:</strong> {previewCard.card['Weakness'] || 'None'}</div>
                 <div><strong>Resistance:</strong> {previewCard.card['Resistance'] || 'None'}</div>
-                <div><strong>Retreat:</strong> {previewCard.card['Retreat Cost'] || '0'}</div>
+                <div><strong>Retreat:</strong> {previewCard.card['Retreat'] ?? previewCard.card['Retreat Cost'] ?? '0'}</div>
               </div>
             </div>
           </div>
